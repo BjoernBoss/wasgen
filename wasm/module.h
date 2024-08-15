@@ -16,7 +16,7 @@ namespace wasm {
 		refExtern,
 		refFunction
 	};
-	struct Import {
+	struct _Import {
 		std::u8string_view module;
 		std::u8string_view name;
 	};
@@ -54,13 +54,13 @@ namespace wasm {
 
 	class Module {
 	public:
-		size_t importFunction(const wasm::Import& name, const std::u8string_view& id, const wasm::FunctionType& type) {
+		size_t importFunction(const wasm::_Import& name, const std::u8string_view& id, const wasm::FunctionType& type) {
 			return 0;
 		}
-		size_t importMemory(const wasm::Import& name, const std::u8string_view& id, const wasm::MemoryType& type) {
+		size_t importMemory(const wasm::_Import& name, const std::u8string_view& id, const wasm::MemoryType& type) {
 			return 0;
 		}
-		size_t importTable(const wasm::Import& name, const std::u8string_view& id, const wasm::TableType& type) {
+		size_t importTable(const wasm::_Import& name, const std::u8string_view& id, const wasm::TableType& type) {
 			return 0;
 		}
 		std::pair<size_t, wasm::InstructionSink> addFunction(const std::u8string_view& id, const wasm::FunctionType& type, const std::u8string_view& exportName = {}) {
