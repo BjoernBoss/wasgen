@@ -52,7 +52,7 @@ namespace wasm {
 
 	};
 
-	class Module {
+	class _Module {
 	public:
 		size_t importFunction(const wasm::_Import& name, const std::u8string_view& id, const wasm::FunctionType& type) {
 			return 0;

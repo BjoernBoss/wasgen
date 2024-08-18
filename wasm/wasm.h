@@ -8,61 +8,61 @@
 
 namespace wasm {
 	/* wasm - Limit */
-	template <class Type>
-	concept CanLimit = requires(Type & state, uint32_t v) {
-		{ typename Type::Limit{ state, v, v } };
-	};
-	template <wasm::CanLimit Writer>
 	struct Limit {
-		typename Writer::Limit written;
-		constexpr Limit(Writer& state, uint32_t min = 0, uint32_t max = std::numeric_limits<uint32_t>::max()) : written{ state, min, max } {}
+		uint32_t min = 0;
+		uint32_t max = 0;
+		constexpr Limit(uint32_t min = 0, uint32_t max = std::numeric_limits<uint32_t>::max()) : min{ min }, max{ std::max<uint32_t>(min, max) } {}
+	};
+
+	/* wasm - Import/Export */
+	struct Exchange {
+		std::u8string module;
+		std::u8string name;
+	};
+	struct Import : public wasm::Exchange {
+		constexpr Import(std::u8string module, std::u8string name) : wasm::Exchange{ module, name } {}
+	};
+	struct Export : public wasm::Exchange {
+		constexpr Export(std::u8string name) : wasm::Exchange{ u8"", name } {}
 	};
 
 	/* wasm - Memory */
 	template <class Type>
-	concept CanMemory = wasm::CanLimit<Type> && requires(Type & state, const std::u8string_view & id, const wasm::Limit<Type>&limit) {
-		{ typename Type::Memory{ state, id, limit.written } };
+	concept CanMemory = requires(Type & state, const std::u8string_view & id, const wasm::Limit & limit, const wasm::Exchange & exchange) {
+		{ typename Type::Memory{ state, id, limit, exchange } };
 	};
 	template <wasm::CanMemory Writer>
 	struct Memory {
-		typename Writer::Memory written;
-		constexpr Memory(Writer& state, const std::u8string_view& id = {}, const wasm::Limit<Writer>& limit = wasm::Limit<Writer>{}) : written{ state, id, limit.written } {}
+		typename Writer::Memory value;
+		constexpr Memory(Writer& state, const std::u8string_view& id = {}, const wasm::Limit& limit = {}, const wasm::Exchange& exchange = {}) : value{ state, id, limit, exchange } {}
 	};
 
 	/* wasm - Table */
 	template <class Type>
-	concept CanTable = wasm::CanLimit<Type> && requires(Type & state, const std::u8string_view & id, const wasm::Limit<Type>&limit) {
-		{ typename Type::Table{ state, id, false, limit.written } };
+	concept CanTable = requires(Type & state, const std::u8string_view & id, const wasm::Limit & limit, const wasm::Exchange & exchange) {
+		{ typename Type::Table{ state, id, false, limit, exchange } };
 	};
 	template <wasm::CanTable Writer>
 	struct Table {
-		typename Writer::Table written;
-		constexpr Table(Writer& state, const std::u8string_view& id = {}, bool functions = true, const wasm::Limit<Writer>& limit = wasm::Limit<Writer>{}) : written{ state, id, functions, limit.written } {}
+		typename Writer::Table value;
+		constexpr Table(Writer& state, const std::u8string_view& id = {}, bool functions = true, const wasm::Limit& limit = {}, const wasm::Exchange& exchange = {}) : value{ state, id, functions, limit, exchange } {}
 	};
 
-	/* wasm - Import */
+	/* wasm - Module */
 	template <class Type>
-	concept CanImport = wasm::CanMemory<Type> && wasm::CanTable<Type> && requires(Type & state, const std::u8string_view & s, const wasm::Memory<Type>&memory, const wasm::Table<Type>&table) {
-		{ typename Type::Import{ state, s, s, memory.written } };
-		{ typename Type::Import{ state, s, s, table.written } };
+	concept CanModule = wasm::CanMemory<Type> && wasm::CanTable<Type> && requires(Type & state, const wasm::Memory<Type>&memory, const wasm::Table<Type>&table) {
+		{ typename Type::Module{ state }.addMemory(memory.value) };
+		{ typename Type::Module{ state }.addTable(table.value) };
 	};
-	template <wasm::CanImport Writer>
-	struct Import {
-		typename Writer::Import written;
-		constexpr Import(Writer& state, const std::u8string_view& mod, const std::u8string_view& name, const wasm::Memory<Writer>& memory) : written{ state, mod, name, memory.written } {}
-		constexpr Import(Writer& state, const std::u8string_view& mod, const std::u8string_view& name, const wasm::Table<Writer>& table) : written{ state, mod, name, table.written } {}
-	};
-
-	/* wasm - Export */
-	template <class Type>
-	concept CanExport = wasm::CanMemory<Type> && wasm::CanTable<Type> && requires(Type & state, const std::u8string_view & s, const wasm::Memory<Type>&memory, const wasm::Table<Type>&table) {
-		{ typename Type::Export{ state, s, memory.written } };
-		{ typename Type::Export{ state, s, table.written } };
-	};
-	template <wasm::CanExport Writer>
-	struct Export {
-		typename Writer::Export written;
-		constexpr Export(Writer& state, const std::u8string_view& name, const wasm::Memory<Writer>& memory) : written{ state, name, memory.written } {}
-		constexpr Export(Writer& state, const std::u8string_view& name, const wasm::Table<Writer>& table) : written{ state, name, table.written } {}
+	template <wasm::CanModule Writer>
+	struct Module {
+		typename Writer::Module value;
+		constexpr Module(Writer& state) : value{ state } {}
+		void add(const wasm::Memory<Writer>& memory) {
+			value.addMemory(memory.value);
+		}
+		void add(const wasm::Table<Writer>& table) {
+			value.addTable(table.value);
+		}
 	};
 }
