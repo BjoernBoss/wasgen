@@ -7,7 +7,7 @@
 #include <utility>
 
 namespace wasm {
-	enum class Type : uint8_t {
+	enum class _Type : uint8_t {
 		i32,
 		i64,
 		f32,
@@ -31,11 +31,11 @@ namespace wasm {
 
 	struct ParamType {
 		std::u8string_view name;
-		wasm::Type type;
+		wasm::_Type type;
 	};
 	struct FunctionType {
 		std::vector<wasm::ParamType> params;
-		std::vector<wasm::Type> result;
+		std::vector<wasm::_Type> result;
 	};
 	struct MemoryType {
 		wasm::Limits limits;
@@ -76,7 +76,7 @@ namespace wasm {
 
 	namespace fn {
 		static wasm::FunctionType VoidFunction = wasm::FunctionType{ { }, { } };
-		static wasm::FunctionType i32Function = { { }, { wasm::Type::i32 } };
-		static wasm::FunctionType i64Function = { { }, { wasm::Type::i64 } };
+		static wasm::FunctionType i32Function = { { }, { wasm::_Type::i32 } };
+		static wasm::FunctionType i64Function = { { }, { wasm::_Type::i64 } };
 	}
 }
