@@ -4,5 +4,5 @@
 
 namespace env {
 	void log(const std::u8string_view& str);
-	void fail(const std::u8string_view& str);
+	void fail [[noreturn]] (const std::u8string_view& str);
 }
