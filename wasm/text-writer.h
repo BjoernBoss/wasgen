@@ -70,28 +70,39 @@ public:
 		constexpr Table(std::u8string id) : id{ id } {}
 	};
 
-	/* wasm::IsInstBase */
-	struct InstBase {
-		std::u8string value;
-		constexpr InstBase(std::u8string value) : value{ value } {}
-	};
-
-	/* wasm::IsJumpBase */
-	struct JumpBase {
-		std::u8string id;
-		constexpr JumpBase(std::u8string id) : id{ id } {}
-	};
-
 	/* wasm::IsLocal */
 	struct Local {
 		std::u8string id;
 		constexpr Local(std::u8string id) : id{ id } {}
 	};
 
+	/* wasm::IsGlobal */
+	struct Global {
+		std::u8string id;
+		constexpr Global(std::u8string id) : id{ id } {}
+	};
+
 	/* wasm::IsFunction */
 	struct Function {
 		std::u8string id;
 		constexpr Function(std::u8string id) : id{ id } {}
+	};
+
+	/* wasm::IsInstruction */
+	struct Instruction {
+		std::u8string value;
+		constexpr Instruction(std::u8string value) : value{ value } {}
+	};
+
+	/* wasm::IsTarget */
+	struct Target {
+		std::u8string id;
+		constexpr Target(std::u8string id) : id{ id } {}
+	};
+
+	/* wasm::IsSink */
+	struct Sink {
+		constexpr Sink() {}
 
 	public:
 		constexpr void popTarget() {
@@ -105,11 +116,11 @@ public:
 		constexpr TextWriter::Local addLocal(wasm::Type type, std::u8string_view id) {
 			return TextWriter::Local{ std::u8string(id) };
 		}
-		constexpr void addInst(const TextWriter::InstBase& inst) {
+		constexpr void addInst(const TextWriter::Instruction& inst) {
 
 		}
-		constexpr TextWriter::JumpBase pushJumpBase(const std::u8string_view& label, const wasm::Proto& prototype, bool loop) {
-			return TextWriter::JumpBase{ std::u8string(label) };
+		constexpr TextWriter::Target pushTarget(const std::u8string_view& label, const wasm::Proto& prototype, bool loop) {
+			return TextWriter::Target{ std::u8string(label) };
 		}
 		constexpr void pushConditional(const wasm::Proto& prototype) {
 		}
@@ -124,16 +135,22 @@ public:
 
 	public:
 		constexpr TextWriter::Memory addMemory(const std::u8string_view& id, const wasm::Limit& limit, const wasm::Exchange& exchange) {
-			str::FormatTo(out, u8"\n  (memory{}{}{})", fMakeId(id), fMakeExchange(exchange), fMakeLimit(limit));
+			str::BuildTo(out, u8"\n  (memory", fMakeId(id), fMakeExchange(exchange), fMakeLimit(limit), u8')');
 			return TextWriter::Memory{ std::u8string(id) };
 		}
 		constexpr TextWriter::Table addTable(const std::u8string_view& id, bool functions, const wasm::Limit& limit, const wasm::Exchange& exchange) {
-			str::FormatTo(out, u8"\n  (table{}{}{} {})", fMakeId(id), fMakeExchange(exchange), fMakeLimit(limit), functions ? u8"funcref" : u8"externref");
+			str::BuildTo(out, u8"\n  (table", fMakeId(id), fMakeExchange(exchange), fMakeLimit(limit), functions ? u8" funcref)" : u8" externref)");
 			return TextWriter::Table{ std::u8string(id) };
+		}
+		constexpr TextWriter::Global addGlobal(const std::u8string_view& id, wasm::Type type, const wasm::Exchange& exchange) {
+			return TextWriter::Global{ std::u8string(id) };
 		}
 		constexpr TextWriter::Function addFunction(const std::u8string_view& id, const wasm::Proto& prototype, const wasm::Exchange& exchange) {
 			str::BuildTo(out, u8"\n  (func", fMakeId(id), fMakeExchange(exchange), fMakePrototype(prototype), u8')');
 			return TextWriter::Function{ std::u8string(id) };
+		}
+		constexpr TextWriter::Sink bindSink(const TextWriter::Function& fn) {
+			return TextWriter::Sink{};
 		}
 		constexpr std::u8string toString() const {
 			if (out.empty())
@@ -143,19 +160,21 @@ public:
 	};
 
 	/* instructions: no-operands */
-	static constexpr TextWriter::InstBase NoOpInst(wasm::NoOpInst type) {
-		switch (type) {
-		case wasm::NoOpInst::add:
-			return InstBase{ u8"add" };
-		case wasm::NoOpInst::ret:
-			return InstBase{ u8"ret" };
-		default:
-			break;
+	struct Inst {
+		static constexpr TextWriter::Instruction Consti32(uint32_t v) {
+			return TextWriter::Instruction{ str::Build<std::u8string>(u8"i32.const ", v) };
 		}
-		env::fail(str::Format<std::u8string>(u8"Unknown wasm::NoOpInst {}\n", size_t(type)));
-		return InstBase{ u8"" };
-	}
-	static constexpr TextWriter::InstBase InstConst(uint32_t v) {
-		return InstBase{ str::Build<std::u8string>(u8"i32.const ", v) };
-	}
+		static constexpr TextWriter::Instruction Consti64(uint64_t v) {
+			return TextWriter::Instruction{ str::Build<std::u8string>(u8"i64.const ", v) };
+		}
+		static constexpr TextWriter::Instruction Constf32(float v) {
+			return TextWriter::Instruction{ str::Build<std::u8string>(u8"f32.const ", v) };
+		}
+		static constexpr TextWriter::Instruction Constf64(double v) {
+			return TextWriter::Instruction{ str::Build<std::u8string>(u8"f64.const ", v) };
+		}
+		static constexpr TextWriter::Instruction NoOp(wasm::NoOpType op, wasm::OperandType type) {
+			return TextWriter::Instruction{ u8"%not-implemented%" };
+		}
+	};
 };
