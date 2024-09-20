@@ -38,26 +38,33 @@ private:
 		return str::Build<std::u8string>(u8' ', limit.min, u8' ', limit.max);
 	}
 	static std::u8string fMakeExchange(const wasm::Exchange& exchange) {
-		if (exchange.name.empty())
-			return std::u8string();
-		if (exchange.module.empty())
-			return str::Format<std::u8string>(u8" (export \"{}\")", exchange.name);
-		return str::Format<std::u8string>(u8" (import \"{}\" \"{}\")", exchange.module, exchange.name);
-	}
-	static std::u8string fMakePrototype(const wasm::Proto& prototype) {
 		std::u8string out;
-		for (size_t i = 0; i < prototype.params.size(); ++i)
-			str::FormatTo(out, " (param{} {})", fMakeId(prototype.params[i].id), fMakeType(prototype.params[i].type));
-		if (!prototype.result.empty()) {
-			out += u8" (result";
-			for (size_t i = 0; i < prototype.result.size(); ++i)
-				out.append(1, u8' ').append(fMakeType(prototype.result[i]));
-			out += u8")";
-		}
+		if (!exchange.expName.empty())
+			str::FormatTo(out, u8" (export \"{}\")", exchange.expName);
+		if (!exchange.impName.empty())
+			str::FormatTo(out, u8" (import \"{}\" \"{}\")", exchange.impModule, exchange.impName);
 		return out;
 	}
+	//static std::u8string fMakePrototype(const wasm::Proto& prototype) {
+	//	std::u8string out;
+	//	for (size_t i = 0; i < prototype.params.size(); ++i)
+	//		str::FormatTo(out, " (param{} {})", fMakeId(prototype.params[i].id), fMakeType(prototype.params[i].type));
+	//	if (!prototype.result.empty()) {
+	//		out += u8" (result";
+	//		for (size_t i = 0; i < prototype.result.size(); ++i)
+	//			out.append(1, u8' ').append(fMakeType(prototype.result[i]));
+	//		out += u8")";
+	//	}
+	//	return out;
+	//}
 
 public:
+	/* wasm::IsPrototype */
+	struct Prototype {
+		std::u8string id;
+		constexpr Prototype(std::u8string id) : id{ id } {}
+	};
+
 	/* wasm::IsMemory */
 	struct Memory {
 		std::u8string id;
@@ -70,10 +77,10 @@ public:
 		constexpr Table(std::u8string id) : id{ id } {}
 	};
 
-	/* wasm::IsLocal */
-	struct Local {
+	/* wasm::IsVariable */
+	struct Variable {
 		std::u8string id;
-		constexpr Local(std::u8string id) : id{ id } {}
+		constexpr Variable(std::u8string id) : id{ id } {}
 	};
 
 	/* wasm::IsGlobal */
@@ -113,16 +120,19 @@ public:
 		}
 		constexpr void toggleElse() {
 		}
-		constexpr TextWriter::Local addLocal(wasm::Type type, std::u8string_view id) {
-			return TextWriter::Local{ std::u8string(id) };
+		constexpr TextWriter::Variable getParameter(uint32_t index) {
+			return TextWriter::Variable{ std::u8string() };
+		}
+		constexpr TextWriter::Variable addLocal(wasm::Type type, std::u8string_view id) {
+			return TextWriter::Variable{ std::u8string(id) };
 		}
 		constexpr void addInst(const TextWriter::Instruction& inst) {
 
 		}
-		constexpr TextWriter::Target pushTarget(const std::u8string_view& label, const wasm::Proto& prototype, bool loop) {
+		constexpr TextWriter::Target pushTarget(const std::u8string_view& label, const TextWriter::Prototype* prototype, bool loop) {
 			return TextWriter::Target{ std::u8string(label) };
 		}
-		constexpr void pushConditional(const wasm::Proto& prototype) {
+		constexpr void pushConditional(const TextWriter::Prototype* prototype) {
 		}
 	};
 
@@ -134,6 +144,9 @@ public:
 		constexpr Module(const TextWriter& state) {}
 
 	public:
+		constexpr TextWriter::Prototype addPrototype(const std::u8string_view& id, const wasm::Param* params, size_t paramCount, const wasm::Type* results, size_t resultCount) {
+			return TextWriter::Prototype{ std::u8string(id) };
+		}
 		constexpr TextWriter::Memory addMemory(const std::u8string_view& id, const wasm::Limit& limit, const wasm::Exchange& exchange) {
 			str::BuildTo(out, u8"\n  (memory", fMakeId(id), fMakeExchange(exchange), fMakeLimit(limit), u8')');
 			return TextWriter::Memory{ std::u8string(id) };
@@ -145,11 +158,11 @@ public:
 		constexpr TextWriter::Global addGlobal(const std::u8string_view& id, wasm::Type type, const wasm::Exchange& exchange) {
 			return TextWriter::Global{ std::u8string(id) };
 		}
-		constexpr TextWriter::Function addFunction(const std::u8string_view& id, const wasm::Proto& prototype, const wasm::Exchange& exchange) {
-			str::BuildTo(out, u8"\n  (func", fMakeId(id), fMakeExchange(exchange), fMakePrototype(prototype), u8')');
+		constexpr TextWriter::Function addFunction(const std::u8string_view& id, const TextWriter::Prototype* prototype, const wasm::Exchange& exchange) {
+			// str::BuildTo(out, u8"\n  (func", fMakeId(id), fMakeExchange(exchange), fMakePrototype(prototype), u8')');
 			return TextWriter::Function{ std::u8string(id) };
 		}
-		constexpr TextWriter::Sink bindSink(const TextWriter::Function& fn) {
+		constexpr TextWriter::Sink getSink(const TextWriter::Function& fn) {
 			return TextWriter::Sink{};
 		}
 		constexpr std::u8string toString() const {
@@ -159,7 +172,7 @@ public:
 		}
 	};
 
-	/* instructions: no-operands */
+	/* wasm::IsInst */
 	struct Inst {
 		static constexpr TextWriter::Instruction Consti32(uint32_t v) {
 			return TextWriter::Instruction{ str::Build<std::u8string>(u8"i32.const ", v) };
@@ -174,6 +187,30 @@ public:
 			return TextWriter::Instruction{ str::Build<std::u8string>(u8"f64.const ", v) };
 		}
 		static constexpr TextWriter::Instruction NoOp(wasm::NoOpType op, wasm::OperandType type) {
+			return TextWriter::Instruction{ u8"%not-implemented%" };
+		}
+		static constexpr TextWriter::Instruction Memory(wasm::MemOpType op, const TextWriter::Memory* mem, const TextWriter::Memory* src, uint32_t off, wasm::OperandType type) {
+			return TextWriter::Instruction{ u8"%not-implemented%" };
+		}
+		static constexpr TextWriter::Instruction Table(wasm::TabOpType op, const TextWriter::Table* tab, const TextWriter::Table* src) {
+			return TextWriter::Instruction{ u8"%not-implemented%" };
+		}
+		static constexpr TextWriter::Instruction Local(wasm::LocOpType op, const TextWriter::Variable& loc) {
+			return TextWriter::Instruction{ u8"%not-implemented%" };
+		}
+		static constexpr TextWriter::Instruction Global(wasm::GlobOpType op, const TextWriter::Global& glob) {
+			return TextWriter::Instruction{ u8"%not-implemented%" };
+		}
+		static constexpr TextWriter::Instruction Ref(wasm::RefOpType op, const TextWriter::Function* fn) {
+			return TextWriter::Instruction{ u8"%not-implemented%" };
+		}
+		static constexpr TextWriter::Instruction Call(wasm::CallOpType op, const TextWriter::Function& fn) {
+			return TextWriter::Instruction{ u8"%not-implemented%" };
+		}
+		static constexpr TextWriter::Instruction Indirect(wasm::CallOpType op, const TextWriter::Table* tab, const TextWriter::Prototype* type) {
+			return TextWriter::Instruction{ u8"%not-implemented%" };
+		}
+		static constexpr TextWriter::Instruction Branch(wasm::BrOpType op, const TextWriter::Target& tgt, const TextWriter::Target* list, uint32_t count) {
 			return TextWriter::Instruction{ u8"%not-implemented%" };
 		}
 	};

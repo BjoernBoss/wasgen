@@ -10,16 +10,17 @@ namespace wasm {
 	*		guaranteed to only be closed once per function object and in stacked order
 	*		for [then] blocks, they will guaranteed at most be toggled once before being closed */
 	template <class Type>
-	concept IsSink = requires(const std::u8string_view id, const wasm::Proto proto) {
+	concept IsSink = requires(const std::u8string_view id, uint32_t i) {
 		typename Type::Sink;
 		{ std::declval<typename Type::Sink>().popTarget() };
 		{ std::declval<typename Type::Sink>().popThen() };
 		{ std::declval<typename Type::Sink>().popElse() };
 		{ std::declval<typename Type::Sink>().toggleElse() };
-		{ std::declval<typename Type::Sink>().addLocal(wasm::Type::i32, id) } -> std::same_as<typename Type::Local>;
-		{ std::declval<typename Type::Sink>().addInst(std::declval<const typename Type::Instruction>()) };
-		{ std::declval<typename Type::Sink>().pushTarget(id, proto, true) } -> std::same_as<typename Type::Target>;
-		{ std::declval<typename Type::Sink>().pushConditional(proto) };
+		{ std::declval<typename Type::Sink>().getParameter(i) } -> std::same_as<typename Type::Variable>;
+		{ std::declval<typename Type::Sink>().addLocal(wasm::Type::i32, id) } -> std::same_as<typename Type::Variable>;
+		{ std::declval<typename Type::Sink>().addInst(std::declval<const typename Type::Instruction&>()) };
+		{ std::declval<typename Type::Sink>().pushTarget(id, std::declval<const typename Type::Prototype*>(), true) } -> std::same_as<typename Type::Target>;
+		{ std::declval<typename Type::Sink>().pushConditional(std::declval<const typename Type::Prototype*>()) };
 	};
 
 	template <wasm::IsSink Writer> struct Sink;
@@ -35,7 +36,7 @@ namespace wasm {
 		protected:
 			wasm::Sink<Writer>& pSink;
 			detail::Pushed pPushed;
-			constexpr JumpBase(wasm::Sink<Writer>& sink, const std::u8string_view& label, const wasm::Proto& prototype, bool loop) : wasm::Target<Writer>{ std::move(sink.fOpen(pPushed, label, prototype, loop)) }, pSink{ sink } {}
+			constexpr JumpBase(wasm::Sink<Writer>& sink, const std::u8string_view& label, const wasm::Prototype<Writer>* prototype, bool loop) : wasm::Target<Writer>{ std::move(sink.fOpen(pPushed, label, prototype, loop)) }, pSink{ sink } {}
 			constexpr void fClose() {
 				pSink.fClose(pPushed);
 			}
@@ -53,8 +54,11 @@ namespace wasm {
 		detail::Pushed pPushed;
 
 	public:
-		constexpr IfThen(wasm::Sink<Writer>& sink, const wasm::Proto& prototype = {}) : pSink{ sink } {
-			pSink.fOpen(pPushed, prototype);
+		constexpr IfThen(wasm::Sink<Writer>& sink) : pSink{ sink } {
+			pSink.fOpen(pPushed, 0);
+		}
+		constexpr IfThen(wasm::Sink<Writer>& sink, const wasm::Prototype<Writer>& prototype) : pSink{ sink } {
+			pSink.fOpen(pPushed, &prototype);
 		}
 		IfThen(wasm::IfThen<Writer>&&) = delete;
 		IfThen(const wasm::IfThen<Writer>&) = delete;
@@ -77,7 +81,8 @@ namespace wasm {
 	/* loop block, which can act as wasm::Target (will automatically end the instruction-block at destruction) */
 	template <class Writer>
 	struct Loop : public detail::JumpBase<Writer> {
-		constexpr Loop(wasm::Sink<Writer>& sink, const std::u8string_view& label = {}, const wasm::Proto& prototype = {}) : detail::JumpBase<Writer>{ sink, label, prototype, true } {}
+		constexpr Loop(wasm::Sink<Writer>& sink, const std::u8string_view& label = {}) : detail::JumpBase<Writer>{ sink, label, 0, true } {}
+		constexpr Loop(wasm::Sink<Writer>& sink, const wasm::Prototype<Writer>& prototype, const std::u8string_view& label = {}) : detail::JumpBase<Writer>{ sink, label, &prototype, true } {}
 		constexpr ~Loop() {
 			detail::JumpBase<Writer>::fClose();
 		}
@@ -92,7 +97,8 @@ namespace wasm {
 	/* jump block, which can act as wasm::Target (will automatically end the instruction-block at destruction) */
 	template <class Writer>
 	struct Block : public detail::JumpBase<Writer> {
-		constexpr Block(wasm::Sink<Writer>& sink, const std::u8string_view& label = {}, const wasm::Proto& prototype = {}) : detail::JumpBase<Writer>{ sink, label, prototype, false } {}
+		constexpr Block(wasm::Sink<Writer>& sink, const std::u8string_view& label = {}) : detail::JumpBase<Writer>{ sink, label, 0, false } {}
+		constexpr Block(wasm::Sink<Writer>& sink, const wasm::Prototype<Writer>& prototype, const std::u8string_view& label = {}) : detail::JumpBase<Writer>{ sink, label, &prototype, false } {}
 		constexpr ~Block() {
 			detail::JumpBase<Writer>::fClose();
 		}
@@ -154,16 +160,16 @@ namespace wasm {
 				self.toggleElse();
 			}
 		}
-		constexpr void fOpen(detail::Pushed& pushed, const wasm::Proto& prototype) {
+		constexpr void fOpen(detail::Pushed& pushed, const wasm::Prototype<Writer>* prototype) {
 			pushed.stamp = pNext;
 			pushed.index = pStack.size();
-			self.pushConditional(prototype);
+			self.pushConditional(prototype == 0 ? 0 : &prototype->self);
 			pStack.emplace_back(++pNext, Opened::Type::then);
 		}
-		constexpr Writer::Target fOpen(detail::Pushed& pushed, const std::u8string_view& label, const wasm::Proto& prototype, bool loop) {
+		constexpr Writer::Target fOpen(detail::Pushed& pushed, const std::u8string_view& label, const wasm::Prototype<Writer>* prototype, bool loop) {
 			pushed.stamp = pNext;
 			pushed.index = pStack.size();
-			typename Writer::Target base = self.pushJump(label, prototype, loop);
+			typename Writer::Target base = self.pushJump(label, (prototype == 0 ? 0 : &prototype->self), loop);
 			pStack.emplace_back(++pNext, Opened::Type::target);
 			return base;
 		}
@@ -174,8 +180,11 @@ namespace wasm {
 		constexpr Sink(wasm::Sink<Writer>&&) = default;
 
 	public:
-		constexpr wasm::Local<Writer> local(wasm::Type type, const std::u8string_view& id = {}) {
-			return wasm::Local<Writer>{ std::move(self.addLocal(type, id)) };
+		constexpr wasm::Variable<Writer> parameter(uint32_t index) {
+			return wasm::Variable<Writer>{ std::move(self.getParameter(index)) };
+		}
+		constexpr wasm::Variable<Writer> local(wasm::Type type, const std::u8string_view& id = {}) {
+			return wasm::Variable<Writer>{ std::move(self.addLocal(type, id)) };
 		}
 		constexpr void operator[](const wasm::Instruction<Writer>& inst) {
 			self.addInst(inst.self);

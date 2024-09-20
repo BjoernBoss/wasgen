@@ -24,13 +24,7 @@ namespace wasm {
 	struct Param {
 		std::u8string id;
 		wasm::Type type;
-		constexpr Param(wasm::Type type, std::u8string id = u8"") : id{ id }, type{ type } {}
-	};
-	struct Proto {
-		std::vector<wasm::Param> params;
-		std::vector<wasm::Type> result;
-		constexpr Proto() = default;
-		constexpr Proto(std::initializer_list<wasm::Param> params, std::initializer_list<wasm::Type> result) : params{ params }, result{ result } {}
+		constexpr Param(std::u8string id, wasm::Type type) : id{ id }, type{ type } {}
 	};
 
 	/* operands used by instructions */
@@ -99,7 +93,15 @@ namespace wasm {
 		floatAbsolute,
 		floatNegate,
 		floatSquareRoot,
-		floatCopySigne
+		floatCopySign,
+
+		drop,
+		nop,
+		ret,
+		unreachable,
+		select,
+		selectRefFunction,
+		selectRefExtern
 	};
 
 	/* instruction types referencing memory */
@@ -122,10 +124,47 @@ namespace wasm {
 		fill
 	};
 
-	/* instruction types referencing local/global variables */
-	enum class VarOpType : uint8_t {
+	/* instruction types referencing global variables */
+	enum class GlobOpType : uint8_t {
+		set,
+		get
+	};
+
+	/* instruction types referencing local variables */
+	enum class LocOpType : uint8_t {
 		set,
 		get,
 		tee
+	};
+
+	/* instruction types referencing tables */
+	enum class TabOpType : uint8_t {
+		get,
+		set,
+		size,
+		grow,
+		fill,
+		copy
+	};
+
+	/* instruction types referencing references */
+	enum class RefOpType : uint8_t {
+		testNull,
+		nullFunction,
+		nullExtern,
+		function
+	};
+
+	/* instruction types referencing function calls */
+	enum class CallOpType : uint8_t {
+		normal,
+		tail
+	};
+
+	/* instruction types referencing branch instructions */
+	enum class BrOpType : uint8_t {
+		direct,
+		conditional,
+		table
 	};
 }

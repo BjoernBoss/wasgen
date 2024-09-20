@@ -3,6 +3,21 @@
 #include "wasm-common.h"
 
 namespace wasm {
+	/* writer must provide type Prototype, which the wasm::Prototype internally instantiates */
+	template <class Type>
+	concept IsPrototype = requires() {
+		typename Type::Prototype;
+	};
+
+	/* any prototype object to be referenced by instructions [instantiated via wasm::Module] */
+	template <wasm::IsPrototype Writer>
+	struct Prototype {
+		Writer::Prototype self;
+		constexpr Prototype(Writer::Prototype&& self) : self{ std::move(self) } {}
+		constexpr Prototype(const wasm::Prototype<Writer>&) = default;
+		constexpr Prototype(wasm::Prototype<Writer>&&) = default;
+	};
+
 	/* writer must provide type Memory, which the wasm::Memory internally instantiates */
 	template <class Type>
 	concept IsMemory = requires() {
@@ -63,19 +78,19 @@ namespace wasm {
 		constexpr Function(wasm::Function<Writer>&&) = default;
 	};
 
-	/* writer must provide type Local, which the wasm::Local internally instantiates */
+	/* writer must provide type Variable, which the wasm::Variable internally instantiates */
 	template <class Type>
-	concept IsLocal = requires() {
-		typename Type::Local;
+	concept IsVariable = requires() {
+		typename Type::Variable;
 	};
 
-	/* any local variable to be referenced by instructions [instantiated via wasm::Sink] */
-	template <wasm::IsLocal Writer>
-	struct Local {
-		Writer::Local self;
-		constexpr Local(Writer::Local&& self) : self{ std::move(self) } {}
-		constexpr Local(const wasm::Local<Writer>&) = default;
-		constexpr Local(wasm::Local<Writer>&&) = default;
+	/* any local variable or parameter to be referenced by instructions [instantiated via wasm::Sink] */
+	template <wasm::IsVariable Writer>
+	struct Variable {
+		Writer::Variable self;
+		constexpr Variable(Writer::Variable&& self) : self{ std::move(self) } {}
+		constexpr Variable(const wasm::Variable<Writer>&) = default;
+		constexpr Variable(wasm::Variable<Writer>&&) = default;
 	};
 
 	/* writer must provide type Instruction, which the wasm::Instruction internally instantiates */

@@ -3,22 +3,7 @@
 #include "wasm-common.h"
 #include "wasm-types.h"
 
-namespace wasm {
-	/* writer must provide a type Inst, which must provide static
-	*	functions for all of the separate instruction functions */
-	template <class Type>
-	concept IsInst = requires() {
-		typename Type::Inst;
-		{ Type::Inst::Consti32(0lu) } -> std::same_as<typename Type::Instruction>;
-		{ Type::Inst::Consti64(0llu) } -> std::same_as<typename Type::Instruction>;
-		{ Type::Inst::Constf32(0.0f) } -> std::same_as<typename Type::Instruction>;
-		{ Type::Inst::Constf64(0.0) } -> std::same_as<typename Type::Instruction>;
-
-		{ Type::Inst::NoOp(wasm::NoOpType::equal, wasm::OperandType::i32) } -> std::same_as<typename Type::Instruction>;
-	};
-}
-
-namespace inst::detail {
+namespace wasm::detail {
 	template <class Writer, wasm::OperandType Type, bool Signed>
 	struct Constant {
 		template <class ValType>
@@ -189,7 +174,6 @@ namespace inst::detail {
 		static constexpr wasm::Instruction<Writer> SetBits() {
 			return wasm::Instruction<Writer>{ std::move(Writer::Inst::NoOp(wasm::NoOpType::bitSetCount, Type)) };
 		}
-
 	};
 
 	template <class Writer, wasm::OperandType Type>
@@ -228,46 +212,79 @@ namespace inst::detail {
 
 	template <class Writer, wasm::OperandType Type>
 	struct Memory {
-		static constexpr wasm::Instruction<Writer> Load(uint32_t offset = 0, const wasm::Memory<Writer>* memory = 0) {
-			return wasm::Instruction<Writer>{ std::move(Writer::Inst::Memory(memory, offset, wasm::MemOpType::load, Type)) };
+		static constexpr wasm::Instruction<Writer> Load(uint32_t offset = 0) {
+			return wasm::Instruction<Writer>{ std::move(Writer::Inst::Memory(wasm::MemOpType::load, 0, 0, offset, Type)) };
 		}
-		static constexpr wasm::Instruction<Writer> Store(uint32_t offset = 0, const wasm::Memory<Writer>* memory = 0) {
-			return wasm::Instruction<Writer>{ std::move(Writer::Inst::Memory(memory, offset, wasm::MemOpType::store, Type)) };
+		static constexpr wasm::Instruction<Writer> Store(uint32_t offset = 0) {
+			return wasm::Instruction<Writer>{ std::move(Writer::Inst::Memory(wasm::MemOpType::store, 0, 0, offset, Type)) };
+		}
+		static constexpr wasm::Instruction<Writer> Load(const wasm::Memory<Writer>& memory, uint32_t offset = 0) {
+			return wasm::Instruction<Writer>{ std::move(Writer::Inst::Memory(wasm::MemOpType::load, &memory.self, 0, offset, Type)) };
+		}
+		static constexpr wasm::Instruction<Writer> Store(const wasm::Memory<Writer>& memory, uint32_t offset = 0) {
+			return wasm::Instruction<Writer>{ std::move(Writer::Inst::Memory(wasm::MemOpType::store, &memory.self, 0, offset, Type)) };
 		}
 	};
 
 	template <class Writer, wasm::OperandType Type, bool Signed>
 	struct LargeMemory {
-		static constexpr wasm::Instruction<Writer> Load32(uint32_t offset = 0, const wasm::Memory<Writer>* memory = 0) {
+		static constexpr wasm::Instruction<Writer> Load32(uint32_t offset = 0) {
 			if constexpr (Signed)
-				return wasm::Instruction<Writer>{ std::move(Writer::Inst::Memory(memory, offset, wasm::MemOpType::load32Signed, Type)) };
+				return wasm::Instruction<Writer>{ std::move(Writer::Inst::Memory(wasm::MemOpType::load32Signed, 0, 0, offset, Type)) };
 			else
-				return wasm::Instruction<Writer>{ std::move(Writer::Inst::Memory(memory, offset, wasm::MemOpType::load32Unsigned, Type)) };
+				return wasm::Instruction<Writer>{ std::move(Writer::Inst::Memory(wasm::MemOpType::load32Unsigned, 0, 0, offset, Type)) };
 		}
-		static constexpr wasm::Instruction<Writer> Store32(uint32_t offset = 0, const wasm::Memory<Writer>* memory = 0) {
-			return wasm::Instruction<Writer>{ std::move(Writer::Inst::Memory(memory, offset, wasm::MemOpType::store32, Type)) };
+		static constexpr wasm::Instruction<Writer> Store32(uint32_t offset = 0) {
+			return wasm::Instruction<Writer>{ std::move(Writer::Inst::Memory(wasm::MemOpType::store32, 0, 0, offset, Type)) };
+		}
+		static constexpr wasm::Instruction<Writer> Load32(const wasm::Memory<Writer>& memory, uint32_t offset = 0) {
+			if constexpr (Signed)
+				return wasm::Instruction<Writer>{ std::move(Writer::Inst::Memory(wasm::MemOpType::load32Signed, &memory.self, 0, offset, Type)) };
+			else
+				return wasm::Instruction<Writer>{ std::move(Writer::Inst::Memory(wasm::MemOpType::load32Unsigned, &memory.self, 0, offset, Type)) };
+		}
+		static constexpr wasm::Instruction<Writer> Store32(const wasm::Memory<Writer>& memory, uint32_t offset = 0) {
+			return wasm::Instruction<Writer>{ std::move(Writer::Inst::Memory(wasm::MemOpType::store32, &memory.self, 0, offset, Type)) };
 		}
 	};
 
 	template <class Writer, wasm::OperandType Type, bool Signed>
 	struct IntMemory {
-		static constexpr wasm::Instruction<Writer> Load8(uint32_t offset = 0, const wasm::Memory<Writer>* memory = 0) {
+		static constexpr wasm::Instruction<Writer> Load8(uint32_t offset = 0) {
 			if constexpr (Signed)
-				return wasm::Instruction<Writer>{ std::move(Writer::Inst::Memory(memory, offset, wasm::MemOpType::load8Signed, Type)) };
+				return wasm::Instruction<Writer>{ std::move(Writer::Inst::Memory(wasm::MemOpType::load8Signed, 0, 0, offset, Type)) };
 			else
-				return wasm::Instruction<Writer>{ std::move(Writer::Inst::Memory(memory, offset, wasm::MemOpType::load8Unsigned, Type)) };
+				return wasm::Instruction<Writer>{ std::move(Writer::Inst::Memory(wasm::MemOpType::load8Unsigned, 0, 0, offset, Type)) };
 		}
-		static constexpr wasm::Instruction<Writer> Load16(uint32_t offset = 0, const wasm::Memory<Writer>* memory = 0) {
+		static constexpr wasm::Instruction<Writer> Load16(uint32_t offset = 0) {
 			if constexpr (Signed)
-				return wasm::Instruction<Writer>{ std::move(Writer::Inst::Memory(memory, offset, wasm::MemOpType::load16Signed, Type)) };
+				return wasm::Instruction<Writer>{ std::move(Writer::Inst::Memory(wasm::MemOpType::load16Signed, 0, 0, offset, Type)) };
 			else
-				return wasm::Instruction<Writer>{ std::move(Writer::Inst::Memory(memory, offset, wasm::MemOpType::load16Unsigned, Type)) };
+				return wasm::Instruction<Writer>{ std::move(Writer::Inst::Memory(wasm::MemOpType::load16Unsigned, 0, 0, offset, Type)) };
 		}
-		static constexpr wasm::Instruction<Writer> Store8(uint32_t offset = 0, const wasm::Memory<Writer>* memory = 0) {
-			return wasm::Instruction<Writer>{ std::move(Writer::Inst::Memory(memory, offset, wasm::MemOpType::store8, Type)) };
+		static constexpr wasm::Instruction<Writer> Store8(uint32_t offset = 0) {
+			return wasm::Instruction<Writer>{ std::move(Writer::Inst::Memory(wasm::MemOpType::store8, 0, 0, offset, Type)) };
 		}
-		static constexpr wasm::Instruction<Writer> Store16(uint32_t offset = 0, const wasm::Memory<Writer>* memory = 0) {
-			return wasm::Instruction<Writer>{ std::move(Writer::Inst::Memory(memory, offset, wasm::MemOpType::store16, Type)) };
+		static constexpr wasm::Instruction<Writer> Store16(uint32_t offset = 0) {
+			return wasm::Instruction<Writer>{ std::move(Writer::Inst::Memory(wasm::MemOpType::store16, 0, 0, offset, Type)) };
+		}
+		static constexpr wasm::Instruction<Writer> Load8(const wasm::Memory<Writer>& memory, uint32_t offset = 0) {
+			if constexpr (Signed)
+				return wasm::Instruction<Writer>{ std::move(Writer::Inst::Memory(wasm::MemOpType::load8Signed, &memory.self, 0, offset, Type)) };
+			else
+				return wasm::Instruction<Writer>{ std::move(Writer::Inst::Memory(wasm::MemOpType::load8Unsigned, &memory.self, 0, offset, Type)) };
+		}
+		static constexpr wasm::Instruction<Writer> Load16(const wasm::Memory<Writer>& memory, uint32_t offset = 0) {
+			if constexpr (Signed)
+				return wasm::Instruction<Writer>{ std::move(Writer::Inst::Memory(wasm::MemOpType::load16Signed, &memory.self, 0, offset, Type)) };
+			else
+				return wasm::Instruction<Writer>{ std::move(Writer::Inst::Memory(wasm::MemOpType::load16Unsigned, &memory.self, 0, offset, Type)) };
+		}
+		static constexpr wasm::Instruction<Writer> Store8(const wasm::Memory<Writer>& memory, uint32_t offset = 0) {
+			return wasm::Instruction<Writer>{ std::move(Writer::Inst::Memory(wasm::MemOpType::store8, &memory.self, 0, offset, Type)) };
+		}
+		static constexpr wasm::Instruction<Writer> Store16(const wasm::Memory<Writer>& memory, uint32_t offset = 0) {
+			return wasm::Instruction<Writer>{ std::move(Writer::Inst::Memory(wasm::MemOpType::store16, &memory.self, 0, offset, Type)) };
 		}
 	};
 }
