@@ -5,12 +5,12 @@
 namespace wasm {
 	/* wrapper to define imports/exports/transports for wasm-types */
 	struct Exchange {
-		std::u8string expName;
 		std::u8string impModule;
 		std::u8string impName;
+		std::u8string expName;
 	};
 	struct Transport : public wasm::Exchange {
-		constexpr Transport(std::u8string expName, std::u8string impModule, std::u8string impName) : wasm::Exchange{ expName, impModule, impName } {}
+		constexpr Transport(std::u8string impModule, std::u8string impName, std::u8string expName) : wasm::Exchange{ impModule, impName, expName } {}
 	};
 	struct Import : public wasm::Exchange {
 		constexpr Import(std::u8string module, std::u8string name) : wasm::Exchange{ module, name, u8"" } {}
