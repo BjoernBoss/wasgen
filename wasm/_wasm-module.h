@@ -8,11 +8,11 @@
 #include "_wasm-function.h"
 
 namespace wasm {
-	class _SinkInterface;
-
+	/* module interface used to define a wasm-module */
 	class _ModuleInterface {
 	public:
 		virtual wasm::_SinkInterface* sink(const wasm::_Function& function) = 0;
+		virtual void close(const wasm::_Module& module) = 0;
 		virtual void addPrototype(const wasm::_Prototype& prototype) = 0;
 		virtual void addMemory(const wasm::_Memory& memory) = 0;
 		virtual void addTable(const wasm::_Table& table) = 0;
@@ -20,6 +20,7 @@ namespace wasm {
 		virtual void addFunction(const wasm::_Function& function) = 0;
 	};
 
+	/* write wasm-objects out to the module-implementation */
 	class _Module {
 		template <class> friend class detail::ModuleMember;
 		friend class wasm::_Sink;
@@ -87,11 +88,18 @@ namespace wasm {
 		Types<detail::GlobalState> pGlobal;
 		Types<detail::FunctionState> pFunction;
 		wasm::_ModuleInterface* pInterface = 0;
+		bool pClosed = false;
 
 	public:
-		_Module() = default;
+		_Module(wasm::_ModuleInterface* interface);
+		_Module() = delete;
 		_Module(wasm::_Module&&) = delete;
 		_Module(const wasm::_Module&) = delete;
+		~_Module();
+
+	private:
+		void fClose();
+		void fCheckClosed() const;
 
 	public:
 		wasm::_Prototype prototype(std::initializer_list<wasm::_Param> params, std::initializer_list<wasm::_Type> result, std::u8string_view id = {});
@@ -99,6 +107,7 @@ namespace wasm {
 		wasm::_Table table(bool functions, const wasm::_Limit& limit = {}, std::u8string_view id = {}, const wasm::_Import& imported = {}, const wasm::_Export& exported = {});
 		wasm::_Global global(wasm::_Type type, bool mutating, std::u8string_view id = {}, const wasm::_Import& imported = {}, const wasm::_Export& exported = {});
 		wasm::_Function function(const wasm::_Prototype& prototype = {}, std::u8string_view id = {}, const wasm::_Import& imported = {}, const wasm::_Export& exported = {});
+		void close();
 
 	public:
 		wasm::_List<wasm::_Prototype, _Module::_PrototypeList> prototypes() const;

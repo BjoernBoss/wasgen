@@ -20,6 +20,7 @@ namespace wasm {
 		};
 	}
 
+	/* describe a wasm-target to be jumped to for a sink */
 	class _Target : public detail::SinkMember<detail::TargetState> {
 		friend class wasm::_Sink;
 	private:
@@ -46,6 +47,7 @@ namespace wasm {
 		wasm::_ScopeType type() const;
 	};
 
+	/* create a conditional if/then/else block, which can be jumped to for a sink */
 	struct _IfThen : public wasm::_Target {
 		_IfThen(wasm::_Sink& sink, const wasm::_Prototype& prototype = {}, std::u8string_view label = {});
 		~_IfThen();
@@ -53,12 +55,14 @@ namespace wasm {
 		void otherwise();
 	};
 
+	/* create a loop block, which can be jumped to for a sink */
 	struct _Loop : public wasm::_Target {
 		_Loop(wasm::_Sink& sink, const wasm::_Prototype& prototype = {}, std::u8string_view label = {});
 		~_Loop();
 		void close();
 	};
 
+	/* create a jump block, which can be jumped to for a sink */
 	struct _Block : public wasm::_Target {
 		_Block(wasm::_Sink& sink, const wasm::_Prototype& prototype = {}, std::u8string_view label = {});
 		~_Block();

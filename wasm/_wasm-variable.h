@@ -10,6 +10,7 @@ namespace wasm {
 		};
 	}
 
+	/* describe a wasm-local or parameter of a sink */
 	class _Variable : public detail::SinkMember<detail::VariableState> {
 		friend class wasm::_Sink;
 	public:

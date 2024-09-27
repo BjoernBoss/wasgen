@@ -9,6 +9,7 @@
 #include "_wasm-target.h"
 
 namespace wasm {
+	/* supported operand types */
 	enum class _OpType : uint8_t {
 		i32,
 		i64,
@@ -16,6 +17,7 @@ namespace wasm {
 		f64
 	};
 
+	/* description of any simple instructions, which take a single constant as operand */
 	struct _InstConst {
 	public:
 		std::variant<uint32_t, uint64_t, float, double> value;
@@ -28,6 +30,7 @@ namespace wasm {
 		constexpr _InstConst(double value, wasm::_OpType operand) : value{ value }, operand{ operand } {}
 	};
 
+	/* description of any simple instructions, which do not take any direct operands */
 	struct _InstSimple {
 	public:
 		enum class Type : uint8_t {
@@ -110,6 +113,7 @@ namespace wasm {
 		constexpr _InstSimple(Type type, wasm::_OpType operand) : type{ type }, operand{ operand } {}
 	};
 
+	/* description of any memory-interacting instructions */
 	struct _InstMemory {
 	public:
 		enum class Type : uint8_t {
@@ -142,6 +146,7 @@ namespace wasm {
 		constexpr _InstMemory(Type type, const wasm::_Memory& memory, const wasm::_Memory& source, uint32_t offset, wasm::_OpType operand) : memory{ memory }, source{ source }, offset{ offset }, type{ type }, operand{ operand } {}
 	};
 
+	/* description of any table-interacting instructions */
 	struct _InstTable {
 	public:
 		enum class Type : uint8_t {
@@ -162,6 +167,7 @@ namespace wasm {
 		constexpr _InstTable(Type type, const wasm::_Table& table, const wasm::_Table& source) : table{ table }, source{ source }, type{ type } {}
 	};
 
+	/* description of any local variable-interacting instructions */
 	struct _InstLocal {
 	public:
 		enum class Type : uint8_t {
@@ -178,6 +184,7 @@ namespace wasm {
 		constexpr _InstLocal(Type type, const wasm::_Variable& variable) : variable{ variable }, type{ type } {}
 	};
 
+	/* description of any global variable-interacting instructions */
 	struct _InstGlobal {
 	public:
 		enum class Type : uint8_t {
@@ -193,6 +200,7 @@ namespace wasm {
 		constexpr _InstGlobal(Type type, const wasm::_Global& global) : global{ global }, type{ type } {}
 	};
 
+	/* description of any function-interacting instructions */
 	struct _InstFunction {
 	public:
 		enum class Type : uint8_t {
@@ -209,6 +217,7 @@ namespace wasm {
 		constexpr _InstFunction(Type type, const wasm::_Function& function) : function{ function }, type{ type } {}
 	};
 
+	/* description of any indirect-call instructions */
 	struct _InstIndirect {
 	public:
 		enum class Type : uint8_t {
@@ -234,6 +243,7 @@ namespace wasm {
 		}
 	};
 
+	/* description of any branch instructions */
 	struct _InstBranch {
 	public:
 		enum class Type : uint8_t {

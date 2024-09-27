@@ -10,10 +10,12 @@ namespace wasm {
 			wasm::_Export exported;
 			std::u8string_view id;
 			wasm::_Prototype prototype;
+			wasm::_Sink* sink = 0;
 			bool bound = false;
 		};
 	}
 
+	/* describe a wasm-function object */
 	class _Function : public detail::ModuleMember<detail::FunctionState> {
 		friend class wasm::_Module;
 	public:

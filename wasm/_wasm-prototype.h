@@ -11,6 +11,7 @@ namespace wasm {
 		};
 	}
 
+	/* describe a wasm-prototype object */
 	class _Prototype : public detail::ModuleMember<detail::PrototypeState> {
 		friend class wasm::_Module;
 	public:

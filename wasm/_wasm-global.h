@@ -13,6 +13,7 @@ namespace wasm {
 		};
 	}
 
+	/* describe a wasm-global object */
 	class _Global : public detail::ModuleMember<detail::GlobalState> {
 		friend class wasm::_Module;
 	public:

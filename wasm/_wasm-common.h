@@ -11,6 +11,8 @@
 namespace wasm {
 	class _Module;
 	class _Sink;
+	class _SinkInterface;
+	class _ModuleInterface;
 
 	/* native types supported by wasm */
 	enum class _Type : uint8_t {
@@ -101,6 +103,7 @@ namespace wasm {
 		};
 	}
 
+	/* list type used to support iterating over types created by module/sink */
 	template <class Type, class ImplType>
 	struct _List {
 	public:

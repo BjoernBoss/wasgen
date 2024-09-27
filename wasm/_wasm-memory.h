@@ -12,6 +12,7 @@ namespace wasm {
 		};
 	}
 
+	/* describe a wasm-memory object */
 	class _Memory : public detail::ModuleMember<detail::MemoryState> {
 		friend class wasm::_Module;
 	public:

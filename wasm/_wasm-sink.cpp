@@ -11,8 +11,9 @@ wasm::_Sink::_Sink(const wasm::_Function& function) {
 		util::fail(u8"Sinks cannot be created for imported function [", function.id(), u8"]");
 	wasm::_Prototype prototype = function.prototype();
 
-	/* check if the function has already been bound */
+	/* check if the module is closed or the function has already been bound */
 	wasm::_Module& module = wasm::_Function{ function }.module();
+	module.fCheckClosed();
 	if (module.pFunction.list[function.index()].bound)
 		util::fail(u8"Sink cannot be created for function [", function.id(), u8"] for which a sink has already been created before");
 	module.pFunction.list[function.index()].bound = true;
@@ -28,6 +29,7 @@ wasm::_Sink::_Sink(const wasm::_Function& function) {
 		}
 	}
 	pParameter = uint32_t(pVariables.list.size());
+	module.pFunction.list[function.index()].sink = this;
 
 	/* setup the sink-interface */
 	pInterface = module.pInterface->sink(pFunction);
@@ -39,11 +41,16 @@ wasm::_Sink::~_Sink() {
 void wasm::_Sink::fClose() {
 	if (pClosed)
 		return;
-	fPopUntil(0);
 	pClosed = true;
-	pInterface->close();
+
+	/* close all remaining scopes and unregister the sink from the function */
+	fPopUntil(0);
+	pFunction.module().pFunction.list[pFunction.index()].sink = 0;
+
+	/* mark the sink as closed */
+	pInterface->close(*this);
 }
-void wasm::_Sink::fCheckClosed() {
+void wasm::_Sink::fCheckClosed() const {
 	if (pClosed)
 		util::fail(u8"Cannot change the closed sink to function [", pFunction.id(), u8"]");
 }

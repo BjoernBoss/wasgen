@@ -7,12 +7,13 @@
 #include "_wasm-instruction.h"
 
 namespace wasm {
+	/* sink interface used to write the instructions out */
 	class _SinkInterface {
 	public:
 		virtual void pushScope(const wasm::_Target& target) = 0;
 		virtual void popScope() = 0;
 		virtual void toggleConditional() = 0;
-		virtual void close() = 0;
+		virtual void close(const wasm::_Sink& sink) = 0;
 		virtual void addLocal(const wasm::_Variable& local) = 0;
 		virtual void addInst(const wasm::_InstConst& inst) = 0;
 		virtual void addInst(const wasm::_InstSimple& inst) = 0;
@@ -25,8 +26,10 @@ namespace wasm {
 		virtual void addInst(const wasm::_InstBranch& inst) = 0;
 	};
 
+	/* write instructions out to a function bound to the given sink out to the sink-implementation */
 	class _Sink {
 		template <class> friend class detail::SinkMember;
+		friend class wasm::_Module;
 		friend class wasm::_Target;
 	private:
 		struct _LocalList {
@@ -61,7 +64,7 @@ namespace wasm {
 
 	private:
 		void fClose();
-		void fCheckClosed();
+		void fCheckClosed() const;
 		void fPopUntil(uint32_t size);
 		bool fCheckTarget(uint32_t index, size_t stamp, bool soft) const;
 		void fSetupTarget(const wasm::_Prototype& prototype, std::u8string_view label, wasm::_ScopeType type, wasm::_Target& target);

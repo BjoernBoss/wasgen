@@ -13,6 +13,7 @@ namespace wasm {
 		};
 	}
 
+	/* describe a wasm-table object */
 	class _Table : public detail::ModuleMember<detail::TableState> {
 		friend class wasm::_Module;
 	public:

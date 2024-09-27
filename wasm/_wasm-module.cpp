@@ -1,11 +1,37 @@
 #include "_wasm-module.h"
+#include "_wasm-sink.h"
 
 #include "../util/logging.h"
 
+wasm::_Module::_Module(wasm::_ModuleInterface* interface) : pInterface{ interface } {}
+wasm::_Module::~_Module() {
+	fClose();
+}
+
+void wasm::_Module::fClose() {
+	if (pClosed)
+		return;
+	pClosed = true;
+
+	/* close all remaining sinks */
+	for (size_t i = 0; i < pFunction.list.size(); ++i) {
+		if (pFunction.list[i].sink != 0)
+			pFunction.list[i].sink->fClose();
+	}
+
+	/* mark the module as closed */
+	pInterface->close(*this);
+}
+void wasm::_Module::fCheckClosed() const {
+	if (pClosed)
+		util::fail(u8"Cannot change the closed module");
+}
+
 wasm::_Prototype wasm::_Module::prototype(std::initializer_list<wasm::_Param> params, std::initializer_list<wasm::_Type> result, std::u8string_view id) {
-	std::u8string _id{ id };
+	fCheckClosed();
 
 	/* validate the id and the parameter */
+	std::u8string _id{ id };
 	if (!_id.empty() && pPrototype.ids.contains(_id))
 		util::fail(u8"Prototype with id [", _id, u8"] already defined");
 	std::unordered_set<std::u8string> names;
@@ -33,9 +59,10 @@ wasm::_Prototype wasm::_Module::prototype(std::initializer_list<wasm::_Param> pa
 	return prototype;
 }
 wasm::_Memory wasm::_Module::memory(const wasm::_Limit& limit, std::u8string_view id, const wasm::_Import& imported, const wasm::_Export& exported) {
-	std::u8string _id{ id };
+	fCheckClosed();
 
 	/* validate the id */
+	std::u8string _id{ id };
 	if (!_id.empty() && pMemory.ids.contains(_id))
 		util::fail(u8"Memory with id [", _id, u8"] already defined");
 
@@ -53,9 +80,10 @@ wasm::_Memory wasm::_Module::memory(const wasm::_Limit& limit, std::u8string_vie
 	return memory;
 }
 wasm::_Table wasm::_Module::table(bool functions, const wasm::_Limit& limit, std::u8string_view id, const wasm::_Import& imported, const wasm::_Export& exported) {
-	std::u8string _id{ id };
+	fCheckClosed();
 
 	/* validate the id */
+	std::u8string _id{ id };
 	if (!_id.empty() && pTable.ids.contains(_id))
 		util::fail(u8"Table with id [", _id, u8"] already defined");
 
@@ -73,9 +101,10 @@ wasm::_Table wasm::_Module::table(bool functions, const wasm::_Limit& limit, std
 	return table;
 }
 wasm::_Global wasm::_Module::global(wasm::_Type type, bool mutating, std::u8string_view id, const wasm::_Import& imported, const wasm::_Export& exported) {
-	std::u8string _id{ id };
+	fCheckClosed();
 
-	/* validate the id-state */
+	/* validate the id */
+	std::u8string _id{ id };
 	if (!_id.empty() && pGlobal.ids.contains(_id))
 		util::fail(u8"Global with id [", _id, u8"] already defined");
 
@@ -93,9 +122,10 @@ wasm::_Global wasm::_Module::global(wasm::_Type type, bool mutating, std::u8stri
 	return global;
 }
 wasm::_Function wasm::_Module::function(const wasm::_Prototype& prototype, std::u8string_view id, const wasm::_Import& imported, const wasm::_Export& exported) {
-	std::u8string _id{ id };
+	fCheckClosed();
 
 	/* validate the id and the prototype */
+	std::u8string _id{ id };
 	if (!_id.empty() && pFunction.ids.contains(_id))
 		util::fail(u8"Function with id [", _id, u8"] already defined");
 	if (prototype.valid() && &prototype.module() != this)
@@ -113,6 +143,9 @@ wasm::_Function wasm::_Module::function(const wasm::_Prototype& prototype, std::
 	/* notify the interface about the added function */
 	pInterface->addFunction(function);
 	return function;
+}
+void wasm::_Module::close() {
+	fClose();
 }
 
 wasm::_List<wasm::_Prototype, wasm::_Module::_PrototypeList> wasm::_Module::prototypes() const {
