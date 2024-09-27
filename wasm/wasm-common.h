@@ -1,13 +1,19 @@
 #pragma once
 
 #include <cinttypes>
-#include <concepts>
-#include <type_traits>
+#include <vector>
+#include <unordered_set>
 #include <limits>
 #include <string>
-#include <vector>
+#include <variant>
+#include <initializer_list>
 
 namespace wasm {
+	class Module;
+	class Sink;
+	class SinkInterface;
+	class ModuleInterface;
+
 	/* native types supported by wasm */
 	enum class Type : uint8_t {
 		i32,
@@ -19,151 +25,156 @@ namespace wasm {
 		refFunction
 	};
 
-	/* parameter to construct any prototype */
+	/* parameter to construct any prototype-parameter */
 	struct Param {
 		std::u8string id;
 		wasm::Type type;
 		constexpr Param(std::u8string id, wasm::Type type) : id{ id }, type{ type } {}
 	};
 
-	/* operands used by instructions */
-	enum class OperandType : uint8_t {
-		i32,
-		i64,
-		f32,
-		f64
+	/* limit used by memories and tables */
+	struct Limit {
+		uint32_t min = 0;
+		uint32_t max = 0;
+		constexpr Limit(uint32_t min = 0, uint32_t max = std::numeric_limits<uint32_t>::max()) : min{ min }, max{ std::max<uint32_t>(min, max) } {}
+		constexpr bool maxValid() const {
+			return (max >= min && max != std::numeric_limits<uint32_t>::max());
+		}
 	};
 
-	/* instruction types using no direct operands */
-	enum class NoOpType : uint8_t {
-		equal,
-		notEqual,
-		equalZero,
-		greaterSigned,
-		greaterUnsigned,
-		lessSigned,
-		lessUnsigned,
-		greaterEqualSigned,
-		greaterEqualUnsigned,
-		lessEqualSigned,
-		lessEqualUnsigned,
-
-		add,
-		sub,
-		mul,
-		divSigned,
-		divUnsigned,
-		modSigned,
-		modUnsigned,
-
-		convertToF32Signed,
-		convertToF32Unsigned,
-		convertToF64Signed,
-		convertToF64Unsigned,
-		convertFromF32Signed,
-		convertFromF32Unsigned,
-		convertFromF64Signed,
-		convertFromF64Unsigned,
-
-		reinterpretAsInt,
-		reinterpretAsFloat,
-
-		expand,
-		shrink,
-
-		bitAnd,
-		bitOr,
-		bitXOr,
-		bitShiftLeft,
-		bitShiftRightSigned,
-		bitShiftRightUnsigned,
-		bitRotateLeft,
-		bitRotateRight,
-		bitLeadingNulls,
-		bitTrailingNulls,
-		bitSetCount,
-
-		floatMin,
-		floatMax,
-		floatFloor,
-		floatRound,
-		floatCeil,
-		floatTruncate,
-		floatAbsolute,
-		floatNegate,
-		floatSquareRoot,
-		floatCopySign,
-
-		drop,
-		nop,
-		ret,
-		unreachable,
-		select,
-		selectRefFunction,
-		selectRefExtern
+	/* specify imports/exports for wasm-types */
+	struct Import {
+		std::u8string module;
+		std::u8string name;
+		constexpr Import() = default;
+		constexpr Import(std::u8string module, std::u8string name) : module{ module }, name{ name } {}
+		constexpr bool valid() const {
+			return (!module.empty() && !name.empty());
+		}
+	};
+	struct Export {
+		std::u8string name;
+		constexpr Export() = default;
+		constexpr Export(std::u8string name) : name{ name } {}
+		constexpr bool valid() const {
+			return !name.empty();
+		}
 	};
 
-	/* instruction types referencing memory */
-	enum class MemOpType : uint8_t {
-		load,
-		load8Unsigned,
-		load8Signed,
-		load16Unsigned,
-		load16Signed,
-		load32Unsigned,
-		load32Signed,
-		store,
-		store8,
-		store16,
-		store32,
+	namespace detail {
+		template <class Type>
+		class ModuleMember {
+		private:
+			wasm::Module* pModule = 0;
+			uint32_t pIndex = std::numeric_limits<uint32_t>::max();
 
-		grow,
-		size,
-		copy,
-		fill
-	};
+		protected:
+			constexpr ModuleMember() = default;
+			constexpr ModuleMember(wasm::Module& module, uint32_t index) : pModule{ &module }, pIndex{ index } {}
 
-	/* instruction types referencing global variables */
-	enum class GlobOpType : uint8_t {
-		set,
-		get
-	};
+		protected:
+			constexpr const Type* fGet() const;
 
-	/* instruction types referencing local variables */
-	enum class LocOpType : uint8_t {
-		set,
-		get,
-		tee
-	};
+		public:
+			constexpr bool valid() const {
+				return (pModule != 0);
+			}
+			constexpr const wasm::Module& module() const {
+				return *pModule;
+			}
+			constexpr wasm::Module& module() {
+				return *pModule;
+			}
+			constexpr std::u8string_view id() const {
+				return fGet()->id;
+			}
+			constexpr uint32_t index() const {
+				return pIndex;
+			}
+		};
 
-	/* instruction types referencing tables */
-	enum class TabOpType : uint8_t {
-		get,
-		set,
-		size,
-		grow,
-		fill,
-		copy
-	};
+		template <class Type>
+		class SinkMember {
+		protected:
+			wasm::Sink* pSink = 0;
+			uint32_t pIndex = std::numeric_limits<uint32_t>::max();
 
-	/* instruction types referencing references */
-	enum class RefOpType : uint8_t {
-		testNull,
-		nullFunction,
-		nullExtern,
-		function
-	};
+		protected:
+			constexpr SinkMember() = default;
+			constexpr SinkMember(wasm::Sink& sink, uint32_t index) : pSink{ &sink }, pIndex{ index } {}
 
-	/* instruction types referencing function calls */
-	enum class CallOpType : uint8_t {
-		normal,
-		tail
-	};
+		protected:
+			constexpr const Type* fGet() const;
 
-	/* instruction types referencing branch instructions */
-	enum class BrOpType : uint8_t {
-		direct,
-		conditional,
-		table
+		public:
+			constexpr const wasm::Sink& sink() const {
+				return *pSink;
+			}
+			constexpr wasm::Sink& sink() {
+				return *pSink;
+			}
+		};
+	}
+
+	/* list type used to support iterating over types created by module/sink */
+	template <class Type, class ImplType>
+	struct List {
+	public:
+		class Iterator {
+			friend struct wasm::List<Type, ImplType>;
+		private:
+			const ImplType* pImpl = 0;
+			uint32_t pIndex = 0;
+
+		private:
+			constexpr Iterator(const ImplType* impl, uint32_t index) : pImpl{ impl }, pIndex{ index } {}
+
+		public:
+			constexpr Iterator() = default;
+			constexpr bool operator==(const Iterator& it) const {
+				return (pImpl == it.pImpl && pIndex == it.pIndex);
+			}
+			constexpr bool operator!=(const Iterator& it) const {
+				return !(*this == it);
+			}
+			constexpr Type operator*() const {
+				return pImpl->get(pIndex);
+			}
+			constexpr Iterator& operator++() {
+				++pIndex;
+				return *this;
+			}
+			constexpr Iterator& operator--() {
+				--pIndex;
+				return *this;
+			}
+			constexpr Iterator operator++(int) {
+				return Iterator{ pImpl, pIndex + 1 };
+			}
+			constexpr Iterator operator--(int) {
+				return Iterator{ pImpl, pIndex - 1 };
+			}
+		};
+
+	private:
+		ImplType pImpl{};
+
+	public:
+		constexpr List(const ImplType& impl) : pImpl{ impl } {}
+		constexpr Type operator[](size_t index) const {
+			return pImpl.get(uint32_t(index));
+		}
+		constexpr size_t size() const {
+			return pImpl.size();
+		}
+		constexpr bool empty() const {
+			return (pImpl.size() == 0);
+		}
+		constexpr Iterator begin() const {
+			return Iterator{ &pImpl, 0 };
+		}
+		constexpr Iterator end() const {
+			return Iterator{ &pImpl, uint32_t(pImpl.size()) };
+		}
 	};
 }

@@ -1,290 +1,262 @@
 #pragma once
 
-#include "wasm-common.h"
-#include "wasm-types.h"
+#include "wasm-instruction.h"
 
 namespace wasm::detail {
-	template <class Writer, wasm::OperandType Type, bool Signed>
+	template <wasm::OpType Type, bool Signed>
 	struct Constant {
 		template <class ValType>
-		static constexpr wasm::Instruction<Writer> Const(ValType val) {
-			if constexpr (Type == wasm::OperandType::i32) {
+		static constexpr wasm::InstConst Const(ValType val) {
+			if constexpr (Type == wasm::OpType::i32) {
 				if constexpr (Signed)
-					return wasm::Instruction<Writer>{ std::move(Writer::Inst::Consti32(uint32_t(int32_t(val)))) };
-				return wasm::Instruction<Writer>{ std::move(Writer::Inst::Consti32(uint32_t(val))) };
+					return wasm::InstConst{ uint32_t(int32_t(val)), wasm::OpType::i32 };
+				return wasm::InstConst{ uint32_t(val), wasm::OpType::i32 };
 			}
-			else if constexpr (Type == wasm::OperandType::i64) {
+			else if constexpr (Type == wasm::OpType::i64) {
 				if constexpr (Signed)
-					return wasm::Instruction<Writer>{ std::move(Writer::Inst::Consti64(uint64_t(int64_t(val)))) };
-				return wasm::Instruction<Writer>{ std::move(Writer::Inst::Consti64(uint64_t(val))) };
+					return wasm::InstConst{ uint64_t(int64_t(val)), wasm::OpType::i64 };
+				return wasm::InstConst{ uint64_t(val), wasm::OpType::i64 };
 			}
-			else if constexpr (Type == wasm::OperandType::f32)
-				return wasm::Instruction<Writer>{ std::move(Writer::Inst::Constf32(float(val))) };
+			else if constexpr (Type == wasm::OpType::f32)
+				return wasm::InstConst{ float(val), wasm::OpType::f32 };
 			else
-				return wasm::Instruction<Writer>{ std::move(Writer::Inst::Constf64(double(val))) };
+				return wasm::InstConst{ double(val), wasm::OpType::f64 };
 		}
 	};
 
-	template <class Writer, wasm::OperandType Type, bool Signed>
+	template < wasm::OpType Type, bool Signed>
 	struct Compare {
-		static constexpr wasm::Instruction<Writer> Equal() {
-			return wasm::Instruction<Writer>{ std::move(Writer::Inst::NoOp(wasm::NoOpType::equal, Type)) };
+		static constexpr wasm::InstSimple Equal() {
+			return wasm::InstSimple{ wasm::InstSimple::Type::equal, Type };
 		}
-		static constexpr wasm::Instruction<Writer> EqualZero() {
-			return wasm::Instruction<Writer>{ std::move(Writer::Inst::NoOp(wasm::NoOpType::equalZero, Type)) };
+		static constexpr wasm::InstSimple EqualZero() {
+			return wasm::InstSimple{ wasm::InstSimple::Type::equalZero, Type };
 		}
-		static constexpr wasm::Instruction<Writer> NotEqual() {
-			return wasm::Instruction<Writer>{ std::move(Writer::Inst::NoOp(wasm::NoOpType::notEqual, Type)) };
+		static constexpr wasm::InstSimple NotEqual() {
+			return wasm::InstSimple{ wasm::InstSimple::Type::notEqual, Type };
 		}
-		static constexpr wasm::Instruction<Writer> Greater() {
+		static constexpr wasm::InstSimple Greater() {
 			if constexpr (Signed)
-				return wasm::Instruction<Writer>{ std::move(Writer::Inst::NoOp(wasm::NoOpType::greaterSigned, Type)) };
+				return wasm::InstSimple{ wasm::InstSimple::Type::greaterSigned, Type };
 			else
-				return wasm::Instruction<Writer>{ std::move(Writer::Inst::NoOp(wasm::NoOpType::greaterUnsigned, Type)) };
+				return wasm::InstSimple{ wasm::InstSimple::Type::greaterUnsigned, Type };
 		}
-		static constexpr wasm::Instruction<Writer> Less() {
+		static constexpr wasm::InstSimple Less() {
 			if constexpr (Signed)
-				return wasm::Instruction<Writer>{ std::move(Writer::Inst::NoOp(wasm::NoOpType::lessSigned, Type)) };
+				return wasm::InstSimple{ wasm::InstSimple::Type::lessSigned, Type };
 			else
-				return wasm::Instruction<Writer>{ std::move(Writer::Inst::NoOp(wasm::NoOpType::lessUnsigned, Type)) };
+				return wasm::InstSimple{ wasm::InstSimple::Type::lessUnsigned, Type };
 		}
-		static constexpr wasm::Instruction<Writer> GreaterEqual() {
+		static constexpr wasm::InstSimple GreaterEqual() {
 			if constexpr (Signed)
-				return wasm::Instruction<Writer>{ std::move(Writer::Inst::NoOp(wasm::NoOpType::greaterEqualSigned, Type)) };
+				return wasm::InstSimple{ wasm::InstSimple::Type::greaterEqualSigned, Type };
 			else
-				return wasm::Instruction<Writer>{ std::move(Writer::Inst::NoOp(wasm::NoOpType::greaterEqualUnsigned, Type)) };
+				return wasm::InstSimple{ wasm::InstSimple::Type::greaterEqualUnsigned, Type };
 		}
-		static constexpr wasm::Instruction<Writer> LessEqual() {
+		static constexpr wasm::InstSimple LessEqual() {
 			if constexpr (Signed)
-				return wasm::Instruction<Writer>{ std::move(Writer::Inst::NoOp(wasm::NoOpType::lessEqualSigned, Type)) };
+				return wasm::InstSimple{ wasm::InstSimple::Type::lessEqualSigned, Type };
 			else
-				return wasm::Instruction<Writer>{ std::move(Writer::Inst::NoOp(wasm::NoOpType::lessEqualUnsigned, Type)) };
+				return wasm::InstSimple{ wasm::InstSimple::Type::lessEqualUnsigned, Type };
 		}
 	};
 
-	template <class Writer, wasm::OperandType Type, bool Signed>
+	template <wasm::OpType Type, bool Signed>
 	struct Arithmetic {
-		static constexpr wasm::Instruction<Writer> Add() {
-			return wasm::Instruction<Writer>{ std::move(Writer::Inst::NoOp(wasm::NoOpType::add, Type)) };
+		static constexpr wasm::InstSimple Add() {
+			return wasm::InstSimple{ wasm::InstSimple::Type::add, Type };
 		}
-		static constexpr wasm::Instruction<Writer> Sub() {
-			return wasm::Instruction<Writer>{ std::move(Writer::Inst::NoOp(wasm::NoOpType::sub, Type)) };
+		static constexpr wasm::InstSimple Sub() {
+			return wasm::InstSimple{ wasm::InstSimple::Type::sub, Type };
 		}
-		static constexpr wasm::Instruction<Writer> Mul() {
-			return wasm::Instruction<Writer>{ std::move(Writer::Inst::NoOp(wasm::NoOpType::mul, Type)) };
+		static constexpr wasm::InstSimple Mul() {
+			return wasm::InstSimple{ wasm::InstSimple::Type::mul, Type };
 		}
-		static constexpr wasm::Instruction<Writer> Div() {
+		static constexpr wasm::InstSimple Div() {
 			if constexpr (Signed)
-				return wasm::Instruction<Writer>{ std::move(Writer::Inst::NoOp(wasm::NoOpType::divSigned, Type)) };
+				return wasm::InstSimple{ wasm::InstSimple::Type::divSigned, Type };
 			else
-				return wasm::Instruction<Writer>{ std::move(Writer::Inst::NoOp(wasm::NoOpType::divUnsigned, Type)) };
+				return wasm::InstSimple{ wasm::InstSimple::Type::divUnsigned, Type };
 		}
-		static constexpr wasm::Instruction<Writer> Mod() {
+		static constexpr wasm::InstSimple Mod() {
 			if constexpr (Signed)
-				return wasm::Instruction<Writer>{ std::move(Writer::Inst::NoOp(wasm::NoOpType::modSigned, Type)) };
+				return wasm::InstSimple{ wasm::InstSimple::Type::modSigned, Type };
 			else
-				return wasm::Instruction<Writer>{ std::move(Writer::Inst::NoOp(wasm::NoOpType::modUnsigned, Type)) };
+				return wasm::InstSimple{ wasm::InstSimple::Type::modUnsigned, Type };
 		}
 	};
 
-	template <class Writer, wasm::OperandType Type>
+	template <wasm::OpType Type>
 	struct SmallConvert {
-		static constexpr wasm::Instruction<Writer> Expand() {
-			return wasm::Instruction<Writer>{ std::move(Writer::Inst::NoOp(wasm::NoOpType::expand, Type)) };
+		static constexpr wasm::InstSimple Expand() {
+			return wasm::InstSimple{ wasm::InstSimple::Type::expand, Type };
 		}
 	};
 
-	template <class Writer, wasm::OperandType Type>
+	template <wasm::OpType Type>
 	struct LargeConvert {
-		static constexpr wasm::Instruction<Writer> Shrink() {
-			return wasm::Instruction<Writer>{ std::move(Writer::Inst::NoOp(wasm::NoOpType::shrink, Type)) };
+		static constexpr wasm::InstSimple Shrink() {
+			return wasm::InstSimple{ wasm::InstSimple::Type::shrink, Type };
 		}
 	};
 
-	template <class Writer, wasm::OperandType Type>
+	template <wasm::OpType Type>
 	struct FloatConvert {
-		static constexpr wasm::Instruction<Writer> AsInt() {
-			return wasm::Instruction<Writer>{ std::move(Writer::Inst::NoOp(wasm::NoOpType::reinterpretAsInt, Type)) };
+		static constexpr wasm::InstSimple AsInt() {
+			return wasm::InstSimple{ wasm::InstSimple::Type::reinterpretAsInt, Type };
 		}
 	};
 
-	template <class Writer, wasm::OperandType Type, bool Signed>
+	template <wasm::OpType Type, bool Signed>
 	struct IntConvert {
-		static constexpr wasm::Instruction<Writer> ToF32() {
+		static constexpr wasm::InstSimple ToF32() {
 			if constexpr (Signed)
-				return wasm::Instruction<Writer>{ std::move(Writer::Inst::NoOp(wasm::NoOpType::convertToF32Signed, Type)) };
+				return wasm::InstSimple{ wasm::InstSimple::Type::convertToF32Signed, Type };
 			else
-				return wasm::Instruction<Writer>{ std::move(Writer::Inst::NoOp(wasm::NoOpType::convertToF32Unsigned, Type)) };
+				return wasm::InstSimple{ wasm::InstSimple::Type::convertToF32Unsigned, Type };
 		}
-		static constexpr wasm::Instruction<Writer> ToF64() {
+		static constexpr wasm::InstSimple ToF64() {
 			if constexpr (Signed)
-				return wasm::Instruction<Writer>{ std::move(Writer::Inst::NoOp(wasm::NoOpType::convertToF64Signed, Type)) };
+				return wasm::InstSimple{ wasm::InstSimple::Type::convertToF64Signed, Type };
 			else
-				return wasm::Instruction<Writer>{ std::move(Writer::Inst::NoOp(wasm::NoOpType::convertToF64Unsigned, Type)) };
+				return wasm::InstSimple{ wasm::InstSimple::Type::convertToF64Unsigned, Type };
 		}
-		static constexpr wasm::Instruction<Writer> FromF32() {
+		static constexpr wasm::InstSimple FromF32() {
 			if constexpr (Signed)
-				return wasm::Instruction<Writer>{ std::move(Writer::Inst::NoOp(wasm::NoOpType::convertFromF32Signed, Type)) };
+				return wasm::InstSimple{ wasm::InstSimple::Type::convertFromF32Signed, Type };
 			else
-				return wasm::Instruction<Writer>{ std::move(Writer::Inst::NoOp(wasm::NoOpType::convertFromF32Unsigned, Type)) };
+				return wasm::InstSimple{ wasm::InstSimple::Type::convertFromF32Unsigned, Type };
 		}
-		static constexpr wasm::Instruction<Writer> FromF64() {
+		static constexpr wasm::InstSimple FromF64() {
 			if constexpr (Signed)
-				return wasm::Instruction<Writer>{ std::move(Writer::Inst::NoOp(wasm::NoOpType::convertFromF64Signed, Type)) };
+				return wasm::InstSimple{ wasm::InstSimple::Type::convertFromF64Signed, Type };
 			else
-				return wasm::Instruction<Writer>{ std::move(Writer::Inst::NoOp(wasm::NoOpType::convertFromF64Unsigned, Type)) };
+				return wasm::InstSimple{ wasm::InstSimple::Type::convertFromF64Unsigned, Type };
 		}
-		static constexpr wasm::Instruction<Writer> AsFloat() {
-			return wasm::Instruction<Writer>{ std::move(Writer::Inst::NoOp(wasm::NoOpType::reinterpretAsFloat, Type)) };
+		static constexpr wasm::InstSimple AsFloat() {
+			return wasm::InstSimple{ wasm::InstSimple::Type::reinterpretAsFloat, Type };
 		}
 	};
 
-	template <class Writer, wasm::OperandType Type, bool Signed>
+	template <wasm::OpType Type, bool Signed>
 	struct Bitwise {
-		static constexpr wasm::Instruction<Writer> And() {
-			return wasm::Instruction<Writer>{ std::move(Writer::Inst::NoOp(wasm::NoOpType::bitAnd, Type)) };
+		static constexpr wasm::InstSimple And() {
+			return wasm::InstSimple{ wasm::InstSimple::Type::bitAnd, Type };
 		}
-		static constexpr wasm::Instruction<Writer> Or() {
-			return wasm::Instruction<Writer>{ std::move(Writer::Inst::NoOp(wasm::NoOpType::bitOr, Type)) };
+		static constexpr wasm::InstSimple Or() {
+			return wasm::InstSimple{ wasm::InstSimple::Type::bitOr, Type };
 		}
-		static constexpr wasm::Instruction<Writer> XOr() {
-			return wasm::Instruction<Writer>{ std::move(Writer::Inst::NoOp(wasm::NoOpType::bitXOr, Type)) };
+		static constexpr wasm::InstSimple XOr() {
+			return wasm::InstSimple{ wasm::InstSimple::Type::bitXOr, Type };
 		}
-		static constexpr wasm::Instruction<Writer> ShiftLeft() {
-			return wasm::Instruction<Writer>{ std::move(Writer::Inst::NoOp(wasm::NoOpType::bitShiftLeft, Type)) };
+		static constexpr wasm::InstSimple ShiftLeft() {
+			return wasm::InstSimple{ wasm::InstSimple::Type::bitShiftLeft, Type };
 		}
-		static constexpr wasm::Instruction<Writer> ShiftRight() {
+		static constexpr wasm::InstSimple ShiftRight() {
 			if constexpr (Signed)
-				return wasm::Instruction<Writer>{ std::move(Writer::Inst::NoOp(wasm::NoOpType::bitShiftRightSigned, Type)) };
+				return wasm::InstSimple{ wasm::InstSimple::Type::bitShiftRightSigned, Type };
 			else
-				return wasm::Instruction<Writer>{ std::move(Writer::Inst::NoOp(wasm::NoOpType::bitShiftRightUnsigned, Type)) };
+				return wasm::InstSimple{ wasm::InstSimple::Type::bitShiftRightUnsigned, Type };
 		}
-		static constexpr wasm::Instruction<Writer> RotateLeft() {
-			return wasm::Instruction<Writer>{ std::move(Writer::Inst::NoOp(wasm::NoOpType::bitRotateLeft, Type)) };
+		static constexpr wasm::InstSimple RotateLeft() {
+			return wasm::InstSimple{ wasm::InstSimple::Type::bitRotateLeft, Type };
 		}
-		static constexpr wasm::Instruction<Writer> RotateRight() {
-			return wasm::Instruction<Writer>{ std::move(Writer::Inst::NoOp(wasm::NoOpType::bitRotateRight, Type)) };
+		static constexpr wasm::InstSimple RotateRight() {
+			return wasm::InstSimple{ wasm::InstSimple::Type::bitRotateRight, Type };
 		}
-		static constexpr wasm::Instruction<Writer> LeadingNulls() {
-			return wasm::Instruction<Writer>{ std::move(Writer::Inst::NoOp(wasm::NoOpType::bitLeadingNulls, Type)) };
+		static constexpr wasm::InstSimple LeadingNulls() {
+			return wasm::InstSimple{ wasm::InstSimple::Type::bitLeadingNulls, Type };
 		}
-		static constexpr wasm::Instruction<Writer> TrailingNulls() {
-			return wasm::Instruction<Writer>{ std::move(Writer::Inst::NoOp(wasm::NoOpType::bitTrailingNulls, Type)) };
+		static constexpr wasm::InstSimple TrailingNulls() {
+			return wasm::InstSimple{ wasm::InstSimple::Type::bitTrailingNulls, Type };
 		}
-		static constexpr wasm::Instruction<Writer> SetBits() {
-			return wasm::Instruction<Writer>{ std::move(Writer::Inst::NoOp(wasm::NoOpType::bitSetCount, Type)) };
+		static constexpr wasm::InstSimple SetBits() {
+			return wasm::InstSimple{ wasm::InstSimple::Type::bitSetCount, Type };
 		}
 	};
 
-	template <class Writer, wasm::OperandType Type>
+	template <wasm::OpType Type>
 	struct Float {
-		static constexpr wasm::Instruction<Writer> Min() {
-			return wasm::Instruction<Writer>{ std::move(Writer::Inst::NoOp(wasm::NoOpType::floatMin, Type)) };
+		static constexpr wasm::InstSimple Min() {
+			return wasm::InstSimple{ wasm::InstSimple::Type::floatMin, Type };
 		}
-		static constexpr wasm::Instruction<Writer> Max() {
-			return wasm::Instruction<Writer>{ std::move(Writer::Inst::NoOp(wasm::NoOpType::floatMax, Type)) };
+		static constexpr wasm::InstSimple Max() {
+			return wasm::InstSimple{ wasm::InstSimple::Type::floatMax, Type };
 		}
-		static constexpr wasm::Instruction<Writer> Floor() {
-			return wasm::Instruction<Writer>{ std::move(Writer::Inst::NoOp(wasm::NoOpType::floatFloor, Type)) };
+		static constexpr wasm::InstSimple Floor() {
+			return wasm::InstSimple{ wasm::InstSimple::Type::floatFloor, Type };
 		}
-		static constexpr wasm::Instruction<Writer> Round() {
-			return wasm::Instruction<Writer>{ std::move(Writer::Inst::NoOp(wasm::NoOpType::floatRound, Type)) };
+		static constexpr wasm::InstSimple Round() {
+			return wasm::InstSimple{ wasm::InstSimple::Type::floatRound, Type };
 		}
-		static constexpr wasm::Instruction<Writer> Ceil() {
-			return wasm::Instruction<Writer>{ std::move(Writer::Inst::NoOp(wasm::NoOpType::floatCeil, Type)) };
+		static constexpr wasm::InstSimple Ceil() {
+			return wasm::InstSimple{ wasm::InstSimple::Type::floatCeil, Type };
 		}
-		static constexpr wasm::Instruction<Writer> Truncate() {
-			return wasm::Instruction<Writer>{ std::move(Writer::Inst::NoOp(wasm::NoOpType::floatTruncate, Type)) };
+		static constexpr wasm::InstSimple Truncate() {
+			return wasm::InstSimple{ wasm::InstSimple::Type::floatTruncate, Type };
 		}
-		static constexpr wasm::Instruction<Writer> Absolute() {
-			return wasm::Instruction<Writer>{ std::move(Writer::Inst::NoOp(wasm::NoOpType::floatAbsolute, Type)) };
+		static constexpr wasm::InstSimple Absolute() {
+			return wasm::InstSimple{ wasm::InstSimple::Type::floatAbsolute, Type };
 		}
-		static constexpr wasm::Instruction<Writer> Negate() {
-			return wasm::Instruction<Writer>{ std::move(Writer::Inst::NoOp(wasm::NoOpType::floatNegate, Type)) };
+		static constexpr wasm::InstSimple Negate() {
+			return wasm::InstSimple{ wasm::InstSimple::Type::floatNegate, Type };
 		}
-		static constexpr wasm::Instruction<Writer> SquareRoot() {
-			return wasm::Instruction<Writer>{ std::move(Writer::Inst::NoOp(wasm::NoOpType::floatSquareRoot, Type)) };
+		static constexpr wasm::InstSimple SquareRoot() {
+			return wasm::InstSimple{ wasm::InstSimple::Type::floatSquareRoot, Type };
 		}
-		static constexpr wasm::Instruction<Writer> CopySign() {
-			return wasm::Instruction<Writer>{ std::move(Writer::Inst::NoOp(wasm::NoOpType::floatCopySign, Type)) };
+		static constexpr wasm::InstSimple CopySign() {
+			return wasm::InstSimple{ wasm::InstSimple::Type::floatCopySign, Type };
 		}
 	};
 
-	template <class Writer, wasm::OperandType Type>
+	template <wasm::OpType Type>
 	struct Memory {
-		static constexpr wasm::Instruction<Writer> Load(uint32_t offset = 0) {
-			return wasm::Instruction<Writer>{ std::move(Writer::Inst::Memory(wasm::MemOpType::load, 0, 0, offset, Type)) };
+		static constexpr wasm::InstMemory Load(uint32_t offset = 0) {
+			return wasm::InstMemory{ wasm::InstMemory::Type::load, {}, {}, offset, Type };
 		}
-		static constexpr wasm::Instruction<Writer> Store(uint32_t offset = 0) {
-			return wasm::Instruction<Writer>{ std::move(Writer::Inst::Memory(wasm::MemOpType::store, 0, 0, offset, Type)) };
+		static constexpr wasm::InstMemory Store(uint32_t offset = 0) {
+			return wasm::InstMemory{ wasm::InstMemory::Type::store, {}, {}, offset, Type };
 		}
-		static constexpr wasm::Instruction<Writer> Load(const wasm::Memory<Writer>& memory, uint32_t offset = 0) {
-			return wasm::Instruction<Writer>{ std::move(Writer::Inst::Memory(wasm::MemOpType::load, &memory.self, 0, offset, Type)) };
+		static constexpr wasm::InstMemory Load(const wasm::Memory& memory, uint32_t offset = 0) {
+			return wasm::InstMemory{ wasm::InstMemory::Type::load, memory, {}, offset, Type };
 		}
-		static constexpr wasm::Instruction<Writer> Store(const wasm::Memory<Writer>& memory, uint32_t offset = 0) {
-			return wasm::Instruction<Writer>{ std::move(Writer::Inst::Memory(wasm::MemOpType::store, &memory.self, 0, offset, Type)) };
+		static constexpr wasm::InstMemory Store(const wasm::Memory& memory, uint32_t offset = 0) {
+			return wasm::InstMemory{ wasm::InstMemory::Type::store, memory, {}, offset, Type };
 		}
 	};
 
-	template <class Writer, wasm::OperandType Type, bool Signed>
+	template <wasm::OpType Type, bool Signed>
 	struct LargeMemory {
-		static constexpr wasm::Instruction<Writer> Load32(uint32_t offset = 0) {
+		static constexpr wasm::InstMemory Load32(const wasm::Memory& memory = {}, uint32_t offset = 0) {
 			if constexpr (Signed)
-				return wasm::Instruction<Writer>{ std::move(Writer::Inst::Memory(wasm::MemOpType::load32Signed, 0, 0, offset, Type)) };
+				return wasm::InstMemory{ wasm::InstMemory::Type::load32Signed, memory, {}, offset, Type };
 			else
-				return wasm::Instruction<Writer>{ std::move(Writer::Inst::Memory(wasm::MemOpType::load32Unsigned, 0, 0, offset, Type)) };
+				return wasm::InstMemory{ wasm::InstMemory::Type::load32Unsigned, memory, {}, offset, Type };
 		}
-		static constexpr wasm::Instruction<Writer> Store32(uint32_t offset = 0) {
-			return wasm::Instruction<Writer>{ std::move(Writer::Inst::Memory(wasm::MemOpType::store32, 0, 0, offset, Type)) };
-		}
-		static constexpr wasm::Instruction<Writer> Load32(const wasm::Memory<Writer>& memory, uint32_t offset = 0) {
-			if constexpr (Signed)
-				return wasm::Instruction<Writer>{ std::move(Writer::Inst::Memory(wasm::MemOpType::load32Signed, &memory.self, 0, offset, Type)) };
-			else
-				return wasm::Instruction<Writer>{ std::move(Writer::Inst::Memory(wasm::MemOpType::load32Unsigned, &memory.self, 0, offset, Type)) };
-		}
-		static constexpr wasm::Instruction<Writer> Store32(const wasm::Memory<Writer>& memory, uint32_t offset = 0) {
-			return wasm::Instruction<Writer>{ std::move(Writer::Inst::Memory(wasm::MemOpType::store32, &memory.self, 0, offset, Type)) };
+		static constexpr wasm::InstMemory Store32(const wasm::Memory& memory = {}, uint32_t offset = 0) {
+			return wasm::InstMemory{ wasm::InstMemory::Type::store32, memory, {}, offset, Type };
 		}
 	};
 
-	template <class Writer, wasm::OperandType Type, bool Signed>
+	template <wasm::OpType Type, bool Signed>
 	struct IntMemory {
-		static constexpr wasm::Instruction<Writer> Load8(uint32_t offset = 0) {
+		static constexpr wasm::InstMemory Load8(const wasm::Memory& memory = {}, uint32_t offset = 0) {
 			if constexpr (Signed)
-				return wasm::Instruction<Writer>{ std::move(Writer::Inst::Memory(wasm::MemOpType::load8Signed, 0, 0, offset, Type)) };
+				return wasm::InstMemory{ wasm::InstMemory::Type::load8Signed, memory, {}, offset, Type };
 			else
-				return wasm::Instruction<Writer>{ std::move(Writer::Inst::Memory(wasm::MemOpType::load8Unsigned, 0, 0, offset, Type)) };
+				return wasm::InstMemory{ wasm::InstMemory::Type::load8Unsigned, memory, {}, offset, Type };
 		}
-		static constexpr wasm::Instruction<Writer> Load16(uint32_t offset = 0) {
+		static constexpr wasm::InstMemory Load16(const wasm::Memory& memory = {}, uint32_t offset = 0) {
 			if constexpr (Signed)
-				return wasm::Instruction<Writer>{ std::move(Writer::Inst::Memory(wasm::MemOpType::load16Signed, 0, 0, offset, Type)) };
+				return wasm::InstMemory{ wasm::InstMemory::Type::load16Signed, memory, {}, offset, Type };
 			else
-				return wasm::Instruction<Writer>{ std::move(Writer::Inst::Memory(wasm::MemOpType::load16Unsigned, 0, 0, offset, Type)) };
+				return wasm::InstMemory{ wasm::InstMemory::Type::load16Unsigned, memory, {}, offset, Type };
 		}
-		static constexpr wasm::Instruction<Writer> Store8(uint32_t offset = 0) {
-			return wasm::Instruction<Writer>{ std::move(Writer::Inst::Memory(wasm::MemOpType::store8, 0, 0, offset, Type)) };
+		static constexpr wasm::InstMemory Store8(const wasm::Memory& memory = {}, uint32_t offset = 0) {
+			return wasm::InstMemory{ wasm::InstMemory::Type::store8, memory, {}, offset, Type };
 		}
-		static constexpr wasm::Instruction<Writer> Store16(uint32_t offset = 0) {
-			return wasm::Instruction<Writer>{ std::move(Writer::Inst::Memory(wasm::MemOpType::store16, 0, 0, offset, Type)) };
-		}
-		static constexpr wasm::Instruction<Writer> Load8(const wasm::Memory<Writer>& memory, uint32_t offset = 0) {
-			if constexpr (Signed)
-				return wasm::Instruction<Writer>{ std::move(Writer::Inst::Memory(wasm::MemOpType::load8Signed, &memory.self, 0, offset, Type)) };
-			else
-				return wasm::Instruction<Writer>{ std::move(Writer::Inst::Memory(wasm::MemOpType::load8Unsigned, &memory.self, 0, offset, Type)) };
-		}
-		static constexpr wasm::Instruction<Writer> Load16(const wasm::Memory<Writer>& memory, uint32_t offset = 0) {
-			if constexpr (Signed)
-				return wasm::Instruction<Writer>{ std::move(Writer::Inst::Memory(wasm::MemOpType::load16Signed, &memory.self, 0, offset, Type)) };
-			else
-				return wasm::Instruction<Writer>{ std::move(Writer::Inst::Memory(wasm::MemOpType::load16Unsigned, &memory.self, 0, offset, Type)) };
-		}
-		static constexpr wasm::Instruction<Writer> Store8(const wasm::Memory<Writer>& memory, uint32_t offset = 0) {
-			return wasm::Instruction<Writer>{ std::move(Writer::Inst::Memory(wasm::MemOpType::store8, &memory.self, 0, offset, Type)) };
-		}
-		static constexpr wasm::Instruction<Writer> Store16(const wasm::Memory<Writer>& memory, uint32_t offset = 0) {
-			return wasm::Instruction<Writer>{ std::move(Writer::Inst::Memory(wasm::MemOpType::store16, &memory.self, 0, offset, Type)) };
+		static constexpr wasm::InstMemory Store16(const wasm::Memory& memory = {}, uint32_t offset = 0) {
+			return wasm::InstMemory{ wasm::InstMemory::Type::store16, memory, {}, offset, Type };
 		}
 	};
 }

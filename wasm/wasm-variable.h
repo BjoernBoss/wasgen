@@ -1,23 +1,23 @@
 #pragma once
 
-#include "_wasm-common.h"
+#include "wasm-common.h"
 
 namespace wasm {
 	namespace detail {
 		struct VariableState {
 			std::u8string_view name;
-			wasm::_Type type = wasm::_Type::i32;
+			wasm::Type type = wasm::Type::i32;
 		};
 	}
 
 	/* describe a wasm-local or parameter of a sink */
-	class _Variable : public detail::SinkMember<detail::VariableState> {
-		friend class wasm::_Sink;
+	class Variable : public detail::SinkMember<detail::VariableState> {
+		friend class wasm::Sink;
 	public:
-		constexpr _Variable() = default;
+		constexpr Variable() = default;
 
 	private:
-		constexpr _Variable(wasm::_Sink& sink, uint32_t index) : SinkMember{ sink, index } {}
+		constexpr Variable(wasm::Sink& sink, uint32_t index) : SinkMember{ sink, index } {}
 
 	public:
 		constexpr bool valid() const {
@@ -29,7 +29,7 @@ namespace wasm {
 		constexpr std::u8string_view name() const {
 			return fGet()->name;
 		}
-		constexpr wasm::_Type type() const {
+		constexpr wasm::Type type() const {
 			return fGet()->type;
 		}
 	};

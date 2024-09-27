@@ -1,14 +1,12 @@
-#include "_wasm-module.h"
-#include "_wasm-sink.h"
+#include "wasm-module.h"
+#include "wasm-sink.h"
 
-#include "../util/logging.h"
-
-wasm::_Module::_Module(wasm::_ModuleInterface* interface) : pInterface{ interface } {}
-wasm::_Module::~_Module() {
+wasm::Module::Module(wasm::ModuleInterface* interface) : pInterface{ interface } {}
+wasm::Module::~Module() {
 	fClose();
 }
 
-void wasm::_Module::fClose() {
+void wasm::Module::fClose() {
 	if (pClosed)
 		return;
 	pClosed = true;
@@ -22,12 +20,12 @@ void wasm::_Module::fClose() {
 	/* mark the module as closed */
 	pInterface->close(*this);
 }
-void wasm::_Module::fCheckClosed() const {
+void wasm::Module::fCheckClosed() const {
 	if (pClosed)
 		util::fail(u8"Cannot change the closed module");
 }
 
-wasm::_Prototype wasm::_Module::prototype(std::initializer_list<wasm::_Param> params, std::initializer_list<wasm::_Type> result, std::u8string_view id) {
+wasm::Prototype wasm::Module::prototype(std::initializer_list<wasm::Param> params, std::initializer_list<wasm::Type> result, std::u8string_view id) {
 	fCheckClosed();
 
 	/* validate the id and the parameter */
@@ -52,13 +50,13 @@ wasm::_Prototype wasm::_Module::prototype(std::initializer_list<wasm::_Param> pa
 	if (!_id.empty())
 		state.id = *pPrototype.ids.insert(_id).first;
 	pPrototype.list.push_back(std::move(state));
-	wasm::_Prototype prototype{ *this, uint32_t(pPrototype.list.size() - 1) };
+	wasm::Prototype prototype{ *this, uint32_t(pPrototype.list.size() - 1) };
 
 	/* notify the interface about the added prototype */
 	pInterface->addPrototype(prototype);
 	return prototype;
 }
-wasm::_Memory wasm::_Module::memory(const wasm::_Limit& limit, std::u8string_view id, const wasm::_Import& imported, const wasm::_Export& exported) {
+wasm::Memory wasm::Module::memory(const wasm::Limit& limit, std::u8string_view id, const wasm::Import& imported, const wasm::Export& exported) {
 	fCheckClosed();
 
 	/* validate the id */
@@ -73,13 +71,13 @@ wasm::_Memory wasm::_Module::memory(const wasm::_Limit& limit, std::u8string_vie
 	if (!_id.empty())
 		state.id = *pMemory.ids.insert(_id).first;
 	pMemory.list.push_back(std::move(state));
-	wasm::_Memory memory{ *this, uint32_t(pMemory.list.size() - 1) };
+	wasm::Memory memory{ *this, uint32_t(pMemory.list.size() - 1) };
 
 	/* notify the interface about the added memory */
 	pInterface->addMemory(memory);
 	return memory;
 }
-wasm::_Table wasm::_Module::table(bool functions, const wasm::_Limit& limit, std::u8string_view id, const wasm::_Import& imported, const wasm::_Export& exported) {
+wasm::Table wasm::Module::table(bool functions, const wasm::Limit& limit, std::u8string_view id, const wasm::Import& imported, const wasm::Export& exported) {
 	fCheckClosed();
 
 	/* validate the id */
@@ -94,13 +92,13 @@ wasm::_Table wasm::_Module::table(bool functions, const wasm::_Limit& limit, std
 	if (!_id.empty())
 		state.id = *pTable.ids.insert(_id).first;
 	pTable.list.push_back(std::move(state));
-	wasm::_Table table{ *this, uint32_t(pTable.list.size() - 1) };
+	wasm::Table table{ *this, uint32_t(pTable.list.size() - 1) };
 
 	/* notify the interface about the added table */
 	pInterface->addTable(table);
 	return table;
 }
-wasm::_Global wasm::_Module::global(wasm::_Type type, bool mutating, std::u8string_view id, const wasm::_Import& imported, const wasm::_Export& exported) {
+wasm::Global wasm::Module::global(wasm::Type type, bool mutating, std::u8string_view id, const wasm::Import& imported, const wasm::Export& exported) {
 	fCheckClosed();
 
 	/* validate the id */
@@ -115,13 +113,13 @@ wasm::_Global wasm::_Module::global(wasm::_Type type, bool mutating, std::u8stri
 	if (!_id.empty())
 		state.id = *pGlobal.ids.insert(_id).first;
 	pGlobal.list.push_back(std::move(state));
-	wasm::_Global global{ *this, uint32_t(pGlobal.list.size() - 1) };
+	wasm::Global global{ *this, uint32_t(pGlobal.list.size() - 1) };
 
 	/* notify the interface about the added global */
 	pInterface->addGlobal(global);
 	return global;
 }
-wasm::_Function wasm::_Module::function(const wasm::_Prototype& prototype, std::u8string_view id, const wasm::_Import& imported, const wasm::_Export& exported) {
+wasm::Function wasm::Module::function(const wasm::Prototype& prototype, std::u8string_view id, const wasm::Import& imported, const wasm::Export& exported) {
 	fCheckClosed();
 
 	/* validate the id and the prototype */
@@ -138,28 +136,28 @@ wasm::_Function wasm::_Module::function(const wasm::_Prototype& prototype, std::
 	if (!_id.empty())
 		state.id = *pFunction.ids.insert(_id).first;
 	pFunction.list.push_back(std::move(state));
-	wasm::_Function function{ *this, uint32_t(pFunction.list.size() - 1) };
+	wasm::Function function{ *this, uint32_t(pFunction.list.size() - 1) };
 
 	/* notify the interface about the added function */
 	pInterface->addFunction(function);
 	return function;
 }
-void wasm::_Module::close() {
+void wasm::Module::close() {
 	fClose();
 }
 
-wasm::_List<wasm::_Prototype, wasm::_Module::_PrototypeList> wasm::_Module::prototypes() const {
-	return { _Module::_PrototypeList{ const_cast<wasm::_Module*>(this) } };
+wasm::List<wasm::Prototype, wasm::Module::PrototypeList> wasm::Module::prototypes() const {
+	return { Module::PrototypeList{ const_cast<wasm::Module*>(this) } };
 }
-wasm::_List<wasm::_Memory, wasm::_Module::_MemoryList> wasm::_Module::memories() const {
-	return { _Module::_MemoryList{ const_cast<wasm::_Module*>(this) } };
+wasm::List<wasm::Memory, wasm::Module::MemoryList> wasm::Module::memories() const {
+	return { Module::MemoryList{ const_cast<wasm::Module*>(this) } };
 }
-wasm::_List<wasm::_Table, wasm::_Module::_TableList> wasm::_Module::tables() const {
-	return { _Module::_TableList{ const_cast<wasm::_Module*>(this) } };
+wasm::List<wasm::Table, wasm::Module::TableList> wasm::Module::tables() const {
+	return { Module::TableList{ const_cast<wasm::Module*>(this) } };
 }
-wasm::_List<wasm::_Global, wasm::_Module::_GlobalList> wasm::_Module::globals() const {
-	return { _Module::_GlobalList{ const_cast<wasm::_Module*>(this) } };
+wasm::List<wasm::Global, wasm::Module::GlobalList> wasm::Module::globals() const {
+	return { Module::GlobalList{ const_cast<wasm::Module*>(this) } };
 }
-wasm::_List<wasm::_Function, wasm::_Module::_FunctionList> wasm::_Module::functions() const {
-	return { _Module::_FunctionList{ const_cast<wasm::_Module*>(this) } };
+wasm::List<wasm::Function, wasm::Module::FunctionList> wasm::Module::functions() const {
+	return { Module::FunctionList{ const_cast<wasm::Module*>(this) } };
 }

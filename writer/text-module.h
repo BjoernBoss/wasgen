@@ -1,53 +1,26 @@
 #pragma once
 
 #include "text-base.h"
-#include "text-sink.h"
 
 namespace writer::text {
-	using Memory = IdObject;
-
-	using Table = IdObject;
-
-	using Function = IdObject;
-
-	using Global = IdObject;
-
-	class Module {
+	class Module final : public wasm::ModuleInterface {
+		friend class text::Sink;
 	private:
-		struct Section {
-			std::unordered_set<std::u8string> ids;
-			uint32_t next = 0;
-		};
-		struct OpenSink {
-			std::u8string header;
-			uint32_t parameter = uint32_t(-1);
-			bool open = false;
-			OpenSink() = default;
-			OpenSink(std::u8string header, uint32_t param) : header{ header }, parameter{ param }, open{ true } {}
-		};
-
-	private:
-		Section pTypes{};
-		Section pMemory{};
-		Section pTables{};
-		Section pFunctions{};
-		Section pGlobals{};
+		std::vector<std::u8string> pFunctions;
 		std::u8string pImports;
-		std::u8string pBody;
-		std::vector<OpenSink> pSinks;
-		std::vector<std::vector<wasm::Param>> pParameter;
-		text::SinkImpl pSink;
+		std::u8string pDefined;
+		std::u8string pOutput;
 
 	public:
-		Module(const writer::TextWriter& state);
+		const std::u8string& output() const;
 
 	public:
-		text::Prototype addPrototype(const std::u8string_view& id, const wasm::Param* params, size_t paramCount, const wasm::Type* results, size_t resultCount);
-		text::Memory addMemory(const std::u8string_view& id, const wasm::Limit& limit, const wasm::Exchange& exchange);
-		text::Table addTable(const std::u8string_view& id, bool functions, const wasm::Limit& limit, const wasm::Exchange& exchange);
-		text::Global addGlobal(const std::u8string_view& id, wasm::Type type, bool mut, const wasm::Exchange& exchange);
-		text::Function addFunction(const std::u8string_view& id, const text::Prototype* prototype, const wasm::Exchange& exchange);
-		text::SinkWrapper bindSink(const text::Function& fn);
-		std::u8string toString();
+		wasm::SinkInterface* sink(const wasm::Function& function) override;
+		void close(const wasm::Module& module) override;
+		void addPrototype(const wasm::Prototype& prototype) override;
+		void addMemory(const wasm::Memory& memory) override;
+		void addTable(const wasm::Table& table) override;
+		void addGlobal(const wasm::Global& global) override;
+		void addFunction(const wasm::Function& function) override;
 	};
 }

@@ -1,112 +1,107 @@
 #pragma once
 
 #include "wasm-common.h"
-#include "wasm-types.h"
+#include "wasm-variable.h"
+#include "wasm-target.h"
+#include "wasm-function.h"
+#include "wasm-instruction.h"
+
+#include "../util/logging.h"
 
 namespace wasm {
-	/* writer must provide type Sink, which the wasm::Sink internally instantiates
-	*	must implement various interaction member-functions for it
-	*	pushed jump-bases/conditionals
-	*		guaranteed to only be closed once per function object and in stacked order
-	*		for [then] blocks, they will guaranteed at most be toggled once before being closed */
-	template <class Type>
-	concept IsSink = requires(const std::u8string_view id, uint32_t i) {
-		typename Type::Sink;
-		{ std::declval<typename Type::Sink>().pushLoop(id, std::declval<const typename Type::Prototype*>()) } -> std::same_as<typename Type::Target>;
-		{ std::declval<typename Type::Sink>().popLoop(std::declval<typename Type::Target&>()) };
-		{ std::declval<typename Type::Sink>().pushBlock(id, std::declval<const typename Type::Prototype*>()) } -> std::same_as<typename Type::Target>;
-		{ std::declval<typename Type::Sink>().popBlock(std::declval<typename Type::Target&>()) };
-		{ std::declval<typename Type::Sink>().pushConditional(id, std::declval<const typename Type::Prototype*>()) } -> std::same_as<typename Type::Target>;
-		{ std::declval<typename Type::Sink>().toggleConditional(std::declval<typename Type::Target&>()) };
-		{ std::declval<typename Type::Sink>().popConditional(std::declval<typename Type::Target&>()) };
-		{ std::declval<typename Type::Sink>().getParameter(i) } -> std::same_as<typename Type::Variable>;
-		{ std::declval<typename Type::Sink>().addLocal(wasm::Type::i32, id) } -> std::same_as<typename Type::Variable>;
-		{ std::declval<typename Type::Sink>().addInst(std::declval<const typename Type::Instruction&>()) };
-		{ std::declval<typename Type::Sink>().close() };
+	/* sink interface used to write the instructions out */
+	class SinkInterface {
+	public:
+		virtual void pushScope(const wasm::Target& target) = 0;
+		virtual void popScope(wasm::ScopeType type) = 0;
+		virtual void toggleConditional() = 0;
+		virtual void close(const wasm::Sink& sink) = 0;
+		virtual void addLocal(const wasm::Variable& local) = 0;
+		virtual void addInst(const wasm::InstConst& inst) = 0;
+		virtual void addInst(const wasm::InstSimple& inst) = 0;
+		virtual void addInst(const wasm::InstMemory& inst) = 0;
+		virtual void addInst(const wasm::InstTable& inst) = 0;
+		virtual void addInst(const wasm::InstLocal& inst) = 0;
+		virtual void addInst(const wasm::InstGlobal& inst) = 0;
+		virtual void addInst(const wasm::InstFunction& inst) = 0;
+		virtual void addInst(const wasm::InstIndirect& inst) = 0;
+		virtual void addInst(const wasm::InstBranch& inst) = 0;
 	};
 
-	template <wasm::IsSink Writer> struct Sink;
-
-	/* if-then block of a conditional (will automatically end the instruction-block at destruction and can be toggled to else-block) */
-	template <wasm::IsSink Writer>
-	struct IfThen : public wasm::Target<Writer> {
+	/* write instructions out to a function bound to the given sink out to the sink-implementation */
+	class Sink {
+		template <class> friend class detail::SinkMember;
+		friend class wasm::Module;
+		friend class wasm::Target;
 	private:
-		typename Writer::Sink& pSink;
+		struct LocalList {
+			wasm::Sink* _this = 0;
+			constexpr LocalList(wasm::Sink* module) : _this{ module } {}
+			constexpr size_t size() const {
+				return _this->pVariables.list.size() - _this->pParameter;
+			}
+			constexpr wasm::Variable get(uint32_t index) const {
+				return wasm::Variable{ *_this, index + _this->pParameter };
+			}
+		};
 
-	public:
-		constexpr IfThen(wasm::Sink<Writer>& sink, const std::u8string_view& label = {}) : wasm::Target<Writer>{ std::move(sink.self.pushConditional(label, 0)) }, pSink{ sink.self } {}
-		constexpr IfThen(wasm::Sink<Writer>& sink, const wasm::Prototype<Writer>& prototype, const std::u8string_view& label = {}) : wasm::Target<Writer>{ std::move(sink.self.pushConditional(label, &prototype.self)) }, pSink{ sink.self } {}
-		constexpr ~IfThen() {
-			pSink.popConditional(wasm::Target<Writer>::self);
-		}
-		constexpr void close() {
-			pSink.popConditional(wasm::Target<Writer>::self);
-		}
-		constexpr void otherwise() {
-			pSink.toggleConditional(wasm::Target<Writer>::self);
-		}
-	};
-
-	/* loop block, which can act as wasm::Target (will automatically end the instruction-block at destruction) */
-	template <wasm::IsSink Writer>
-	struct Loop : public wasm::Target<Writer> {
 	private:
-		typename Writer::Sink& pSink;
+		struct {
+			std::vector<detail::VariableState> list;
+			std::unordered_set<std::u8string> names;
+		} pVariables;
+		std::vector<detail::TargetState> pTargets;
+		wasm::Function pFunction;
+		wasm::SinkInterface* pInterface = 0;
+		size_t pNextStamp = 0;
+		uint32_t pParameter = 0;
+		bool pClosed = false;
 
 	public:
-		constexpr Loop(wasm::Sink<Writer>& sink, const std::u8string_view& label = {}) : wasm::Target<Writer>{ std::move(sink.self.pushLoop(label, 0)) }, pSink{ sink.self } {}
-		constexpr Loop(wasm::Sink<Writer>& sink, const wasm::Prototype<Writer>& prototype, const std::u8string_view& label = {}) : wasm::Target<Writer>{ std::move(sink.self.pushLoop(label, &prototype.self)) }, pSink{ sink.self } {}
-		constexpr ~Loop() {
-			pSink.popLoop(wasm::Target<Writer>::self);
-		}
-		constexpr void close() {
-			pSink.popLoop(wasm::Target<Writer>::self);
-		}
-	};
+		Sink(const wasm::Function& function);
+		Sink() = delete;
+		Sink(wasm::Sink&&) = delete;
+		Sink(const wasm::Sink&) = delete;
+		~Sink();
 
-	/* jump block, which can act as wasm::Target (will automatically end the instruction-block at destruction) */
-	template <wasm::IsSink Writer>
-	struct Block : public wasm::Target<Writer> {
 	private:
-		typename Writer::Sink& pSink;
+		void fClose();
+		void fCheckClosed() const;
+		void fPopUntil(uint32_t size);
+		bool fCheckTarget(uint32_t index, size_t stamp, bool soft) const;
+		void fSetupTarget(const wasm::Prototype& prototype, std::u8string_view label, wasm::ScopeType type, wasm::Target& target);
+		void fToggleTarget(uint32_t index, size_t stamp);
+		void fCloseTarget(uint32_t index, size_t stamp);
 
 	public:
-		constexpr Block(wasm::Sink<Writer>& sink, const std::u8string_view& label = {}) : wasm::Target<Writer>{ std::move(sink.self.pushBlock(label, 0)) }, pSink{ sink.self } {}
-		constexpr Block(wasm::Sink<Writer>& sink, const wasm::Prototype<Writer>& prototype, const std::u8string_view& label = {}) : wasm::Target<Writer>{ std::move(sink.self.pushBlock(label, &prototype.self)) }, pSink{ sink.self } {}
-		constexpr ~Block() {
-			pSink.popBlock(wasm::Target<Writer>::self);
-		}
-		constexpr void close() {
-			pSink.popBlock(wasm::Target<Writer>::self);
-		}
+		wasm::Variable parameter(uint32_t index);
+		wasm::Variable local(wasm::Type type, std::u8string_view name);
+		wasm::Function function() const;
+		void close();
+
+	public:
+		wasm::List<wasm::Variable, Sink::LocalList> locals() const;
+
+	public:
+		void operator[](const wasm::InstConst& inst);
+		void operator[](const wasm::InstSimple& inst);
+		void operator[](const wasm::InstMemory& inst);
+		void operator[](const wasm::InstTable& inst);
+		void operator[](const wasm::InstLocal& inst);
+		void operator[](const wasm::InstGlobal& inst);
+		void operator[](const wasm::InstFunction& inst);
+		void operator[](const wasm::InstIndirect& inst);
+		void operator[](const wasm::InstBranch& inst);
 	};
 
-	/* instruction-sink to collect instructions for a function [instantiated via wasm::Module]
-	*	Important: No produced/bound types must outlive the wasm::Sink object */
-	template <wasm::IsSink Writer>
-	struct Sink {
-		Writer::Sink self;
-
-	public:
-		constexpr Sink(Writer::Sink&& self) : self{ std::move(self) } {}
-		Sink(const wasm::Sink<Writer>&) = delete;
-		constexpr Sink(wasm::Sink<Writer>&&) = default;
-		constexpr ~Sink() {
-			self.close();
+	namespace detail {
+		template <class Type>
+		constexpr const Type* SinkMember<Type>::fGet() const {
+			if constexpr (std::is_same_v<Type, detail::VariableState>)
+				return &pSink->pVariables.list[pIndex];
+			if constexpr (std::is_same_v<Type, detail::TargetState>)
+				return &pSink->pTargets[pIndex];
+			return nullptr;
 		}
-
-	public:
-		constexpr wasm::Variable<Writer> parameter(uint32_t index) {
-			return wasm::Variable<Writer>{ std::move(self.getParameter(index)) };
-		}
-		constexpr wasm::Variable<Writer> local(wasm::Type type, const std::u8string_view& id = {}) {
-			return wasm::Variable<Writer>{ std::move(self.addLocal(type, id)) };
-		}
-		constexpr void operator[](const wasm::Instruction<Writer>& inst) {
-			self.addInst(inst.self);
-		}
-		constexpr void close() {
-			self.close();
-		}
-	};
+	}
 }

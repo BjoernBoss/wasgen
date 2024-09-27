@@ -1,271 +1,263 @@
 #pragma once
 
-#include "wasm-instbase.h"
+#include "wasm-memory.h"
+#include "wasm-table.h"
+#include "wasm-global.h"
+#include "wasm-prototype.h"
+#include "wasm-function.h"
+#include "wasm-variable.h"
+#include "wasm-target.h"
 
 namespace wasm {
-	/* writer must provide a type Inst, which must provide static
-	*	functions for all of the separate instruction functions */
-	template <class Type>
-	concept IsInst = requires(uint32_t o) {
-		typename Type::Inst;
-		{ Type::Inst::Consti32(0lu) } -> std::same_as<typename Type::Instruction>;
-		{ Type::Inst::Consti64(0llu) } -> std::same_as<typename Type::Instruction>;
-		{ Type::Inst::Constf32(0.0f) } -> std::same_as<typename Type::Instruction>;
-		{ Type::Inst::Constf64(0.0) } -> std::same_as<typename Type::Instruction>;
-		{ Type::Inst::NoOp(wasm::NoOpType::equal, wasm::OperandType::i32) } -> std::same_as<typename Type::Instruction>;
-		{ Type::Inst::Memory(wasm::MemOpType::load, std::declval<const typename Type::Memory*>(), std::declval<const typename Type::Memory*>(), o, wasm::OperandType::i32) } -> std::same_as<typename Type::Instruction>;
-		{ Type::Inst::Table(wasm::TabOpType::get, std::declval<const typename Type::Table*>(), std::declval<const typename Type::Table*>()) } -> std::same_as<typename Type::Instruction>;
-		{ Type::Inst::Local(wasm::LocOpType::get, std::declval<const typename Type::Variable&>()) }  -> std::same_as<typename Type::Instruction>;
-		{ Type::Inst::Global(wasm::GlobOpType::get, std::declval<const typename Type::Global&>()) }  -> std::same_as<typename Type::Instruction>;
-		{ Type::Inst::Ref(wasm::RefOpType::testNull, std::declval<const typename Type::Function*>()) }  -> std::same_as<typename Type::Instruction>;
-		{ Type::Inst::Call(wasm::CallOpType::normal, std::declval<const typename Type::Function&>()) }  -> std::same_as<typename Type::Instruction>;
-		{ Type::Inst::Indirect(wasm::CallOpType::normal, std::declval<const typename Type::Table*>(), std::declval<const typename Type::Prototype*>()) }  -> std::same_as<typename Type::Instruction>;
-		{ Type::Inst::Branch(wasm::BrOpType::direct, std::declval<const typename Type::Target&>(), std::declval<const typename Type::Target*>(), o) }  -> std::same_as<typename Type::Instruction>;
+	/* supported operand types */
+	enum class OpType : uint8_t {
+		i32,
+		i64,
+		f32,
+		f64
 	};
 
-	/* instruction instantiation structure */
-	template <wasm::IsInst Writer>
-	struct Inst {
-		struct Branch {
-			static constexpr wasm::Instruction<Writer> Direct(const wasm::Target<Writer>& target) {
-				return wasm::Instruction<Writer>{ std::move(Writer::Inst::Branch(wasm::BrOpType::direct, target.self, 0, 0)) };
-			}
-			static constexpr wasm::Instruction<Writer> If(const wasm::Target<Writer>& target) {
-				return wasm::Instruction<Writer>{ std::move(Writer::Inst::Branch(wasm::BrOpType::conditional, target.self, 0, 0)) };
-			}
-			static constexpr wasm::Instruction<Writer> Table(std::initializer_list<const wasm::Target<Writer>&> optTarget, const wasm::Target<Writer>& defTarget) {
-				return wasm::Instruction<Writer>{ std::move(Writer::Inst::Branch(wasm::BrOpType::conditional, defTarget.self, optTarget.begin(), uint32_t(optTarget.size()))) };
-			}
+	/* description of any simple instructions, which take a single constant as operand */
+	struct InstConst {
+	public:
+		std::variant<uint32_t, uint64_t, float, double> value;
+		wasm::OpType operand = wasm::OpType::i32;
+
+	public:
+		constexpr InstConst(uint32_t value, wasm::OpType operand) : value{ value }, operand{ operand } {}
+		constexpr InstConst(uint64_t value, wasm::OpType operand) : value{ value }, operand{ operand } {}
+		constexpr InstConst(float value, wasm::OpType operand) : value{ value }, operand{ operand } {}
+		constexpr InstConst(double value, wasm::OpType operand) : value{ value }, operand{ operand } {}
+	};
+
+	/* description of any simple instructions, which do not take any direct operands */
+	struct InstSimple {
+	public:
+		enum class Type : uint8_t {
+			equal,
+			notEqual,
+			equalZero,
+			greaterSigned,
+			greaterUnsigned,
+			lessSigned,
+			lessUnsigned,
+			greaterEqualSigned,
+			greaterEqualUnsigned,
+			lessEqualSigned,
+			lessEqualUnsigned,
+
+			add,
+			sub,
+			mul,
+			divSigned,
+			divUnsigned,
+			modSigned,
+			modUnsigned,
+
+			convertToF32Signed,
+			convertToF32Unsigned,
+			convertToF64Signed,
+			convertToF64Unsigned,
+			convertFromF32Signed,
+			convertFromF32Unsigned,
+			convertFromF64Signed,
+			convertFromF64Unsigned,
+
+			reinterpretAsInt,
+			reinterpretAsFloat,
+
+			expand,
+			shrink,
+
+			bitAnd,
+			bitOr,
+			bitXOr,
+			bitShiftLeft,
+			bitShiftRightSigned,
+			bitShiftRightUnsigned,
+			bitRotateLeft,
+			bitRotateRight,
+			bitLeadingNulls,
+			bitTrailingNulls,
+			bitSetCount,
+
+			floatMin,
+			floatMax,
+			floatFloor,
+			floatRound,
+			floatCeil,
+			floatTruncate,
+			floatAbsolute,
+			floatNegate,
+			floatSquareRoot,
+			floatCopySign,
+
+			drop,
+			nop,
+			ret,
+			unreachable,
+			select,
+			selectRefFunction,
+			selectRefExtern,
+
+			refTestNull,
+			refNullFunction,
+			refNullExtern
 		};
 
-		struct Call {
-			static constexpr wasm::Instruction<Writer> Direct(const wasm::Function<Writer>& fn) {
-				return wasm::Instruction<Writer>{ std::move(Writer::Inst::Call(wasm::CallOpType::normal, fn.self)) };
-			}
-			static constexpr wasm::Instruction<Writer> Tail(const wasm::Function<Writer>& fn) {
-				return wasm::Instruction<Writer>{ std::move(Writer::Inst::Call(wasm::CallOpType::tail, fn.self)) };
-			}
-			static constexpr wasm::Instruction<Writer> Indirect() {
-				return wasm::Instruction<Writer>{ std::move(Writer::Inst::Indirect(wasm::CallOpType::normal, 0, 0)) };
-			}
-			static constexpr wasm::Instruction<Writer> Indirect(const wasm::Table<Writer>& table) {
-				return wasm::Instruction<Writer>{ std::move(Writer::Inst::Indirect(wasm::CallOpType::normal, &table.self, 0)) };
-			}
-			static constexpr wasm::Instruction<Writer> Indirect(const wasm::Prototype<Writer>& type) {
-				return wasm::Instruction<Writer>{ std::move(Writer::Inst::Indirect(wasm::CallOpType::normal, 0, &type.self)) };
-			}
-			static constexpr wasm::Instruction<Writer> Indirect(const wasm::Table<Writer>& table, const wasm::Prototype<Writer>& type) {
-				return wasm::Instruction<Writer>{ std::move(Writer::Inst::Indirect(wasm::CallOpType::normal, &table.self, &type.self)) };
-			}
-			static constexpr wasm::Instruction<Writer> IndirectTail() {
-				return wasm::Instruction<Writer>{ std::move(Writer::Inst::Indirect(wasm::CallOpType::tail, 0, 0)) };
-			}
-			static constexpr wasm::Instruction<Writer> IndirectTail(const wasm::Table<Writer>& table) {
-				return wasm::Instruction<Writer>{ std::move(Writer::Inst::Indirect(wasm::CallOpType::tail, &table.self, 0)) };
-			}
-			static constexpr wasm::Instruction<Writer> IndirectTail(const wasm::Prototype<Writer>& type) {
-				return wasm::Instruction<Writer>{ std::move(Writer::Inst::Indirect(wasm::CallOpType::tail, 0, &type.self)) };
-			}
-			static constexpr wasm::Instruction<Writer> IndirectTail(const wasm::Table<Writer>& table, const wasm::Prototype<Writer>& type) {
-				return wasm::Instruction<Writer>{ std::move(Writer::Inst::Indirect(wasm::CallOpType::tail, &table.self, &type.self)) };
-			}
+	public:
+		Type type = Type::nop;
+		wasm::OpType operand = wasm::OpType::i32;
+
+	public:
+		constexpr InstSimple(Type type, wasm::OpType operand) : type{ type }, operand{ operand } {}
+	};
+
+	/* description of any memory-interacting instructions */
+	struct InstMemory {
+	public:
+		enum class Type : uint8_t {
+			load,
+			load8Unsigned,
+			load8Signed,
+			load16Unsigned,
+			load16Signed,
+			load32Unsigned,
+			load32Signed,
+			store,
+			store8,
+			store16,
+			store32,
+
+			grow,
+			size,
+			copy,
+			fill
 		};
 
-		struct Local {
-			static constexpr wasm::Instruction<Writer> Get(const wasm::Variable<Writer>& local) {
-				return wasm::Instruction<Writer>{ std::move(Writer::Inst::Local(wasm::LocOpType::get, local.self)) };
-			}
-			static constexpr wasm::Instruction<Writer> Set(const wasm::Variable<Writer>& local) {
-				return wasm::Instruction<Writer>{ std::move(Writer::Inst::Local(wasm::LocOpType::set, local.self)) };
-			}
-			static constexpr wasm::Instruction<Writer> Tee(const wasm::Variable<Writer>& local) {
-				return wasm::Instruction<Writer>{ std::move(Writer::Inst::Local(wasm::LocOpType::tee, local.self)) };
-			}
+	public:
+		wasm::Memory memory;
+		wasm::Memory source;
+		uint32_t offset = 0;
+		Type type = Type::load;
+		wasm::OpType operand = OpType::i32;
+
+	public:
+		constexpr InstMemory(Type type, const wasm::Memory& memory, const wasm::Memory& source, uint32_t offset, wasm::OpType operand) : memory{ memory }, source{ source }, offset{ offset }, type{ type }, operand{ operand } {}
+	};
+
+	/* description of any table-interacting instructions */
+	struct InstTable {
+	public:
+		enum class Type : uint8_t {
+			get,
+			set,
+			size,
+			grow,
+			fill,
+			copy
 		};
 
-		struct Global {
-			static constexpr wasm::Instruction<Writer> Get(const wasm::Global<Writer>& global) {
-				return wasm::Instruction<Writer>{ std::move(Writer::Inst::Global(wasm::GlobOpType::get, global)) };
-			}
-			static constexpr wasm::Instruction<Writer> Set(const wasm::Global<Writer>& global) {
-				return wasm::Instruction<Writer>{ std::move(Writer::Inst::Global(wasm::GlobOpType::set, global)) };
-			}
+	public:
+		wasm::Table table;
+		wasm::Table source;
+		Type type = Type::get;
+
+	public:
+		constexpr InstTable(Type type, const wasm::Table& table, const wasm::Table& source) : table{ table }, source{ source }, type{ type } {}
+	};
+
+	/* description of any local variable-interacting instructions */
+	struct InstLocal {
+	public:
+		enum class Type : uint8_t {
+			set,
+			get,
+			tee
 		};
 
-		struct Memory {
-			static constexpr wasm::Instruction<Writer> Grow() {
-				return wasm::Instruction<Writer>{ std::move(Writer::Inst::Memory(wasm::MemOpType::grow, 0, 0, 0, wasm::OperandType::i32)) };
-			}
-			static constexpr wasm::Instruction<Writer> Size() {
-				return wasm::Instruction<Writer>{ std::move(Writer::Inst::Memory(wasm::MemOpType::size, 0, 0, 0, wasm::OperandType::i32)) };
-			}
-			static constexpr wasm::Instruction<Writer> Fill() {
-				return wasm::Instruction<Writer>{ std::move(Writer::Inst::Memory(wasm::MemOpType::fill, 0, 0, 0, wasm::OperandType::i32)) };
-			}
-			static constexpr wasm::Instruction<Writer> Copy() {
-				return wasm::Instruction<Writer>{ std::move(Writer::Inst::Memory(wasm::MemOpType::copy, 0, 0, wasm::OperandType::i32)) };
-			}
-			static constexpr wasm::Instruction<Writer> Grow(const wasm::Memory<Writer>& memory) {
-				return wasm::Instruction<Writer>{ std::move(Writer::Inst::Memory(wasm::MemOpType::grow, &memory.self, 0, 0, wasm::OperandType::i32)) };
-			}
-			static constexpr wasm::Instruction<Writer> Size(const wasm::Memory<Writer>& memory) {
-				return wasm::Instruction<Writer>{ std::move(Writer::Inst::Memory(wasm::MemOpType::size, &memory.self, 0, 0, wasm::OperandType::i32)) };
-			}
-			static constexpr wasm::Instruction<Writer> Fill(const wasm::Memory<Writer>& memory) {
-				return wasm::Instruction<Writer>{ std::move(Writer::Inst::Memory(wasm::MemOpType::fill, &memory.self, 0, 0, wasm::OperandType::i32)) };
-			}
-			static constexpr wasm::Instruction<Writer> Copy(const wasm::Memory<Writer>& memory) {
-				return wasm::Instruction<Writer>{ std::move(Writer::Inst::Memory(wasm::MemOpType::copy, &memory.self, &memory.self, 0, wasm::OperandType::i32)) };
-			}
-			static constexpr wasm::Instruction<Writer> Copy(const wasm::Memory<Writer>* dest, const wasm::Memory<Writer>* source) {
-				return wasm::Instruction<Writer>{ std::move(Writer::Inst::Memory(wasm::MemOpType::copy, (dest == 0 ? 0 : &dest->self), (source == 0 ? 0 : &source->self), 0, wasm::OperandType::i32)) };
-			}
+	public:
+		wasm::Variable variable;
+		Type type = Type::set;
+
+	public:
+		constexpr InstLocal(Type type, const wasm::Variable& variable) : variable{ variable }, type{ type } {}
+	};
+
+	/* description of any global variable-interacting instructions */
+	struct InstGlobal {
+	public:
+		enum class Type : uint8_t {
+			set,
+			get
 		};
 
-		struct Table {
-			static constexpr wasm::Instruction<Writer> Get() {
-				return wasm::Instruction<Writer>{ std::move(Writer::Inst::Table(wasm::TabOpType::get, 0, 0)) };
-			}
-			static constexpr wasm::Instruction<Writer> Set() {
-				return wasm::Instruction<Writer>{ std::move(Writer::Inst::Table(wasm::TabOpType::set, 0, 0)) };
-			}
-			static constexpr wasm::Instruction<Writer> Size() {
-				return wasm::Instruction<Writer>{ std::move(Writer::Inst::Table(wasm::TabOpType::size, 0, 0)) };
-			}
-			static constexpr wasm::Instruction<Writer> Grow() {
-				return wasm::Instruction<Writer>{ std::move(Writer::Inst::Table(wasm::TabOpType::grow, 0, 0)) };
-			}
-			static constexpr wasm::Instruction<Writer> Fill() {
-				return wasm::Instruction<Writer>{ std::move(Writer::Inst::Table(wasm::TabOpType::fill, 0, 0)) };
-			}
-			static constexpr wasm::Instruction<Writer> Copy() {
-				return wasm::Instruction<Writer>{ std::move(Writer::Inst::Table(wasm::TabOpType::copy, 0, 0)) };
-			}
-			static constexpr wasm::Instruction<Writer> Get(const wasm::Table<Writer>& table) {
-				return wasm::Instruction<Writer>{ std::move(Writer::Inst::Table(wasm::TabOpType::get, &table.self, 0)) };
-			}
-			static constexpr wasm::Instruction<Writer> Set(const wasm::Table<Writer>& table) {
-				return wasm::Instruction<Writer>{ std::move(Writer::Inst::Table(wasm::TabOpType::set, &table.self, 0)) };
-			}
-			static constexpr wasm::Instruction<Writer> Size(const wasm::Table<Writer>& table) {
-				return wasm::Instruction<Writer>{ std::move(Writer::Inst::Table(wasm::TabOpType::size, &table.self, 0)) };
-			}
-			static constexpr wasm::Instruction<Writer> Grow(const wasm::Table<Writer>& table) {
-				return wasm::Instruction<Writer>{ std::move(Writer::Inst::Table(wasm::TabOpType::grow, &table.self, 0)) };
-			}
-			static constexpr wasm::Instruction<Writer> Fill(const wasm::Table<Writer>& table) {
-				return wasm::Instruction<Writer>{ std::move(Writer::Inst::Table(wasm::TabOpType::fill, &table.self, 0)) };
-			}
-			static constexpr wasm::Instruction<Writer> Copy(const wasm::Table<Writer>& table) {
-				return wasm::Instruction<Writer>{ std::move(Writer::Inst::Table(wasm::TabOpType::copy, &table.self, 0)) };
-			}
-			static constexpr wasm::Instruction<Writer> Copy(const wasm::Table<Writer>* dest, const wasm::Table<Writer>* source) {
-				return wasm::Instruction<Writer>{ std::move(Writer::Inst::Table(wasm::TabOpType::copy, (dest == 0 ? 0 : &dest->self), (source == 0 ? 0 : &source->self))) };
-			}
+	public:
+		wasm::Global global;
+		Type type = Type::set;
+
+	public:
+		constexpr InstGlobal(Type type, const wasm::Global& global) : global{ global }, type{ type } {}
+	};
+
+	/* description of any function-interacting instructions */
+	struct InstFunction {
+	public:
+		enum class Type : uint8_t {
+			refFunction,
+			callNormal,
+			callTail
 		};
 
-		struct Ref {
-			static constexpr wasm::Instruction<Writer> IsNull() {
-				return wasm::Instruction<Writer>{ std::move(Writer::Inst::Ref(wasm::RefOpType::testNull, 0)) };
-			}
-			static constexpr wasm::Instruction<Writer> NullFunction() {
-				return wasm::Instruction<Writer>{ std::move(Writer::Inst::Ref(wasm::RefOpType::nullFunction, 0)) };
-			}
-			static constexpr wasm::Instruction<Writer> NullExtern() {
-				return wasm::Instruction<Writer>{ std::move(Writer::Inst::Ref(wasm::RefOpType::nullExtern, 0)) };
-			}
-			static constexpr wasm::Instruction<Writer> Function(const wasm::Function<Writer>& fn) {
-				return wasm::Instruction<Writer>{ std::move(Writer::Inst::Ref(wasm::RefOpType::function, &fn.self)) };
-			}
+	public:
+		wasm::Function function;
+		Type type = Type::refFunction;
+
+	public:
+		constexpr InstFunction(Type type, const wasm::Function& function) : function{ function }, type{ type } {}
+	};
+
+	/* description of any indirect-call instructions */
+	struct InstIndirect {
+	public:
+		enum class Type : uint8_t {
+			callNormal,
+			callTail
 		};
 
-		struct I32 :
-			public detail::Constant<Writer, wasm::OperandType::i32, true>,
-			public detail::Compare<Writer, wasm::OperandType::i32, true>,
-			public detail::Arithmetic<Writer, wasm::OperandType::i32, true>,
-			public detail::SmallConvert<Writer, wasm::OperandType::i32>,
-			public detail::IntConvert<Writer, wasm::OperandType::i32, true>,
-			public detail::Bitwise<Writer, wasm::OperandType::i32, true>,
-			public detail::Memory<Writer, wasm::OperandType::i32>,
-			public detail::IntMemory<Writer, wasm::OperandType::i32, true>
-		{};
+	public:
+		wasm::Table table;
+		wasm::Prototype prototype;
+		Type type = Type::callNormal;
 
-		struct U32 :
-			public detail::Constant<Writer, wasm::OperandType::i32, false>,
-			public detail::Compare<Writer, wasm::OperandType::i32, false>,
-			public detail::Arithmetic<Writer, wasm::OperandType::i32, false>,
-			public detail::SmallConvert<Writer, wasm::OperandType::i32>,
-			public detail::IntConvert<Writer, wasm::OperandType::i32, false>,
-			public detail::Bitwise<Writer, wasm::OperandType::i32, false>,
-			public detail::Memory<Writer, wasm::OperandType::i32>,
-			public detail::IntMemory<Writer, wasm::OperandType::i32, false>
-		{};
+	public:
+		constexpr InstIndirect(Type type, const wasm::Table& table, const wasm::Prototype& prototype) : table{ table }, prototype{ prototype }, type{ type } {}
+	};
 
-		struct I64 :
-			public detail::Constant<Writer, wasm::OperandType::i64, true>,
-			public detail::Compare<Writer, wasm::OperandType::i64, true>,
-			public detail::Arithmetic<Writer, wasm::OperandType::i64, true>,
-			public detail::LargeConvert<Writer, wasm::OperandType::i64>,
-			public detail::IntConvert<Writer, wasm::OperandType::i64, true>,
-			public detail::Bitwise<Writer, wasm::OperandType::i64, true>,
-			public detail::Memory<Writer, wasm::OperandType::i64>,
-			public detail::IntMemory<Writer, wasm::OperandType::i64, true>,
-			public detail::LargeMemory<Writer, wasm::OperandType::i64, true>
-		{};
-
-		struct U64 :
-			public detail::Constant<Writer, wasm::OperandType::i64, false>,
-			public detail::Compare<Writer, wasm::OperandType::i64, false>,
-			public detail::Arithmetic<Writer, wasm::OperandType::i64, false>,
-			public detail::LargeConvert<Writer, wasm::OperandType::i64>,
-			public detail::IntConvert<Writer, wasm::OperandType::i64, false>,
-			public detail::Bitwise<Writer, wasm::OperandType::i64, false>,
-			public detail::Memory<Writer, wasm::OperandType::i64>,
-			public detail::IntMemory<Writer, wasm::OperandType::i64, false>,
-			public detail::LargeMemory<Writer, wasm::OperandType::i64, false>
-		{};
-
-		struct F32 :
-			public detail::Constant<Writer, wasm::OperandType::f32, false>,
-			public detail::Compare<Writer, wasm::OperandType::f32, false>,
-			public detail::Arithmetic<Writer, wasm::OperandType::f32, false>,
-			public detail::SmallConvert<Writer, wasm::OperandType::f32>,
-			public detail::FloatConvert<Writer, wasm::OperandType::f32>,
-			public detail::Float<Writer, wasm::OperandType::f32>,
-			public detail::Memory<Writer, wasm::OperandType::f32>
-		{};
-
-		struct F64 :
-			public detail::Constant<Writer, wasm::OperandType::f64, false>,
-			public detail::Compare<Writer, wasm::OperandType::f64, false>,
-			public detail::Arithmetic<Writer, wasm::OperandType::f64, false>,
-			public detail::LargeConvert<Writer, wasm::OperandType::f64>,
-			public detail::FloatConvert<Writer, wasm::OperandType::f64>,
-			public detail::Float<Writer, wasm::OperandType::f64>,
-			public detail::Memory<Writer, wasm::OperandType::f64>
-		{};
-
-		static constexpr wasm::Instruction<Writer> Drop() {
-			return wasm::Instruction<Writer>{ std::move(Writer::Inst::NoOp(wasm::NoOpType::drop, wasm::OperandType::i32)) };
+	/* wrapper necessary to be able to create initializer-lists from non-copyable targets */
+	struct WTarget {
+		const wasm::Target& target;
+		constexpr WTarget(const wasm::Target& target) : target{ target } {}
+		constexpr operator const wasm::Target& () const {
+			return target;
 		}
-		static constexpr wasm::Instruction<Writer> Nop() {
-			return wasm::Instruction<Writer>{ std::move(Writer::Inst::NoOp(wasm::NoOpType::nop, wasm::OperandType::i32)) };
-		}
-		static constexpr wasm::Instruction<Writer> Return() {
-			return wasm::Instruction<Writer>{ std::move(Writer::Inst::NoOp(wasm::NoOpType::ret, wasm::OperandType::i32)) };
-		}
-		static constexpr wasm::Instruction<Writer> Unreachable() {
-			return wasm::Instruction<Writer>{ std::move(Writer::Inst::NoOp(wasm::NoOpType::unreachable, wasm::OperandType::i32)) };
-		}
-		static constexpr wasm::Instruction<Writer> Select() {
-			return wasm::Instruction<Writer>{ std::move(Writer::Inst::NoOp(wasm::NoOpType::select, wasm::OperandType::i32)) };
-		}
-		static constexpr wasm::Instruction<Writer> Select(wasm::Type type) {
-			if (type == wasm::Type::refExtern)
-				return wasm::Instruction<Writer>{ std::move(Writer::Inst::NoOp(wasm::NoOpType::selectRefExtern, wasm::OperandType::i32)) };
-			else if (type == wasm::Type::refFunction)
-				return wasm::Instruction<Writer>{ std::move(Writer::Inst::NoOp(wasm::NoOpType::selectRefFunction, wasm::OperandType::i32)) };
-			return wasm::Instruction<Writer>{ std::move(Writer::Inst::NoOp(wasm::NoOpType::select, wasm::OperandType::i32)) };
-		}
+	};
+
+	/* description of any branch instructions */
+	struct InstBranch {
+	public:
+		enum class Type : uint8_t {
+			direct,
+			conditional,
+			table
+		};
+
+	public:
+		std::initializer_list<wasm::WTarget> list;
+		const wasm::Target& target;
+		Type type = Type::direct;
+
+	public:
+		constexpr InstBranch(Type type, std::initializer_list<wasm::WTarget> list, const wasm::Target& target) : list(list), target{ target }, type{ type } {}
 	};
 }
