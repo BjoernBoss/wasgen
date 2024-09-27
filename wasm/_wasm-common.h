@@ -5,6 +5,8 @@
 #include <unordered_set>
 #include <limits>
 #include <string>
+#include <variant>
+#include <initializer_list>
 
 namespace wasm {
 	class _Module;

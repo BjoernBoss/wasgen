@@ -4,6 +4,7 @@
 #include "_wasm-variable.h"
 #include "_wasm-target.h"
 #include "_wasm-function.h"
+#include "_wasm-instruction.h"
 
 namespace wasm {
 	class _Sink {
@@ -30,6 +31,17 @@ namespace wasm {
 		wasm::_Variable parameter(uint32_t index);
 		wasm::_Variable local(wasm::_Type type, std::u8string_view name);
 		wasm::_Function function() const;
+
+	public:
+		void operator[](const wasm::_InstConst& inst);
+		void operator[](const wasm::_InstSimple& inst);
+		void operator[](const wasm::_InstMemory& inst);
+		void operator[](const wasm::_InstTable& inst);
+		void operator[](const wasm::_InstLocal& inst);
+		void operator[](const wasm::_InstGlobal& inst);
+		void operator[](const wasm::_InstFunction& inst);
+		void operator[](const wasm::_InstIndirect& inst);
+		void operator[](const wasm::_InstBranch& inst);
 	};
 
 	namespace detail {

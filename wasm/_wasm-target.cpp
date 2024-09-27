@@ -1,6 +1,5 @@
-#include "_wasm-target.h"
-
 #include "_wasm-sink.h"
+#include "_wasm-module.h"
 
 wasm::_Target::_Target(wasm::_Sink& sink) : SinkMember{ sink, 0 } {}
 

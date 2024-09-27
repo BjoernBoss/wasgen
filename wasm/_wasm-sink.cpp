@@ -66,3 +66,75 @@ wasm::_Variable wasm::_Sink::local(wasm::_Type type, std::u8string_view name) {
 wasm::_Function wasm::_Sink::function() const {
 	return pFunction;
 }
+
+void wasm::_Sink::operator[](const wasm::_InstConst& inst) {
+
+}
+void wasm::_Sink::operator[](const wasm::_InstSimple& inst) {
+
+}
+void wasm::_Sink::operator[](const wasm::_InstMemory& inst) {
+	/* validate the instruction-operands */
+	if (inst.memory.valid() && &inst.memory.module() != &pFunction.module())
+		util::fail(u8"Memory [", inst.memory.id(), u8"] must originate from same module as sink for sink to function [", pFunction.id(), u8"]");
+	if (inst.type == wasm::_InstMemory::Type::copy) {
+		if (inst.source.valid() && &inst.source.module() != &pFunction.module())
+			util::fail(u8"Memory [", inst.source.id(), u8"] must originate from same module as sink for sink to function [", pFunction.id(), u8"]");
+	}
+}
+void wasm::_Sink::operator[](const wasm::_InstTable& inst) {
+	/* validate the instruction-operands */
+	if (inst.table.valid() && &inst.table.module() != &pFunction.module())
+		util::fail(u8"Table [", inst.table.id(), u8"] must originate from same module as sink for sink to function [", pFunction.id(), u8"]");
+	if (inst.type == wasm::_InstTable::Type::copy) {
+		if (inst.source.valid() && &inst.source.module() != &pFunction.module())
+			util::fail(u8"Table [", inst.source.id(), u8"] must originate from same module as sink for sink to function [", pFunction.id(), u8"]");
+	}
+}
+void wasm::_Sink::operator[](const wasm::_InstLocal& inst) {
+	/* validate the instruction-operands */
+	if (!inst.variable.valid())
+		util::fail(u8"Locals must be constructed for sink to function [", pFunction.id(), u8"]");
+	if (&inst.variable.sink() != this)
+		util::fail(u8"Local [", inst.variable.name(), u8"] must originate from sink to function [", pFunction.id(), u8"]");
+}
+void wasm::_Sink::operator[](const wasm::_InstGlobal& inst) {
+	/* validate the instruction-operands */
+	if (!inst.global.valid())
+		util::fail(u8"Globals must be constructed for sink to function [", pFunction.id(), u8"]");
+	if (&inst.global.module() != &pFunction.module())
+		util::fail(u8"Global [", inst.global.id(), u8"] must originate from same module as sink for sink to function [", pFunction.id(), u8"]");
+}
+void wasm::_Sink::operator[](const wasm::_InstFunction& inst) {
+	/* validate the instruction-operands */
+	if (!inst.function.valid())
+		util::fail(u8"Functions must be constructed for sink to function [", pFunction.id(), u8"]");
+	if (&inst.function.module() != &pFunction.module())
+		util::fail(u8"Function [", inst.function.id(), u8"] must originate from same module as sink for sink to function [", pFunction.id(), u8"]");
+}
+void wasm::_Sink::operator[](const wasm::_InstIndirect& inst) {
+	/* validate the instruction-operands */
+	if (inst.table.valid() && &inst.table.module() != &pFunction.module())
+		util::fail(u8"Table [", inst.table.id(), u8"] must originate from same module as sink for sink to function [", pFunction.id(), u8"]");
+	if (inst.prototype.valid() && &inst.prototype.module() != &pFunction.module())
+		util::fail(u8"Prototype [", inst.prototype.id(), u8"] must originate from same module as sink for sink to function [", pFunction.id(), u8"]");
+}
+void wasm::_Sink::operator[](const wasm::_InstBranch& inst) {
+	/* validate the instruction-operands */
+	if (!inst.target.valid())
+		util::fail(u8"Targets must be constructed and not out of scope for sink to function [", pFunction.id(), u8"]");
+	if (&inst.target.sink() != this)
+		util::fail(u8"Target [", inst.target.label(), u8"] must originate from sink to function [", pFunction.id(), u8"]");
+
+	if (inst.type == wasm::_InstBranch::Type::table) {
+		for (size_t i = 0; i < inst.list.size(); ++i) {
+			const wasm::_Target& target = inst.list.begin()[i];
+
+			if (!target.valid())
+				util::fail(u8"Targets must be constructed and not out of scope for sink to function [", pFunction.id(), u8"]");
+			if (&target.sink() != this)
+				util::fail(u8"Target [", target.label(), u8"] must originate from sink to function [", pFunction.id(), u8"]");
+
+		}
+	}
+}

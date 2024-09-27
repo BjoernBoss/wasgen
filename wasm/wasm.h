@@ -6,3 +6,4 @@
 
 #include "_wasm-module.h"
 #include "_wasm-sink.h"
+#include "_wasm-instlist.h"
