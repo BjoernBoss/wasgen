@@ -2,7 +2,7 @@
 
 #include "../util/logging.h"
 
-wasm::_Prototype wasm::_Module::prototype(std::u8string_view id, std::initializer_list<wasm::_Param> params, std::initializer_list<wasm::_Type> result) {
+wasm::_Prototype wasm::_Module::prototype(std::initializer_list<wasm::_Param> params, std::initializer_list<wasm::_Type> result, std::u8string_view id) {
 	std::u8string _id{ id };
 
 	/* validate the id and the parameter */
@@ -28,7 +28,7 @@ wasm::_Prototype wasm::_Module::prototype(std::u8string_view id, std::initialize
 	pPrototype.list.push_back(std::move(state));
 	return wasm::_Prototype{ *this, uint32_t(pPrototype.list.size() - 1) };
 }
-wasm::_Memory wasm::_Module::memory(std::u8string_view id, const wasm::_Limit& limit, const wasm::_Import& imported, const wasm::_Export& exported) {
+wasm::_Memory wasm::_Module::memory(const wasm::_Limit& limit, std::u8string_view id, const wasm::_Import& imported, const wasm::_Export& exported) {
 	std::u8string _id{ id };
 
 	/* validate the id */
@@ -44,7 +44,7 @@ wasm::_Memory wasm::_Module::memory(std::u8string_view id, const wasm::_Limit& l
 	pMemory.list.push_back(std::move(state));
 	return wasm::_Memory{ *this, uint32_t(pMemory.list.size() - 1) };
 }
-wasm::_Table wasm::_Module::table(std::u8string_view id, bool functions, const wasm::_Limit& limit, const wasm::_Import& imported, const wasm::_Export& exported) {
+wasm::_Table wasm::_Module::table(bool functions, const wasm::_Limit& limit, std::u8string_view id, const wasm::_Import& imported, const wasm::_Export& exported) {
 	std::u8string _id{ id };
 
 	/* validate the id */
@@ -76,7 +76,7 @@ wasm::_Global wasm::_Module::global(wasm::_Type type, bool mutating, std::u8stri
 	pGlobal.list.push_back(std::move(state));
 	return wasm::_Global{ *this, uint32_t(pGlobal.list.size() - 1) };
 }
-wasm::_Function wasm::_Module::function(std::u8string_view id, const wasm::_Prototype& prototype, const wasm::_Import& imported, const wasm::_Export& exported) {
+wasm::_Function wasm::_Module::function(const wasm::_Prototype& prototype, std::u8string_view id, const wasm::_Import& imported, const wasm::_Export& exported) {
 	std::u8string _id{ id };
 
 	/* validate the id and the prototype */

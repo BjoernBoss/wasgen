@@ -5,3 +5,4 @@
 
 
 #include "_wasm-module.h"
+#include "_wasm-sink.h"

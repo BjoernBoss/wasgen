@@ -8,6 +8,7 @@
 
 namespace wasm {
 	class _Module;
+	class _Sink;
 
 	/* native types supported by wasm */
 	enum class _Type : uint8_t {
@@ -44,12 +45,6 @@ namespace wasm {
 	};
 
 	namespace detail {
-		struct PrototypeState;
-		struct MemoryState;
-		struct TableState;
-		struct GlobalState;
-		struct FunctionState;
-
 		template <class Type>
 		class ModuleMember {
 		private:
@@ -61,19 +56,7 @@ namespace wasm {
 			constexpr ModuleMember(wasm::_Module& module, uint32_t index) : pModule{ &module }, pIndex{ index } {}
 
 		protected:
-			constexpr const Type* fGet() const {
-				if constexpr (std::is_same_v<Type, detail::PrototypeState>)
-					return &pModule->pPrototype.list[pIndex];
-				if constexpr (std::is_same_v<Type, detail::MemoryState>)
-					return &pModule->pMemory.list[pIndex];
-				if constexpr (std::is_same_v<Type, detail::TableState>)
-					return &pModule->pTable.list[pIndex];
-				if constexpr (std::is_same_v<Type, detail::GlobalState>)
-					return &pModule->pGlobal.list[pIndex];
-				if constexpr (std::is_same_v<Type, detail::FunctionState>)
-					return &pModule->pFunction.list[pIndex];
-				return nullptr;
-			}
+			constexpr const Type* fGet() const;
 
 		public:
 			constexpr bool valid() const {
@@ -90,6 +73,28 @@ namespace wasm {
 			}
 			constexpr uint32_t index() const {
 				return pIndex;
+			}
+		};
+
+		template <class Type>
+		class SinkMember {
+		protected:
+			wasm::_Sink* pSink = 0;
+			uint32_t pIndex = std::numeric_limits<uint32_t>::max();
+
+		protected:
+			constexpr SinkMember() = default;
+			constexpr SinkMember(wasm::_Sink& sink, uint32_t index) : pSink{ &sink }, pIndex{ index } {}
+
+		protected:
+			constexpr const Type* fGet() const;
+
+		public:
+			constexpr const wasm::_Sink& sink() const {
+				return *pSink;
+			}
+			constexpr wasm::_Sink& sink() {
+				return *pSink;
 			}
 		};
 	}
