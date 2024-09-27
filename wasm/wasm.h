@@ -5,4 +5,3 @@
 
 
 #include "_wasm-module.h"
-#include "_wasm-objects.h"
