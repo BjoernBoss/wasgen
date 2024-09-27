@@ -26,7 +26,11 @@ wasm::_Prototype wasm::_Module::prototype(std::initializer_list<wasm::_Param> pa
 	if (!_id.empty())
 		state.id = *pPrototype.ids.insert(_id).first;
 	pPrototype.list.push_back(std::move(state));
-	return wasm::_Prototype{ *this, uint32_t(pPrototype.list.size() - 1) };
+	wasm::_Prototype prototype{ *this, uint32_t(pPrototype.list.size() - 1) };
+
+	/* notify the interface about the added prototype */
+	pInterface->addPrototype(prototype);
+	return prototype;
 }
 wasm::_Memory wasm::_Module::memory(const wasm::_Limit& limit, std::u8string_view id, const wasm::_Import& imported, const wasm::_Export& exported) {
 	std::u8string _id{ id };
@@ -42,7 +46,11 @@ wasm::_Memory wasm::_Module::memory(const wasm::_Limit& limit, std::u8string_vie
 	if (!_id.empty())
 		state.id = *pMemory.ids.insert(_id).first;
 	pMemory.list.push_back(std::move(state));
-	return wasm::_Memory{ *this, uint32_t(pMemory.list.size() - 1) };
+	wasm::_Memory memory{ *this, uint32_t(pMemory.list.size() - 1) };
+
+	/* notify the interface about the added memory */
+	pInterface->addMemory(memory);
+	return memory;
 }
 wasm::_Table wasm::_Module::table(bool functions, const wasm::_Limit& limit, std::u8string_view id, const wasm::_Import& imported, const wasm::_Export& exported) {
 	std::u8string _id{ id };
@@ -58,7 +66,11 @@ wasm::_Table wasm::_Module::table(bool functions, const wasm::_Limit& limit, std
 	if (!_id.empty())
 		state.id = *pTable.ids.insert(_id).first;
 	pTable.list.push_back(std::move(state));
-	return wasm::_Table{ *this, uint32_t(pTable.list.size() - 1) };
+	wasm::_Table table{ *this, uint32_t(pTable.list.size() - 1) };
+
+	/* notify the interface about the added table */
+	pInterface->addTable(table);
+	return table;
 }
 wasm::_Global wasm::_Module::global(wasm::_Type type, bool mutating, std::u8string_view id, const wasm::_Import& imported, const wasm::_Export& exported) {
 	std::u8string _id{ id };
@@ -74,7 +86,11 @@ wasm::_Global wasm::_Module::global(wasm::_Type type, bool mutating, std::u8stri
 	if (!_id.empty())
 		state.id = *pGlobal.ids.insert(_id).first;
 	pGlobal.list.push_back(std::move(state));
-	return wasm::_Global{ *this, uint32_t(pGlobal.list.size() - 1) };
+	wasm::_Global global{ *this, uint32_t(pGlobal.list.size() - 1) };
+
+	/* notify the interface about the added global */
+	pInterface->addGlobal(global);
+	return global;
 }
 wasm::_Function wasm::_Module::function(const wasm::_Prototype& prototype, std::u8string_view id, const wasm::_Import& imported, const wasm::_Export& exported) {
 	std::u8string _id{ id };
@@ -92,5 +108,9 @@ wasm::_Function wasm::_Module::function(const wasm::_Prototype& prototype, std::
 	if (!_id.empty())
 		state.id = *pFunction.ids.insert(_id).first;
 	pFunction.list.push_back(std::move(state));
-	return wasm::_Function{ *this, uint32_t(pFunction.list.size() - 1) };
+	wasm::_Function function{ *this, uint32_t(pFunction.list.size() - 1) };
+
+	/* notify the interface about the added function */
+	pInterface->addFunction(function);
+	return function;
 }

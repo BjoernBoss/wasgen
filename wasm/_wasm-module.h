@@ -8,8 +8,21 @@
 #include "_wasm-function.h"
 
 namespace wasm {
+	class _SinkInterface;
+
+	class _ModuleInterface {
+	public:
+		virtual wasm::_SinkInterface* sink(const wasm::_Function& function) = 0;
+		virtual void addPrototype(const wasm::_Prototype& prototype) = 0;
+		virtual void addMemory(const wasm::_Memory& memory) = 0;
+		virtual void addTable(const wasm::_Table& table) = 0;
+		virtual void addGlobal(const wasm::_Global& global) = 0;
+		virtual void addFunction(const wasm::_Function& function) = 0;
+	};
+
 	class _Module {
 		template <class> friend class detail::ModuleMember;
+		friend class wasm::_Sink;
 	private:
 		template <class Type>
 		struct Types {
@@ -23,6 +36,12 @@ namespace wasm {
 		Types<detail::TableState> pTable;
 		Types<detail::GlobalState> pGlobal;
 		Types<detail::FunctionState> pFunction;
+		wasm::_ModuleInterface* pInterface = 0;
+
+	public:
+		_Module() = default;
+		_Module(wasm::_Module&&) = delete;
+		_Module(const wasm::_Module&) = delete;
 
 	public:
 		wasm::_Prototype prototype(std::initializer_list<wasm::_Param> params, std::initializer_list<wasm::_Type> result, std::u8string_view id = {});

@@ -10,6 +10,7 @@ namespace wasm {
 			wasm::_Export exported;
 			std::u8string_view id;
 			wasm::_Prototype prototype;
+			bool bound = false;
 		};
 	}
 

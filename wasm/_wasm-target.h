@@ -4,23 +4,24 @@
 #include "_wasm-prototype.h"
 
 namespace wasm {
-	namespace detail {
-		enum class TargetType : uint8_t {
-			loop,
-			block,
-			then,
-			otherwise
-		};
+	enum class _ScopeType : uint8_t {
+		conditional,
+		loop,
+		block
+	};
 
+	namespace detail {
 		struct TargetState {
 			wasm::_Prototype prototype;
 			std::u8string label;
 			size_t stamp = 0;
-			detail::TargetType type = detail::TargetType::loop;
+			wasm::_ScopeType type = wasm::_ScopeType::conditional;
+			bool otherwise = false;
 		};
 	}
 
 	class _Target : public detail::SinkMember<detail::TargetState> {
+		friend class wasm::_Sink;
 	private:
 		size_t pStamp = 0;
 
@@ -33,7 +34,7 @@ namespace wasm {
 		_Target(wasm::_Sink& sink);
 
 	protected:
-		void fSetup(const wasm::_Prototype& prototype, std::u8string_view label, detail::TargetType type);
+		void fSetup(const wasm::_Prototype& prototype, std::u8string_view label, wasm::_ScopeType type);
 		void fToggle();
 		void fClose();
 
@@ -42,6 +43,7 @@ namespace wasm {
 		uint32_t index() const;
 		std::u8string_view label() const;
 		wasm::_Prototype prototype() const;
+		wasm::_ScopeType type() const;
 	};
 
 	struct _IfThen : public wasm::_Target {
