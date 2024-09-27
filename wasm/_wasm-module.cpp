@@ -114,3 +114,19 @@ wasm::_Function wasm::_Module::function(const wasm::_Prototype& prototype, std::
 	pInterface->addFunction(function);
 	return function;
 }
+
+wasm::_List<wasm::_Prototype, wasm::_Module::_PrototypeList> wasm::_Module::prototypes() const {
+	return { _Module::_PrototypeList{ const_cast<wasm::_Module*>(this) } };
+}
+wasm::_List<wasm::_Memory, wasm::_Module::_MemoryList> wasm::_Module::memories() const {
+	return { _Module::_MemoryList{ const_cast<wasm::_Module*>(this) } };
+}
+wasm::_List<wasm::_Table, wasm::_Module::_TableList> wasm::_Module::tables() const {
+	return { _Module::_TableList{ const_cast<wasm::_Module*>(this) } };
+}
+wasm::_List<wasm::_Global, wasm::_Module::_GlobalList> wasm::_Module::globals() const {
+	return { _Module::_GlobalList{ const_cast<wasm::_Module*>(this) } };
+}
+wasm::_List<wasm::_Function, wasm::_Module::_FunctionList> wasm::_Module::functions() const {
+	return { _Module::_FunctionList{ const_cast<wasm::_Module*>(this) } };
+}

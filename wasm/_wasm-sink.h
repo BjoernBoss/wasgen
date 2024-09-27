@@ -29,6 +29,18 @@ namespace wasm {
 		template <class> friend class detail::SinkMember;
 		friend class wasm::_Target;
 	private:
+		struct _LocalList {
+			wasm::_Sink* _this = 0;
+			constexpr _LocalList(wasm::_Sink* module) : _this{ module } {}
+			constexpr size_t size() const {
+				return _this->pVariables.list.size() - _this->pParameter;
+			}
+			constexpr wasm::_Variable get(uint32_t index) const {
+				return wasm::_Variable{ *_this, index + _this->pParameter };
+			}
+		};
+
+	private:
 		struct {
 			std::vector<detail::VariableState> list;
 			std::unordered_set<std::u8string> names;
@@ -61,6 +73,9 @@ namespace wasm {
 		wasm::_Variable local(wasm::_Type type, std::u8string_view name);
 		wasm::_Function function() const;
 		void close();
+
+	public:
+		wasm::_List<wasm::_Variable, _Sink::_LocalList> locals() const;
 
 	public:
 		void operator[](const wasm::_InstConst& inst);

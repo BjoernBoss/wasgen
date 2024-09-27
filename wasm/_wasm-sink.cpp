@@ -132,6 +132,10 @@ void wasm::_Sink::close() {
 	fClose();
 }
 
+wasm::_List<wasm::_Variable, wasm::_Sink::_LocalList> wasm::_Sink::locals() const {
+	return { _LocalList{ const_cast<wasm::_Sink*>(this) } };
+}
+
 void wasm::_Sink::operator[](const wasm::_InstConst& inst) {
 	fCheckClosed();
 	pInterface->addInst(inst);

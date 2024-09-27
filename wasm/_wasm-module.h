@@ -29,6 +29,56 @@ namespace wasm {
 			std::vector<Type> list;
 			std::unordered_set<std::u8string> ids;
 		};
+		struct _PrototypeList {
+			wasm::_Module* _this = 0;
+			constexpr _PrototypeList(wasm::_Module* module) : _this{ module } {}
+			constexpr size_t size() const {
+				return _this->pPrototype.list.size();
+			}
+			constexpr wasm::_Prototype get(uint32_t index) const {
+				return wasm::_Prototype{ *_this, index };
+			}
+		};
+		struct _MemoryList {
+			wasm::_Module* _this = 0;
+			constexpr _MemoryList(wasm::_Module* module) : _this{ module } {}
+			constexpr size_t size() const {
+				return _this->pMemory.list.size();
+			}
+			constexpr wasm::_Memory get(uint32_t index) const {
+				return wasm::_Memory{ *_this, index };
+			}
+		};
+		struct _TableList {
+			wasm::_Module* _this = 0;
+			constexpr _TableList(wasm::_Module* module) : _this{ module } {}
+			constexpr size_t size() const {
+				return _this->pTable.list.size();
+			}
+			constexpr wasm::_Table get(uint32_t index) const {
+				return wasm::_Table{ *_this, index };
+			}
+		};
+		struct _GlobalList {
+			wasm::_Module* _this = 0;
+			constexpr _GlobalList(wasm::_Module* module) : _this{ module } {}
+			constexpr size_t size() const {
+				return _this->pGlobal.list.size();
+			}
+			constexpr wasm::_Global get(uint32_t index) const {
+				return wasm::_Global{ *_this, index };
+			}
+		};
+		struct _FunctionList {
+			wasm::_Module* _this = 0;
+			constexpr _FunctionList(wasm::_Module* module) : _this{ module } {}
+			constexpr size_t size() const {
+				return _this->pFunction.list.size();
+			}
+			constexpr wasm::_Function get(uint32_t index) const {
+				return wasm::_Function{ *_this, index };
+			}
+		};
 
 	private:
 		Types<detail::PrototypeState> pPrototype;
@@ -49,6 +99,13 @@ namespace wasm {
 		wasm::_Table table(bool functions, const wasm::_Limit& limit = {}, std::u8string_view id = {}, const wasm::_Import& imported = {}, const wasm::_Export& exported = {});
 		wasm::_Global global(wasm::_Type type, bool mutating, std::u8string_view id = {}, const wasm::_Import& imported = {}, const wasm::_Export& exported = {});
 		wasm::_Function function(const wasm::_Prototype& prototype = {}, std::u8string_view id = {}, const wasm::_Import& imported = {}, const wasm::_Export& exported = {});
+
+	public:
+		wasm::_List<wasm::_Prototype, _Module::_PrototypeList> prototypes() const;
+		wasm::_List<wasm::_Memory, _Module::_MemoryList> memories() const;
+		wasm::_List<wasm::_Table, _Module::_TableList> tables() const;
+		wasm::_List<wasm::_Global, _Module::_GlobalList> globals() const;
+		wasm::_List<wasm::_Function, _Module::_FunctionList> functions() const;
 	};
 
 	namespace detail {

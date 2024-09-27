@@ -100,4 +100,65 @@ namespace wasm {
 			}
 		};
 	}
+
+	template <class Type, class ImplType>
+	struct _List {
+	public:
+		class Iterator {
+			friend struct _List<Type, ImplType>;
+		private:
+			const ImplType* pImpl = 0;
+			uint32_t pIndex = 0;
+
+		private:
+			constexpr Iterator(const ImplType* impl, uint32_t index) : pImpl{ impl }, pIndex{ index } {}
+
+		public:
+			constexpr Iterator() = default;
+			constexpr bool operator==(const Iterator& it) const {
+				return (pImpl == it.pImpl && pIndex == it.pIndex);
+			}
+			constexpr bool operator!=(const Iterator& it) const {
+				return !(*this == it);
+			}
+			constexpr Type operator*() const {
+				return pImpl->get(pIndex);
+			}
+			constexpr Iterator& operator++() {
+				++pIndex;
+				return *this;
+			}
+			constexpr Iterator& operator--() {
+				--pIndex;
+				return *this;
+			}
+			constexpr Iterator operator++(int) {
+				return Iterator{ pImpl, pIndex + 1 };
+			}
+			constexpr Iterator operator--(int) {
+				return Iterator{ pImpl, pIndex - 1 };
+			}
+		};
+
+	private:
+		ImplType pImpl{};
+
+	public:
+		constexpr _List(const ImplType& impl) : pImpl{ impl } {}
+		constexpr Type operator[](size_t index) const {
+			return pImpl.get(uint32_t(index));
+		}
+		constexpr size_t size() const {
+			return pImpl.size();
+		}
+		constexpr bool empty() const {
+			return (pImpl.size() == 0);
+		}
+		constexpr Iterator begin() const {
+			return Iterator{ &pImpl, 0 };
+		}
+		constexpr Iterator end() const {
+			return Iterator{ &pImpl, uint32_t(pImpl.size()) };
+		}
+	};
 }
