@@ -48,7 +48,7 @@ namespace wasm {
 	private:
 		struct {
 			std::vector<detail::VariableState> list;
-			std::unordered_set<std::u8string> names;
+			std::unordered_set<std::u8string> ids;
 		} pVariables;
 		std::vector<detail::TargetState> pTargets;
 		wasm::Function pFunction;
@@ -65,17 +65,18 @@ namespace wasm {
 		~Sink();
 
 	private:
+		std::u8string fError() const;
 		void fClose();
 		void fCheckClosed() const;
 		void fPopUntil(uint32_t size);
 		bool fCheckTarget(uint32_t index, size_t stamp, bool soft) const;
-		void fSetupTarget(const wasm::Prototype& prototype, std::u8string_view label, wasm::ScopeType type, wasm::Target& target);
+		void fSetupTarget(const wasm::Prototype& prototype, std::u8string_view id, wasm::ScopeType type, wasm::Target& target);
 		void fToggleTarget(uint32_t index, size_t stamp);
 		void fCloseTarget(uint32_t index, size_t stamp);
 
 	public:
 		wasm::Variable parameter(uint32_t index);
-		wasm::Variable local(wasm::Type type, std::u8string_view name);
+		wasm::Variable local(wasm::Type type, std::u8string_view id = {});
 		wasm::Function function() const;
 		void close();
 

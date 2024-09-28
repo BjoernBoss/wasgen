@@ -61,8 +61,11 @@ namespace wasm::inst {
 		static constexpr wasm::InstMemory Fill(const wasm::Memory& memory = {}) {
 			return wasm::InstMemory{ wasm::InstMemory::Type::fill, memory, {}, 0, wasm::OpType::i32 };
 		}
-		static constexpr wasm::InstMemory Copy(const wasm::Memory& dest = {}, const wasm::Memory& source = {}) {
-			return wasm::InstMemory{ wasm::InstMemory::Type::copy, dest, source, 0, wasm::OpType::i32 };
+		static constexpr wasm::InstMemory Copy(const wasm::Memory& memory = {}) {
+			return wasm::InstMemory{ wasm::InstMemory::Type::copy, memory, {}, 0, wasm::OpType::i32 };
+		}
+		static constexpr wasm::InstMemory Copy(const wasm::Memory& dest, const wasm::Memory& source) {
+			return wasm::InstMemory{ wasm::InstMemory::Type::copy, source, dest, 0, wasm::OpType::i32 };
 		}
 	};
 
@@ -82,8 +85,11 @@ namespace wasm::inst {
 		static constexpr wasm::InstTable Fill(const wasm::Table& table = {}) {
 			return wasm::InstTable{ wasm::InstTable::Type::fill, table, {} };
 		}
-		static constexpr wasm::InstTable Copy(const wasm::Table& dest = {}, const wasm::Table& source = {}) {
-			return wasm::InstTable{ wasm::InstTable::Type::copy, dest, source };
+		static constexpr wasm::InstTable Copy(const wasm::Table& table = {}) {
+			return wasm::InstTable{ wasm::InstTable::Type::copy, table, {} };
+		}
+		static constexpr wasm::InstTable Copy(const wasm::Table& dest, const wasm::Table& source) {
+			return wasm::InstTable{ wasm::InstTable::Type::copy, source, dest };
 		}
 	};
 

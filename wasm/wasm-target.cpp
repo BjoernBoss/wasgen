@@ -3,7 +3,7 @@
 
 wasm::Target::Target(wasm::Sink& sink) : SinkMember{ sink, 0 } {}
 
-void wasm::Target::fSetup(const wasm::Prototype& prototype, std::u8string_view label, wasm::ScopeType type) {
+void wasm::Target::fSetup(std::u8string_view label, const wasm::Prototype& prototype, wasm::ScopeType type) {
 	pSink->fSetupTarget(prototype, label, type, *this);
 }
 void wasm::Target::fToggle() {
@@ -20,9 +20,9 @@ uint32_t wasm::Target::index() const {
 	pSink->fCheckTarget(pIndex, pStamp, false);
 	return uint32_t(pSink->pTargets.size() - pIndex);
 }
-std::u8string_view wasm::Target::label() const {
+std::u8string_view wasm::Target::id() const {
 	pSink->fCheckTarget(pIndex, pStamp, false);
-	return fGet()->label;
+	return fGet()->id;
 }
 wasm::Prototype wasm::Target::prototype() const {
 	pSink->fCheckTarget(pIndex, pStamp, false);
@@ -32,10 +32,17 @@ wasm::ScopeType wasm::Target::type() const {
 	pSink->fCheckTarget(pIndex, pStamp, false);
 	return fGet()->type;
 }
+std::u8string wasm::Target::toString() const {
+	pSink->fCheckTarget(pIndex, pStamp, false);
+	std::u8string_view id = fGet()->id;
+	if (!id.empty())
+		return str::Build<std::u8string>(u8"$", id);
+	return str::Build<std::u8string>(uint32_t(pSink->pTargets.size() - pIndex));
+}
 
 
 wasm::IfThen::IfThen(wasm::Sink& sink, std::u8string_view label, const wasm::Prototype& prototype) : Target{ sink } {
-	fSetup(prototype, label, wasm::ScopeType::conditional);
+	fSetup(label, prototype, wasm::ScopeType::conditional);
 }
 wasm::IfThen::~IfThen() {
 	fClose();
@@ -49,7 +56,7 @@ void wasm::IfThen::otherwise() {
 
 
 wasm::Loop::Loop(wasm::Sink& sink, std::u8string_view label, const wasm::Prototype& prototype) : Target{ sink } {
-	fSetup(prototype, label, wasm::ScopeType::loop);
+	fSetup(label, prototype, wasm::ScopeType::loop);
 }
 wasm::Loop::~Loop() {
 	fClose();
@@ -60,7 +67,7 @@ void wasm::Loop::close() {
 
 
 wasm::Block::Block(wasm::Sink& sink, std::u8string_view label, const wasm::Prototype& prototype) : Target{ sink } {
-	fSetup(prototype, label, wasm::ScopeType::block);
+	fSetup(label, prototype, wasm::ScopeType::block);
 }
 wasm::Block::~Block() {
 	fClose();

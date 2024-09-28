@@ -1,5 +1,6 @@
 #pragma once
 
+#include <ustring/ustring.h>
 #include <cinttypes>
 #include <vector>
 #include <unordered_set>
@@ -90,6 +91,12 @@ namespace wasm {
 			}
 			constexpr uint32_t index() const {
 				return pIndex;
+			}
+			constexpr std::u8string toString() const {
+				std::u8string_view id = fGet()->id;
+				if (!id.empty())
+					return str::Build<std::u8string>(u8"$", id);
+				return str::Build<std::u8string>(pIndex);
 			}
 		};
 

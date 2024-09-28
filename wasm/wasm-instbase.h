@@ -211,16 +211,10 @@ namespace wasm::detail {
 
 	template <wasm::OpType Type>
 	struct Memory {
-		static constexpr wasm::InstMemory Load(uint32_t offset = 0) {
-			return wasm::InstMemory{ wasm::InstMemory::Type::load, {}, {}, offset, Type };
-		}
-		static constexpr wasm::InstMemory Store(uint32_t offset = 0) {
-			return wasm::InstMemory{ wasm::InstMemory::Type::store, {}, {}, offset, Type };
-		}
-		static constexpr wasm::InstMemory Load(const wasm::Memory& memory, uint32_t offset = 0) {
+		static constexpr wasm::InstMemory Load(const wasm::Memory& memory = {}, uint32_t offset = 0) {
 			return wasm::InstMemory{ wasm::InstMemory::Type::load, memory, {}, offset, Type };
 		}
-		static constexpr wasm::InstMemory Store(const wasm::Memory& memory, uint32_t offset = 0) {
+		static constexpr wasm::InstMemory Store(const wasm::Memory& memory = {}, uint32_t offset = 0) {
 			return wasm::InstMemory{ wasm::InstMemory::Type::store, memory, {}, offset, Type };
 		}
 	};

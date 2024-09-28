@@ -13,7 +13,7 @@ namespace wasm {
 	namespace detail {
 		struct TargetState {
 			wasm::Prototype prototype;
-			std::u8string label;
+			std::u8string id;
 			size_t stamp = 0;
 			wasm::ScopeType type = wasm::ScopeType::conditional;
 			bool otherwise = false;
@@ -35,16 +35,17 @@ namespace wasm {
 		Target(wasm::Sink& sink);
 
 	protected:
-		void fSetup(const wasm::Prototype& prototype, std::u8string_view label, wasm::ScopeType type);
+		void fSetup(std::u8string_view label, const wasm::Prototype& prototype, wasm::ScopeType type);
 		void fToggle();
 		void fClose();
 
 	public:
 		bool valid() const;
 		uint32_t index() const;
-		std::u8string_view label() const;
+		std::u8string_view id() const;
 		wasm::Prototype prototype() const;
 		wasm::ScopeType type() const;
+		std::u8string toString() const;
 	};
 
 	/* create a conditional if/then/else block, which can be jumped to for a sink */

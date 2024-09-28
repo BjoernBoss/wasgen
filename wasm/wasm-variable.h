@@ -5,7 +5,7 @@
 namespace wasm {
 	namespace detail {
 		struct VariableState {
-			std::u8string_view name;
+			std::u8string_view id;
 			wasm::Type type = wasm::Type::i32;
 		};
 	}
@@ -26,11 +26,17 @@ namespace wasm {
 		constexpr uint32_t index() const {
 			return pIndex;
 		}
-		constexpr std::u8string_view name() const {
-			return fGet()->name;
+		constexpr std::u8string_view id() const {
+			return fGet()->id;
 		}
 		constexpr wasm::Type type() const {
 			return fGet()->type;
+		}
+		constexpr std::u8string toString() const {
+			std::u8string_view id = fGet()->id;
+			if (!id.empty())
+				return str::Build<std::u8string>(u8"$", id);
+			return str::Build<std::u8string>(pIndex);
 		}
 	};
 }

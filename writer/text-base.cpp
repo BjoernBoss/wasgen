@@ -2,6 +2,8 @@
 
 std::u8string_view writer::text::MakeType(wasm::Type type) {
 	switch (type) {
+	case wasm::Type::i32:
+		return u8" i32";
 	case wasm::Type::i64:
 		return u8" i64";
 	case wasm::Type::f32:
@@ -14,9 +16,9 @@ std::u8string_view writer::text::MakeType(wasm::Type type) {
 		return u8" funcref";
 	case wasm::Type::v128:
 		return u8" v128";
-	case wasm::Type::i32:
 	default:
-		return u8" i32";
+		util::fail(u8"Unknown wasm type [", size_t(type), u8"] encountered");
+		return u8"";
 	}
 }
 std::u8string writer::text::MakeId(std::u8string_view id) {
@@ -42,7 +44,5 @@ std::u8string writer::text::MakeLimit(const wasm::Limit& limit) {
 std::u8string writer::text::MakePrototype(const wasm::Prototype& prototype) {
 	if (!prototype.valid())
 		return {};
-	if (prototype.id().empty())
-		return str::Build<std::u8string>(u8" (type ", prototype.index(), u8')');
-	return str::Build<std::u8string>(u8" (type $", prototype.id(), u8')');
+	return str::Build<std::u8string>(u8" (type ", prototype.toString(), u8')');
 }

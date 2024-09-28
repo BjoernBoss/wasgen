@@ -128,7 +128,6 @@ namespace wasm {
 			store8,
 			store16,
 			store32,
-
 			grow,
 			size,
 			copy,
@@ -137,13 +136,13 @@ namespace wasm {
 
 	public:
 		wasm::Memory memory;
-		wasm::Memory source;
+		wasm::Memory destination;
 		uint32_t offset = 0;
 		Type type = Type::load;
 		wasm::OpType operand = OpType::i32;
 
 	public:
-		constexpr InstMemory(Type type, const wasm::Memory& memory, const wasm::Memory& source, uint32_t offset, wasm::OpType operand) : memory{ memory }, source{ source }, offset{ offset }, type{ type }, operand{ operand } {}
+		constexpr InstMemory(Type type, const wasm::Memory& memory, const wasm::Memory& destination, uint32_t offset, wasm::OpType operand) : memory{ memory }, destination{ destination }, offset{ offset }, type{ type }, operand{ operand } {}
 	};
 
 	/* description of any table-interacting instructions */
@@ -160,11 +159,11 @@ namespace wasm {
 
 	public:
 		wasm::Table table;
-		wasm::Table source;
+		wasm::Table destination;
 		Type type = Type::get;
 
 	public:
-		constexpr InstTable(Type type, const wasm::Table& table, const wasm::Table& source) : table{ table }, source{ source }, type{ type } {}
+		constexpr InstTable(Type type, const wasm::Table& table, const wasm::Table& destination) : table{ table }, destination{ destination }, type{ type } {}
 	};
 
 	/* description of any local variable-interacting instructions */
@@ -239,6 +238,9 @@ namespace wasm {
 		const wasm::Target& target;
 		constexpr WTarget(const wasm::Target& target) : target{ target } {}
 		constexpr operator const wasm::Target& () const {
+			return target;
+		}
+		const wasm::Target& get() const {
 			return target;
 		}
 	};

@@ -19,6 +19,9 @@ namespace writer::text {
 		void fPush(const std::u8string_view& name);
 		void fPop();
 
+	private:
+		std::u8string_view fOperand(wasm::OpType operand) const;
+
 	public:
 		void pushScope(const wasm::Target& target) override;
 		void popScope(wasm::ScopeType type) override;
