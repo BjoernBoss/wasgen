@@ -9,18 +9,18 @@ namespace wasm::detail {
 		static constexpr wasm::InstConst Const(ValType val) {
 			if constexpr (Type == wasm::OpType::i32) {
 				if constexpr (Signed)
-					return wasm::InstConst{ uint32_t(int32_t(val)), wasm::OpType::i32 };
-				return wasm::InstConst{ uint32_t(val), wasm::OpType::i32 };
+					return wasm::InstConst{ uint32_t(int32_t(val)) };
+				return wasm::InstConst{ uint32_t(val) };
 			}
 			else if constexpr (Type == wasm::OpType::i64) {
 				if constexpr (Signed)
-					return wasm::InstConst{ uint64_t(int64_t(val)), wasm::OpType::i64 };
-				return wasm::InstConst{ uint64_t(val), wasm::OpType::i64 };
+					return wasm::InstConst{ uint64_t(int64_t(val)) };
+				return wasm::InstConst{ uint64_t(val) };
 			}
 			else if constexpr (Type == wasm::OpType::f32)
-				return wasm::InstConst{ float(val), wasm::OpType::f32 };
+				return wasm::InstConst{ float(val) };
 			else
-				return wasm::InstConst{ double(val), wasm::OpType::f64 };
+				return wasm::InstConst{ double(val) };
 		}
 	};
 

@@ -21,13 +21,12 @@ namespace wasm {
 	struct InstConst {
 	public:
 		std::variant<uint32_t, uint64_t, float, double> value;
-		wasm::OpType operand = wasm::OpType::i32;
 
 	public:
-		constexpr InstConst(uint32_t value, wasm::OpType operand) : value{ value }, operand{ operand } {}
-		constexpr InstConst(uint64_t value, wasm::OpType operand) : value{ value }, operand{ operand } {}
-		constexpr InstConst(float value, wasm::OpType operand) : value{ value }, operand{ operand } {}
-		constexpr InstConst(double value, wasm::OpType operand) : value{ value }, operand{ operand } {}
+		constexpr InstConst(uint32_t value) : value{ value } {}
+		constexpr InstConst(uint64_t value) : value{ value } {}
+		constexpr InstConst(float value) : value{ value } {}
+		constexpr InstConst(double value) : value{ value } {}
 	};
 
 	/* description of any simple instructions, which do not take any direct operands */
