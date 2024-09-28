@@ -144,11 +144,15 @@ wasm::List<wasm::Variable, wasm::Sink::LocalList> wasm::Sink::locals() const {
 	return { Sink::LocalList{ const_cast<wasm::Sink*>(this) } };
 }
 
+void wasm::Sink::operator[](const wasm::InstSimple& inst) {
+	fCheckClosed();
+	pInterface->addInst(inst);
+}
 void wasm::Sink::operator[](const wasm::InstConst& inst) {
 	fCheckClosed();
 	pInterface->addInst(inst);
 }
-void wasm::Sink::operator[](const wasm::InstSimple& inst) {
+void wasm::Sink::operator[](const wasm::InstOperand& inst) {
 	fCheckClosed();
 	pInterface->addInst(inst);
 }

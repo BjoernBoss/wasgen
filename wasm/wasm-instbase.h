@@ -26,186 +26,186 @@ namespace wasm::detail {
 
 	template < wasm::OpType Type, bool Signed>
 	struct Compare {
-		static constexpr wasm::InstSimple Equal() {
-			return wasm::InstSimple{ wasm::InstSimple::Type::equal, Type };
+		static constexpr wasm::InstOperand Equal() {
+			return wasm::InstOperand{ wasm::InstOperand::Type::equal, Type };
 		}
-		static constexpr wasm::InstSimple EqualZero() {
-			return wasm::InstSimple{ wasm::InstSimple::Type::equalZero, Type };
+		static constexpr wasm::InstOperand EqualZero() {
+			return wasm::InstOperand{ wasm::InstOperand::Type::equalZero, Type };
 		}
-		static constexpr wasm::InstSimple NotEqual() {
-			return wasm::InstSimple{ wasm::InstSimple::Type::notEqual, Type };
+		static constexpr wasm::InstOperand NotEqual() {
+			return wasm::InstOperand{ wasm::InstOperand::Type::notEqual, Type };
 		}
-		static constexpr wasm::InstSimple Greater() {
+		static constexpr wasm::InstOperand Greater() {
 			if constexpr (Signed)
-				return wasm::InstSimple{ wasm::InstSimple::Type::greaterSigned, Type };
+				return wasm::InstOperand{ wasm::InstOperand::Type::greaterSigned, Type };
 			else
-				return wasm::InstSimple{ wasm::InstSimple::Type::greaterUnsigned, Type };
+				return wasm::InstOperand{ wasm::InstOperand::Type::greaterUnsigned, Type };
 		}
-		static constexpr wasm::InstSimple Less() {
+		static constexpr wasm::InstOperand Less() {
 			if constexpr (Signed)
-				return wasm::InstSimple{ wasm::InstSimple::Type::lessSigned, Type };
+				return wasm::InstOperand{ wasm::InstOperand::Type::lessSigned, Type };
 			else
-				return wasm::InstSimple{ wasm::InstSimple::Type::lessUnsigned, Type };
+				return wasm::InstOperand{ wasm::InstOperand::Type::lessUnsigned, Type };
 		}
-		static constexpr wasm::InstSimple GreaterEqual() {
+		static constexpr wasm::InstOperand GreaterEqual() {
 			if constexpr (Signed)
-				return wasm::InstSimple{ wasm::InstSimple::Type::greaterEqualSigned, Type };
+				return wasm::InstOperand{ wasm::InstOperand::Type::greaterEqualSigned, Type };
 			else
-				return wasm::InstSimple{ wasm::InstSimple::Type::greaterEqualUnsigned, Type };
+				return wasm::InstOperand{ wasm::InstOperand::Type::greaterEqualUnsigned, Type };
 		}
-		static constexpr wasm::InstSimple LessEqual() {
+		static constexpr wasm::InstOperand LessEqual() {
 			if constexpr (Signed)
-				return wasm::InstSimple{ wasm::InstSimple::Type::lessEqualSigned, Type };
+				return wasm::InstOperand{ wasm::InstOperand::Type::lessEqualSigned, Type };
 			else
-				return wasm::InstSimple{ wasm::InstSimple::Type::lessEqualUnsigned, Type };
+				return wasm::InstOperand{ wasm::InstOperand::Type::lessEqualUnsigned, Type };
 		}
 	};
 
 	template <wasm::OpType Type, bool Signed>
 	struct Arithmetic {
-		static constexpr wasm::InstSimple Add() {
-			return wasm::InstSimple{ wasm::InstSimple::Type::add, Type };
+		static constexpr wasm::InstOperand Add() {
+			return wasm::InstOperand{ wasm::InstOperand::Type::add, Type };
 		}
-		static constexpr wasm::InstSimple Sub() {
-			return wasm::InstSimple{ wasm::InstSimple::Type::sub, Type };
+		static constexpr wasm::InstOperand Sub() {
+			return wasm::InstOperand{ wasm::InstOperand::Type::sub, Type };
 		}
-		static constexpr wasm::InstSimple Mul() {
-			return wasm::InstSimple{ wasm::InstSimple::Type::mul, Type };
+		static constexpr wasm::InstOperand Mul() {
+			return wasm::InstOperand{ wasm::InstOperand::Type::mul, Type };
 		}
-		static constexpr wasm::InstSimple Div() {
+		static constexpr wasm::InstOperand Div() {
 			if constexpr (Signed)
-				return wasm::InstSimple{ wasm::InstSimple::Type::divSigned, Type };
+				return wasm::InstOperand{ wasm::InstOperand::Type::divSigned, Type };
 			else
-				return wasm::InstSimple{ wasm::InstSimple::Type::divUnsigned, Type };
+				return wasm::InstOperand{ wasm::InstOperand::Type::divUnsigned, Type };
 		}
-		static constexpr wasm::InstSimple Mod() {
+		static constexpr wasm::InstOperand Mod() {
 			if constexpr (Signed)
-				return wasm::InstSimple{ wasm::InstSimple::Type::modSigned, Type };
+				return wasm::InstOperand{ wasm::InstOperand::Type::modSigned, Type };
 			else
-				return wasm::InstSimple{ wasm::InstSimple::Type::modUnsigned, Type };
+				return wasm::InstOperand{ wasm::InstOperand::Type::modUnsigned, Type };
 		}
 	};
 
 	template <wasm::OpType Type>
 	struct SmallConvert {
-		static constexpr wasm::InstSimple Expand() {
-			return wasm::InstSimple{ wasm::InstSimple::Type::expand, Type };
+		static constexpr wasm::InstOperand Expand() {
+			return wasm::InstOperand{ wasm::InstOperand::Type::expand, Type };
 		}
 	};
 
 	template <wasm::OpType Type>
 	struct LargeConvert {
-		static constexpr wasm::InstSimple Shrink() {
-			return wasm::InstSimple{ wasm::InstSimple::Type::shrink, Type };
+		static constexpr wasm::InstOperand Shrink() {
+			return wasm::InstOperand{ wasm::InstOperand::Type::shrink, Type };
 		}
 	};
 
 	template <wasm::OpType Type>
 	struct FloatConvert {
-		static constexpr wasm::InstSimple AsInt() {
-			return wasm::InstSimple{ wasm::InstSimple::Type::reinterpretAsInt, Type };
+		static constexpr wasm::InstOperand AsInt() {
+			return wasm::InstOperand{ wasm::InstOperand::Type::reinterpretAsInt, Type };
 		}
 	};
 
 	template <wasm::OpType Type, bool Signed>
 	struct IntConvert {
-		static constexpr wasm::InstSimple ToF32() {
+		static constexpr wasm::InstOperand ToF32() {
 			if constexpr (Signed)
-				return wasm::InstSimple{ wasm::InstSimple::Type::convertToF32Signed, Type };
+				return wasm::InstOperand{ wasm::InstOperand::Type::convertToF32Signed, Type };
 			else
-				return wasm::InstSimple{ wasm::InstSimple::Type::convertToF32Unsigned, Type };
+				return wasm::InstOperand{ wasm::InstOperand::Type::convertToF32Unsigned, Type };
 		}
-		static constexpr wasm::InstSimple ToF64() {
+		static constexpr wasm::InstOperand ToF64() {
 			if constexpr (Signed)
-				return wasm::InstSimple{ wasm::InstSimple::Type::convertToF64Signed, Type };
+				return wasm::InstOperand{ wasm::InstOperand::Type::convertToF64Signed, Type };
 			else
-				return wasm::InstSimple{ wasm::InstSimple::Type::convertToF64Unsigned, Type };
+				return wasm::InstOperand{ wasm::InstOperand::Type::convertToF64Unsigned, Type };
 		}
-		static constexpr wasm::InstSimple FromF32() {
+		static constexpr wasm::InstOperand FromF32() {
 			if constexpr (Signed)
-				return wasm::InstSimple{ wasm::InstSimple::Type::convertFromF32Signed, Type };
+				return wasm::InstOperand{ wasm::InstOperand::Type::convertFromF32Signed, Type };
 			else
-				return wasm::InstSimple{ wasm::InstSimple::Type::convertFromF32Unsigned, Type };
+				return wasm::InstOperand{ wasm::InstOperand::Type::convertFromF32Unsigned, Type };
 		}
-		static constexpr wasm::InstSimple FromF64() {
+		static constexpr wasm::InstOperand FromF64() {
 			if constexpr (Signed)
-				return wasm::InstSimple{ wasm::InstSimple::Type::convertFromF64Signed, Type };
+				return wasm::InstOperand{ wasm::InstOperand::Type::convertFromF64Signed, Type };
 			else
-				return wasm::InstSimple{ wasm::InstSimple::Type::convertFromF64Unsigned, Type };
+				return wasm::InstOperand{ wasm::InstOperand::Type::convertFromF64Unsigned, Type };
 		}
-		static constexpr wasm::InstSimple AsFloat() {
-			return wasm::InstSimple{ wasm::InstSimple::Type::reinterpretAsFloat, Type };
+		static constexpr wasm::InstOperand AsFloat() {
+			return wasm::InstOperand{ wasm::InstOperand::Type::reinterpretAsFloat, Type };
 		}
 	};
 
 	template <wasm::OpType Type, bool Signed>
 	struct Bitwise {
-		static constexpr wasm::InstSimple And() {
-			return wasm::InstSimple{ wasm::InstSimple::Type::bitAnd, Type };
+		static constexpr wasm::InstOperand And() {
+			return wasm::InstOperand{ wasm::InstOperand::Type::bitAnd, Type };
 		}
-		static constexpr wasm::InstSimple Or() {
-			return wasm::InstSimple{ wasm::InstSimple::Type::bitOr, Type };
+		static constexpr wasm::InstOperand Or() {
+			return wasm::InstOperand{ wasm::InstOperand::Type::bitOr, Type };
 		}
-		static constexpr wasm::InstSimple XOr() {
-			return wasm::InstSimple{ wasm::InstSimple::Type::bitXOr, Type };
+		static constexpr wasm::InstOperand XOr() {
+			return wasm::InstOperand{ wasm::InstOperand::Type::bitXOr, Type };
 		}
-		static constexpr wasm::InstSimple ShiftLeft() {
-			return wasm::InstSimple{ wasm::InstSimple::Type::bitShiftLeft, Type };
+		static constexpr wasm::InstOperand ShiftLeft() {
+			return wasm::InstOperand{ wasm::InstOperand::Type::bitShiftLeft, Type };
 		}
-		static constexpr wasm::InstSimple ShiftRight() {
+		static constexpr wasm::InstOperand ShiftRight() {
 			if constexpr (Signed)
-				return wasm::InstSimple{ wasm::InstSimple::Type::bitShiftRightSigned, Type };
+				return wasm::InstOperand{ wasm::InstOperand::Type::bitShiftRightSigned, Type };
 			else
-				return wasm::InstSimple{ wasm::InstSimple::Type::bitShiftRightUnsigned, Type };
+				return wasm::InstOperand{ wasm::InstOperand::Type::bitShiftRightUnsigned, Type };
 		}
-		static constexpr wasm::InstSimple RotateLeft() {
-			return wasm::InstSimple{ wasm::InstSimple::Type::bitRotateLeft, Type };
+		static constexpr wasm::InstOperand RotateLeft() {
+			return wasm::InstOperand{ wasm::InstOperand::Type::bitRotateLeft, Type };
 		}
-		static constexpr wasm::InstSimple RotateRight() {
-			return wasm::InstSimple{ wasm::InstSimple::Type::bitRotateRight, Type };
+		static constexpr wasm::InstOperand RotateRight() {
+			return wasm::InstOperand{ wasm::InstOperand::Type::bitRotateRight, Type };
 		}
-		static constexpr wasm::InstSimple LeadingNulls() {
-			return wasm::InstSimple{ wasm::InstSimple::Type::bitLeadingNulls, Type };
+		static constexpr wasm::InstOperand LeadingNulls() {
+			return wasm::InstOperand{ wasm::InstOperand::Type::bitLeadingNulls, Type };
 		}
-		static constexpr wasm::InstSimple TrailingNulls() {
-			return wasm::InstSimple{ wasm::InstSimple::Type::bitTrailingNulls, Type };
+		static constexpr wasm::InstOperand TrailingNulls() {
+			return wasm::InstOperand{ wasm::InstOperand::Type::bitTrailingNulls, Type };
 		}
-		static constexpr wasm::InstSimple SetBits() {
-			return wasm::InstSimple{ wasm::InstSimple::Type::bitSetCount, Type };
+		static constexpr wasm::InstOperand SetBits() {
+			return wasm::InstOperand{ wasm::InstOperand::Type::bitSetCount, Type };
 		}
 	};
 
 	template <wasm::OpType Type>
 	struct Float {
-		static constexpr wasm::InstSimple Min() {
-			return wasm::InstSimple{ wasm::InstSimple::Type::floatMin, Type };
+		static constexpr wasm::InstOperand Min() {
+			return wasm::InstOperand{ wasm::InstOperand::Type::floatMin, Type };
 		}
-		static constexpr wasm::InstSimple Max() {
-			return wasm::InstSimple{ wasm::InstSimple::Type::floatMax, Type };
+		static constexpr wasm::InstOperand Max() {
+			return wasm::InstOperand{ wasm::InstOperand::Type::floatMax, Type };
 		}
-		static constexpr wasm::InstSimple Floor() {
-			return wasm::InstSimple{ wasm::InstSimple::Type::floatFloor, Type };
+		static constexpr wasm::InstOperand Floor() {
+			return wasm::InstOperand{ wasm::InstOperand::Type::floatFloor, Type };
 		}
-		static constexpr wasm::InstSimple Round() {
-			return wasm::InstSimple{ wasm::InstSimple::Type::floatRound, Type };
+		static constexpr wasm::InstOperand Round() {
+			return wasm::InstOperand{ wasm::InstOperand::Type::floatRound, Type };
 		}
-		static constexpr wasm::InstSimple Ceil() {
-			return wasm::InstSimple{ wasm::InstSimple::Type::floatCeil, Type };
+		static constexpr wasm::InstOperand Ceil() {
+			return wasm::InstOperand{ wasm::InstOperand::Type::floatCeil, Type };
 		}
-		static constexpr wasm::InstSimple Truncate() {
-			return wasm::InstSimple{ wasm::InstSimple::Type::floatTruncate, Type };
+		static constexpr wasm::InstOperand Truncate() {
+			return wasm::InstOperand{ wasm::InstOperand::Type::floatTruncate, Type };
 		}
-		static constexpr wasm::InstSimple Absolute() {
-			return wasm::InstSimple{ wasm::InstSimple::Type::floatAbsolute, Type };
+		static constexpr wasm::InstOperand Absolute() {
+			return wasm::InstOperand{ wasm::InstOperand::Type::floatAbsolute, Type };
 		}
-		static constexpr wasm::InstSimple Negate() {
-			return wasm::InstSimple{ wasm::InstSimple::Type::floatNegate, Type };
+		static constexpr wasm::InstOperand Negate() {
+			return wasm::InstOperand{ wasm::InstOperand::Type::floatNegate, Type };
 		}
-		static constexpr wasm::InstSimple SquareRoot() {
-			return wasm::InstSimple{ wasm::InstSimple::Type::floatSquareRoot, Type };
+		static constexpr wasm::InstOperand SquareRoot() {
+			return wasm::InstOperand{ wasm::InstOperand::Type::floatSquareRoot, Type };
 		}
-		static constexpr wasm::InstSimple CopySign() {
-			return wasm::InstSimple{ wasm::InstSimple::Type::floatCopySign, Type };
+		static constexpr wasm::InstOperand CopySign() {
+			return wasm::InstOperand{ wasm::InstOperand::Type::floatCopySign, Type };
 		}
 	};
 

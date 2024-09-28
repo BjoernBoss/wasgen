@@ -17,6 +17,29 @@ namespace wasm {
 		f64
 	};
 
+	/* description of any simple instructions, which do not take any direct operands */
+	struct InstSimple {
+	public:
+		enum class Type : uint8_t {
+			drop,
+			nop,
+			ret,
+			unreachable,
+			select,
+			selectRefFunction,
+			selectRefExtern,
+			refTestNull,
+			refNullFunction,
+			refNullExtern
+		};
+
+	public:
+		Type type = Type::nop;
+
+	public:
+		constexpr InstSimple(Type type) : type{ type } {}
+	};
+
 	/* description of any simple instructions, which take a single constant as operand */
 	struct InstConst {
 	public:
@@ -29,8 +52,8 @@ namespace wasm {
 		constexpr InstConst(double value) : value{ value } {}
 	};
 
-	/* description of any simple instructions, which do not take any direct operands */
-	struct InstSimple {
+	/* description of any simple instructions, which only require a operation-type as operand */
+	struct InstOperand {
 	public:
 		enum class Type : uint8_t {
 			equal,
@@ -89,27 +112,15 @@ namespace wasm {
 			floatAbsolute,
 			floatNegate,
 			floatSquareRoot,
-			floatCopySign,
-
-			drop,
-			nop,
-			ret,
-			unreachable,
-			select,
-			selectRefFunction,
-			selectRefExtern,
-
-			refTestNull,
-			refNullFunction,
-			refNullExtern
+			floatCopySign
 		};
 
 	public:
-		Type type = Type::nop;
+		Type type = Type::equal;
 		wasm::OpType operand = wasm::OpType::i32;
 
 	public:
-		constexpr InstSimple(Type type, wasm::OpType operand) : type{ type }, operand{ operand } {}
+		constexpr InstOperand(Type type, wasm::OpType operand) : type{ type }, operand{ operand } {}
 	};
 
 	/* description of any memory-interacting instructions */

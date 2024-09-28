@@ -95,13 +95,13 @@ namespace wasm::inst {
 
 	struct Ref {
 		static constexpr wasm::InstSimple IsNull() {
-			return wasm::InstSimple{ wasm::InstSimple::Type::refTestNull, wasm::OpType::i32 };
+			return wasm::InstSimple{ wasm::InstSimple::Type::refTestNull };
 		}
 		static constexpr wasm::InstSimple NullFunction() {
-			return wasm::InstSimple{ wasm::InstSimple::Type::refNullFunction, wasm::OpType::i32 };
+			return wasm::InstSimple{ wasm::InstSimple::Type::refNullFunction };
 		}
 		static constexpr wasm::InstSimple NullExtern() {
-			return wasm::InstSimple{ wasm::InstSimple::Type::refNullExtern, wasm::OpType::i32 };
+			return wasm::InstSimple{ wasm::InstSimple::Type::refNullExtern };
 		}
 		static constexpr wasm::InstFunction Function(const wasm::Function& fn) {
 			return wasm::InstFunction{ wasm::InstFunction::Type::refFunction, fn };
@@ -175,25 +175,25 @@ namespace wasm::inst {
 	{};
 
 	static constexpr wasm::InstSimple Drop() {
-		return wasm::InstSimple{ wasm::InstSimple::Type::drop, wasm::OpType::i32 };
+		return wasm::InstSimple{ wasm::InstSimple::Type::drop };
 	}
 	static constexpr wasm::InstSimple Nop() {
-		return wasm::InstSimple{ wasm::InstSimple::Type::nop, wasm::OpType::i32 };
+		return wasm::InstSimple{ wasm::InstSimple::Type::nop };
 	}
 	static constexpr wasm::InstSimple Return() {
-		return wasm::InstSimple{ wasm::InstSimple::Type::ret, wasm::OpType::i32 };
+		return wasm::InstSimple{ wasm::InstSimple::Type::ret };
 	}
 	static constexpr wasm::InstSimple Unreachable() {
-		return wasm::InstSimple{ wasm::InstSimple::Type::unreachable, wasm::OpType::i32 };
+		return wasm::InstSimple{ wasm::InstSimple::Type::unreachable };
 	}
 	static constexpr wasm::InstSimple Select() {
-		return wasm::InstSimple{ wasm::InstSimple::Type::select, wasm::OpType::i32 };
+		return wasm::InstSimple{ wasm::InstSimple::Type::select };
 	}
 	static constexpr wasm::InstSimple Select(wasm::Type type) {
 		if (type == wasm::Type::refExtern)
-			return wasm::InstSimple{ wasm::InstSimple::Type::selectRefExtern, wasm::OpType::i32 };
+			return wasm::InstSimple{ wasm::InstSimple::Type::selectRefExtern };
 		else if (type == wasm::Type::refFunction)
-			return wasm::InstSimple{ wasm::InstSimple::Type::selectRefFunction, wasm::OpType::i32 };
-		return wasm::InstSimple{ wasm::InstSimple::Type::select, wasm::OpType::i32 };
+			return wasm::InstSimple{ wasm::InstSimple::Type::selectRefFunction };
+		return wasm::InstSimple{ wasm::InstSimple::Type::select };
 	}
 }

@@ -75,6 +75,44 @@ void writer::text::Sink::addLocal(const wasm::Variable& local) {
 		text::MakeType(local.type()),
 		u8')');
 }
+void writer::text::Sink::addInst(const wasm::InstSimple& inst) {
+	/* write the general instruction-type out */
+	switch (inst.type) {
+	case wasm::InstSimple::Type::drop:
+		fAddLine(u8"drop");
+		break;
+	case wasm::InstSimple::Type::nop:
+		fAddLine(u8"nop");
+		break;
+	case wasm::InstSimple::Type::ret:
+		fAddLine(u8"return");
+		break;
+	case wasm::InstSimple::Type::unreachable:
+		fAddLine(u8"unreachable");
+		break;
+	case wasm::InstSimple::Type::select:
+		fAddLine(u8"select");
+		break;
+	case wasm::InstSimple::Type::selectRefFunction:
+		fAddLine(u8"select (result funcref)");
+		break;
+	case wasm::InstSimple::Type::selectRefExtern:
+		fAddLine(u8"select (result externref)");
+		break;
+	case wasm::InstSimple::Type::refTestNull:
+		fAddLine(u8"ref.is_null");
+		break;
+	case wasm::InstSimple::Type::refNullFunction:
+		fAddLine(u8"ref.null func");
+		break;
+	case wasm::InstSimple::Type::refNullExtern:
+		fAddLine(u8"ref.null extern");
+		break;
+	default:
+		util::fail(u8"Unknown wasm::InstSimple type [", size_t(inst.type), u8"] encountered");
+		break;
+	}
+}
 void writer::text::Sink::addInst(const wasm::InstConst& inst) {
 	std::u8string line;
 
@@ -93,8 +131,8 @@ void writer::text::Sink::addInst(const wasm::InstConst& inst) {
 	/* write the line out */
 	fAddLine(line);
 }
-void writer::text::Sink::addInst(const wasm::InstSimple& inst) {
-	fAddLine(u8"wasm::InstSimple");
+void writer::text::Sink::addInst(const wasm::InstOperand& inst) {
+	fAddLine(u8"wasm::InstOperand");
 }
 void writer::text::Sink::addInst(const wasm::InstMemory& inst) {
 	std::u8string_view name;

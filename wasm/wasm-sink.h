@@ -17,8 +17,9 @@ namespace wasm {
 		virtual void toggleConditional() = 0;
 		virtual void close(const wasm::Sink& sink) = 0;
 		virtual void addLocal(const wasm::Variable& local) = 0;
-		virtual void addInst(const wasm::InstConst& inst) = 0;
 		virtual void addInst(const wasm::InstSimple& inst) = 0;
+		virtual void addInst(const wasm::InstConst& inst) = 0;
+		virtual void addInst(const wasm::InstOperand& inst) = 0;
 		virtual void addInst(const wasm::InstMemory& inst) = 0;
 		virtual void addInst(const wasm::InstTable& inst) = 0;
 		virtual void addInst(const wasm::InstLocal& inst) = 0;
@@ -84,8 +85,9 @@ namespace wasm {
 		wasm::List<wasm::Variable, Sink::LocalList> locals() const;
 
 	public:
-		void operator[](const wasm::InstConst& inst);
 		void operator[](const wasm::InstSimple& inst);
+		void operator[](const wasm::InstConst& inst);
+		void operator[](const wasm::InstOperand& inst);
 		void operator[](const wasm::InstMemory& inst);
 		void operator[](const wasm::InstTable& inst);
 		void operator[](const wasm::InstLocal& inst);

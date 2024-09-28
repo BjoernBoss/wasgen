@@ -28,8 +28,9 @@ namespace writer::text {
 		void toggleConditional() override;
 		void close(const wasm::Sink& sink) override;
 		void addLocal(const wasm::Variable& local) override;
-		void addInst(const wasm::InstConst& inst) override;
 		void addInst(const wasm::InstSimple& inst) override;
+		void addInst(const wasm::InstConst& inst) override;
+		void addInst(const wasm::InstOperand& inst) override;
 		void addInst(const wasm::InstMemory& inst) override;
 		void addInst(const wasm::InstTable& inst) override;
 		void addInst(const wasm::InstLocal& inst) override;
