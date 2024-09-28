@@ -30,7 +30,12 @@ namespace wasm {
 			selectRefExtern,
 			refTestNull,
 			refNullFunction,
-			refNullExtern
+			refNullExtern,
+			expandIntSigned,
+			expandIntUnsigned,
+			shrinkInt,
+			expandFloat,
+			shrinkFloat
 		};
 
 	public:
@@ -52,7 +57,7 @@ namespace wasm {
 		constexpr InstConst(double value) : value{ value } {}
 	};
 
-	/* description of any simple instructions, which only require a operation-type as operand */
+	/* description of any simple instructions, which only require an operation-type as operand */
 	struct InstOperand {
 	public:
 		enum class Type : uint8_t {
@@ -67,15 +72,27 @@ namespace wasm {
 			greaterEqualUnsigned,
 			lessEqualSigned,
 			lessEqualUnsigned,
-
 			add,
 			sub,
-			mul,
+			mul
+		};
+
+	public:
+		Type type = Type::equal;
+		wasm::OpType operand = wasm::OpType::i32;
+
+	public:
+		constexpr InstOperand(Type type, wasm::OpType operand) : type{ type }, operand{ operand } {}
+	};
+
+	/* description of any simple instructions, which operate either on the 32 or 64 version of a type */
+	struct InstWidth {
+	public:
+		enum class Type : uint8_t {
 			divSigned,
 			divUnsigned,
 			modSigned,
 			modUnsigned,
-
 			convertToF32Signed,
 			convertToF32Unsigned,
 			convertToF64Signed,
@@ -84,13 +101,7 @@ namespace wasm {
 			convertFromF32Unsigned,
 			convertFromF64Signed,
 			convertFromF64Unsigned,
-
-			reinterpretAsInt,
 			reinterpretAsFloat,
-
-			expand,
-			shrink,
-
 			bitAnd,
 			bitOr,
 			bitXOr,
@@ -103,6 +114,8 @@ namespace wasm {
 			bitTrailingNulls,
 			bitSetCount,
 
+			floatDiv,
+			reinterpretAsInt,
 			floatMin,
 			floatMax,
 			floatFloor,
@@ -116,11 +129,11 @@ namespace wasm {
 		};
 
 	public:
-		Type type = Type::equal;
-		wasm::OpType operand = wasm::OpType::i32;
+		Type type = Type::divSigned;
+		bool width32 = false;
 
 	public:
-		constexpr InstOperand(Type type, wasm::OpType operand) : type{ type }, operand{ operand } {}
+		constexpr InstWidth(Type type, bool width32) : type{ type }, width32{ width32 } {}
 	};
 
 	/* description of any memory-interacting instructions */

@@ -20,11 +20,8 @@ wasm::Sink::Sink(const wasm::Function& function) {
 	pFunction = function;
 	if (prototype.valid()) {
 		const auto& params = prototype.parameter();
-		for (size_t i = 0; i < params.size(); ++i) {
+		for (size_t i = 0; i < params.size(); ++i)
 			pVariables.list.push_back({ {}, params[i].type });
-			if (!params[i].id.empty())
-				pVariables.list.back().id = *pVariables.ids.insert(params[i].id).first;
-		}
 	}
 	pParameter = uint32_t(pVariables.list.size());
 	module.pFunction.list[function.index()].sink = this;
@@ -153,6 +150,10 @@ void wasm::Sink::operator[](const wasm::InstConst& inst) {
 	pInterface->addInst(inst);
 }
 void wasm::Sink::operator[](const wasm::InstOperand& inst) {
+	fCheckClosed();
+	pInterface->addInst(inst);
+}
+void wasm::Sink::operator[](const wasm::InstWidth& inst) {
 	fCheckClosed();
 	pInterface->addInst(inst);
 }

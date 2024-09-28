@@ -108,6 +108,21 @@ void writer::text::Sink::addInst(const wasm::InstSimple& inst) {
 	case wasm::InstSimple::Type::refNullExtern:
 		fAddLine(u8"ref.null extern");
 		break;
+	case wasm::InstSimple::Type::expandIntSigned:
+		fAddLine(u8"i64.extend_i32_s");
+		break;
+	case wasm::InstSimple::Type::expandIntUnsigned:
+		fAddLine(u8"i64.extend_i32_u");
+		break;
+	case wasm::InstSimple::Type::shrinkInt:
+		fAddLine(u8"i32.wrap_i64");
+		break;
+	case wasm::InstSimple::Type::expandFloat:
+		fAddLine(u8"f64.promote_f32");
+		break;
+	case wasm::InstSimple::Type::shrinkFloat:
+		fAddLine(u8"f32.demote_f64");
+		break;
 	default:
 		util::fail(u8"Unknown wasm::InstSimple type [", size_t(inst.type), u8"] encountered");
 		break;
@@ -132,7 +147,178 @@ void writer::text::Sink::addInst(const wasm::InstConst& inst) {
 	fAddLine(line);
 }
 void writer::text::Sink::addInst(const wasm::InstOperand& inst) {
-	fAddLine(u8"wasm::InstOperand");
+	std::u8string line{ fOperand(inst.operand) };
+	line.push_back(u8'.');
+
+	/* add the general instruction-type */
+	switch (inst.type) {
+	case wasm::InstOperand::Type::equal:
+		line.append(u8"eq");
+		break;
+	case wasm::InstOperand::Type::notEqual:
+		line.append(u8"ne");
+		break;
+	case wasm::InstOperand::Type::equalZero:
+		line.append(u8"eqz");
+		break;
+	case wasm::InstOperand::Type::greaterSigned:
+		line.append(u8"gt_s");
+		break;
+	case wasm::InstOperand::Type::greaterUnsigned:
+		line.append(u8"gt_u");
+		break;
+	case wasm::InstOperand::Type::lessSigned:
+		line.append(u8"lt_s");
+		break;
+	case wasm::InstOperand::Type::lessUnsigned:
+		line.append(u8"lt_u");
+		break;
+	case wasm::InstOperand::Type::greaterEqualSigned:
+		line.append(u8"ge_s");
+		break;
+	case wasm::InstOperand::Type::greaterEqualUnsigned:
+		line.append(u8"ge_u");
+		break;
+	case wasm::InstOperand::Type::lessEqualSigned:
+		line.append(u8"le_s");
+		break;
+	case wasm::InstOperand::Type::lessEqualUnsigned:
+		line.append(u8"le_u");
+		break;
+	case wasm::InstOperand::Type::add:
+		line.append(u8"add");
+		break;
+	case wasm::InstOperand::Type::sub:
+		line.append(u8"sub");
+		break;
+	case wasm::InstOperand::Type::mul:
+		line.append(u8"mul");
+		break;
+	default:
+		util::fail(u8"Unknown wasm::InstOperand type [", size_t(inst.type), u8"] encountered");
+		break;
+	}
+
+	/* write the line out */
+	fAddLine(line);
+}
+void writer::text::Sink::addInst(const wasm::InstWidth& inst) {
+	std::u8string_view width{ inst.width32 ? u8"32" : u8"64" };
+
+	/* write the general instruction-type out */
+	switch (inst.type) {
+	case wasm::InstWidth::Type::divSigned:
+		fAddLine(str::Build<std::u8string>(u8'i', width, u8".div_s"));
+		break;
+	case wasm::InstWidth::Type::divUnsigned:
+		fAddLine(str::Build<std::u8string>(u8'i', width, u8".div_u"));
+		break;
+	case wasm::InstWidth::Type::modSigned:
+		fAddLine(str::Build<std::u8string>(u8'i', width, u8".rem_s"));
+		break;
+	case wasm::InstWidth::Type::modUnsigned:
+		fAddLine(str::Build<std::u8string>(u8'i', width, u8".rem_u"));
+		break;
+	case wasm::InstWidth::Type::convertToF32Signed:
+		fAddLine(str::Build<std::u8string>(u8"f32.convert_i", width, u8"_s"));
+		break;
+	case wasm::InstWidth::Type::convertToF32Unsigned:
+		fAddLine(str::Build<std::u8string>(u8"f32.convert_i", width, u8"_u"));
+		break;
+	case wasm::InstWidth::Type::convertToF64Signed:
+		fAddLine(str::Build<std::u8string>(u8"f64.convert_i", width, u8"_s"));
+		break;
+	case wasm::InstWidth::Type::convertToF64Unsigned:
+		fAddLine(str::Build<std::u8string>(u8"f64.convert_i", width, u8"_u"));
+		break;
+	case wasm::InstWidth::Type::convertFromF32Signed:
+		fAddLine(str::Build<std::u8string>(u8'i', width, u8".trunc_f32_s"));
+		break;
+	case wasm::InstWidth::Type::convertFromF32Unsigned:
+		fAddLine(str::Build<std::u8string>(u8'i', width, u8".trunc_f32_u"));
+		break;
+	case wasm::InstWidth::Type::convertFromF64Signed:
+		fAddLine(str::Build<std::u8string>(u8'i', width, u8".trunc_f64_s"));
+		break;
+	case wasm::InstWidth::Type::convertFromF64Unsigned:
+		fAddLine(str::Build<std::u8string>(u8'i', width, u8".trunc_f64_u"));
+		break;
+	case wasm::InstWidth::Type::reinterpretAsFloat:
+		fAddLine(str::Build<std::u8string>(u8'i', width, u8".reinterpret_f", width));
+		break;
+	case wasm::InstWidth::Type::bitAnd:
+		fAddLine(str::Build<std::u8string>(u8'i', width, u8".and"));
+		break;
+	case wasm::InstWidth::Type::bitOr:
+		fAddLine(str::Build<std::u8string>(u8'i', width, u8".or"));
+		break;
+	case wasm::InstWidth::Type::bitXOr:
+		fAddLine(str::Build<std::u8string>(u8'i', width, u8".xor"));
+		break;
+	case wasm::InstWidth::Type::bitShiftLeft:
+		fAddLine(str::Build<std::u8string>(u8'i', width, u8".shl"));
+		break;
+	case wasm::InstWidth::Type::bitShiftRightSigned:
+		fAddLine(str::Build<std::u8string>(u8'i', width, u8".shr_s"));
+		break;
+	case wasm::InstWidth::Type::bitShiftRightUnsigned:
+		fAddLine(str::Build<std::u8string>(u8'i', width, u8".shr_u"));
+		break;
+	case wasm::InstWidth::Type::bitRotateLeft:
+		fAddLine(str::Build<std::u8string>(u8'i', width, u8".rotl"));
+		break;
+	case wasm::InstWidth::Type::bitRotateRight:
+		fAddLine(str::Build<std::u8string>(u8'i', width, u8".rotr"));
+		break;
+	case wasm::InstWidth::Type::bitLeadingNulls:
+		fAddLine(str::Build<std::u8string>(u8'i', width, u8".clz"));
+		break;
+	case wasm::InstWidth::Type::bitTrailingNulls:
+		fAddLine(str::Build<std::u8string>(u8'i', width, u8".ctz"));
+		break;
+	case wasm::InstWidth::Type::bitSetCount:
+		fAddLine(str::Build<std::u8string>(u8'i', width, u8".popcnt"));
+		break;
+	case wasm::InstWidth::Type::floatDiv:
+		fAddLine(str::Build<std::u8string>(u8'f', width, u8".div"));
+		break;
+	case wasm::InstWidth::Type::reinterpretAsInt:
+		fAddLine(str::Build<std::u8string>(u8'f', width, u8".reinterpret_i", width));
+		break;
+	case wasm::InstWidth::Type::floatMin:
+		fAddLine(str::Build<std::u8string>(u8'f', width, u8".min"));
+		break;
+	case wasm::InstWidth::Type::floatMax:
+		fAddLine(str::Build<std::u8string>(u8'f', width, u8".max"));
+		break;
+	case wasm::InstWidth::Type::floatFloor:
+		fAddLine(str::Build<std::u8string>(u8'f', width, u8".floor"));
+		break;
+	case wasm::InstWidth::Type::floatRound:
+		fAddLine(str::Build<std::u8string>(u8'f', width, u8".nearest"));
+		break;
+	case wasm::InstWidth::Type::floatCeil:
+		fAddLine(str::Build<std::u8string>(u8'f', width, u8".ceil"));
+		break;
+	case wasm::InstWidth::Type::floatTruncate:
+		fAddLine(str::Build<std::u8string>(u8'f', width, u8".trunc"));
+		break;
+	case wasm::InstWidth::Type::floatAbsolute:
+		fAddLine(str::Build<std::u8string>(u8'f', width, u8".abs"));
+		break;
+	case wasm::InstWidth::Type::floatNegate:
+		fAddLine(str::Build<std::u8string>(u8'f', width, u8".neg"));
+		break;
+	case wasm::InstWidth::Type::floatSquareRoot:
+		fAddLine(str::Build<std::u8string>(u8'f', width, u8".sqrt"));
+		break;
+	case wasm::InstWidth::Type::floatCopySign:
+		fAddLine(str::Build<std::u8string>(u8'f', width, u8".copysign"));
+		break;
+	default:
+		util::fail(u8"Unknown wasm::InstWidth type [", size_t(inst.type), u8"] encountered");
+		break;
+	}
 }
 void writer::text::Sink::addInst(const wasm::InstMemory& inst) {
 	std::u8string_view name;
@@ -191,17 +377,18 @@ void writer::text::Sink::addInst(const wasm::InstMemory& inst) {
 	}
 
 	/* construct the common load/store instruction */
-	if (!name.empty()) {
+	if (!name.empty())
 		str::BuildTo(line, fOperand(inst.operand), name);
-		if (inst.offset > 0)
-			str::BuildTo(line, u8" offset=", inst.offset);
-	}
 
-	/* add the memory references and write the line out */
+	/* add the memory references */
 	if (inst.memory.valid())
 		str::BuildTo(line, u8" ", inst.memory.toString());
 	if (inst.type == wasm::InstMemory::Type::copy && inst.destination.valid())
 		str::BuildTo(line, u8" ", inst.destination.toString());
+
+	/* add the offset and write the line out */
+	if (!name.empty() && inst.offset > 0)
+		str::BuildTo(line, u8" offset=", inst.offset);
 	fAddLine(line);
 }
 void writer::text::Sink::addInst(const wasm::InstTable& inst) {

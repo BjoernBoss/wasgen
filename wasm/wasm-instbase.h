@@ -4,7 +4,7 @@
 
 namespace wasm::detail {
 	template <wasm::OpType Type, bool Signed>
-	struct Constant {
+	struct Common {
 		template <class ValType>
 		static constexpr wasm::InstConst Const(ValType val) {
 			if constexpr (Type == wasm::OpType::i32) {
@@ -22,10 +22,6 @@ namespace wasm::detail {
 			else
 				return wasm::InstConst{ double(val) };
 		}
-	};
-
-	template < wasm::OpType Type, bool Signed>
-	struct Compare {
 		static constexpr wasm::InstOperand Equal() {
 			return wasm::InstOperand{ wasm::InstOperand::Type::equal, Type };
 		}
@@ -59,10 +55,6 @@ namespace wasm::detail {
 			else
 				return wasm::InstOperand{ wasm::InstOperand::Type::lessEqualUnsigned, Type };
 		}
-	};
-
-	template <wasm::OpType Type, bool Signed>
-	struct Arithmetic {
 		static constexpr wasm::InstOperand Add() {
 			return wasm::InstOperand{ wasm::InstOperand::Type::add, Type };
 		}
@@ -72,140 +64,143 @@ namespace wasm::detail {
 		static constexpr wasm::InstOperand Mul() {
 			return wasm::InstOperand{ wasm::InstOperand::Type::mul, Type };
 		}
-		static constexpr wasm::InstOperand Div() {
-			if constexpr (Signed)
-				return wasm::InstOperand{ wasm::InstOperand::Type::divSigned, Type };
-			else
-				return wasm::InstOperand{ wasm::InstOperand::Type::divUnsigned, Type };
-		}
-		static constexpr wasm::InstOperand Mod() {
-			if constexpr (Signed)
-				return wasm::InstOperand{ wasm::InstOperand::Type::modSigned, Type };
-			else
-				return wasm::InstOperand{ wasm::InstOperand::Type::modUnsigned, Type };
-		}
 	};
 
-	template <wasm::OpType Type>
+	template <bool Float, bool Signed>
 	struct SmallConvert {
-		static constexpr wasm::InstOperand Expand() {
-			return wasm::InstOperand{ wasm::InstOperand::Type::expand, Type };
+		static constexpr wasm::InstSimple Expand() {
+			if constexpr (Float)
+				return wasm::InstSimple{ wasm::InstSimple::Type::expandFloat };
+			else if constexpr (Signed)
+				return wasm::InstSimple{ wasm::InstSimple::Type::expandIntSigned };
+			else
+				return wasm::InstSimple{ wasm::InstSimple::Type::expandIntUnsigned };
 		}
 	};
 
-	template <wasm::OpType Type>
+	template <bool Float>
 	struct LargeConvert {
-		static constexpr wasm::InstOperand Shrink() {
-			return wasm::InstOperand{ wasm::InstOperand::Type::shrink, Type };
+		static constexpr wasm::InstSimple Shrink() {
+			if constexpr (Float)
+				return wasm::InstSimple{ wasm::InstSimple::Type::shrinkFloat };
+			else
+				return wasm::InstSimple{ wasm::InstSimple::Type::shrinkInt };
 		}
 	};
 
-	template <wasm::OpType Type>
-	struct FloatConvert {
-		static constexpr wasm::InstOperand AsInt() {
-			return wasm::InstOperand{ wasm::InstOperand::Type::reinterpretAsInt, Type };
+	template <bool I32, bool Signed>
+	struct IntOperations {
+		static constexpr wasm::InstWidth Div() {
+			if constexpr (Signed)
+				return wasm::InstWidth{ wasm::InstWidth::Type::divSigned, I32 };
+			else
+				return wasm::InstWidth{ wasm::InstWidth::Type::divUnsigned, I32 };
+		}
+		static constexpr wasm::InstWidth Mod() {
+			if constexpr (Signed)
+				return wasm::InstWidth{ wasm::InstWidth::Type::modSigned, I32 };
+			else
+				return wasm::InstWidth{ wasm::InstWidth::Type::modUnsigned, I32 };
+		}
+		static constexpr wasm::InstWidth ToF32() {
+			if constexpr (Signed)
+				return wasm::InstWidth{ wasm::InstWidth::Type::convertToF32Signed, I32 };
+			else
+				return wasm::InstWidth{ wasm::InstWidth::Type::convertToF32Unsigned, I32 };
+		}
+		static constexpr wasm::InstWidth ToF64() {
+			if constexpr (Signed)
+				return wasm::InstWidth{ wasm::InstWidth::Type::convertToF64Signed, I32 };
+			else
+				return wasm::InstWidth{ wasm::InstWidth::Type::convertToF64Unsigned, I32 };
+		}
+		static constexpr wasm::InstWidth FromF32() {
+			if constexpr (Signed)
+				return wasm::InstWidth{ wasm::InstWidth::Type::convertFromF32Signed, I32 };
+			else
+				return wasm::InstWidth{ wasm::InstWidth::Type::convertFromF32Unsigned, I32 };
+		}
+		static constexpr wasm::InstWidth FromF64() {
+			if constexpr (Signed)
+				return wasm::InstWidth{ wasm::InstWidth::Type::convertFromF64Signed, I32 };
+			else
+				return wasm::InstWidth{ wasm::InstWidth::Type::convertFromF64Unsigned, I32 };
+		}
+		static constexpr wasm::InstWidth AsFloat() {
+			return wasm::InstWidth{ wasm::InstWidth::Type::reinterpretAsFloat, I32 };
+		}
+		static constexpr wasm::InstWidth And() {
+			return wasm::InstWidth{ wasm::InstWidth::Type::bitAnd, I32 };
+		}
+		static constexpr wasm::InstWidth Or() {
+			return wasm::InstWidth{ wasm::InstWidth::Type::bitOr, I32 };
+		}
+		static constexpr wasm::InstWidth XOr() {
+			return wasm::InstWidth{ wasm::InstWidth::Type::bitXOr, I32 };
+		}
+		static constexpr wasm::InstWidth ShiftLeft() {
+			return wasm::InstWidth{ wasm::InstWidth::Type::bitShiftLeft, I32 };
+		}
+		static constexpr wasm::InstWidth ShiftRight() {
+			if constexpr (Signed)
+				return wasm::InstWidth{ wasm::InstWidth::Type::bitShiftRightSigned, I32 };
+			else
+				return wasm::InstWidth{ wasm::InstWidth::Type::bitShiftRightUnsigned, I32 };
+		}
+		static constexpr wasm::InstWidth RotateLeft() {
+			return wasm::InstWidth{ wasm::InstWidth::Type::bitRotateLeft, I32 };
+		}
+		static constexpr wasm::InstWidth RotateRight() {
+			return wasm::InstWidth{ wasm::InstWidth::Type::bitRotateRight, I32 };
+		}
+		static constexpr wasm::InstWidth LeadingNulls() {
+			return wasm::InstWidth{ wasm::InstWidth::Type::bitLeadingNulls, I32 };
+		}
+		static constexpr wasm::InstWidth TrailingNulls() {
+			return wasm::InstWidth{ wasm::InstWidth::Type::bitTrailingNulls, I32 };
+		}
+		static constexpr wasm::InstWidth SetBits() {
+			return wasm::InstWidth{ wasm::InstWidth::Type::bitSetCount, I32 };
 		}
 	};
 
-	template <wasm::OpType Type, bool Signed>
-	struct IntConvert {
-		static constexpr wasm::InstOperand ToF32() {
-			if constexpr (Signed)
-				return wasm::InstOperand{ wasm::InstOperand::Type::convertToF32Signed, Type };
-			else
-				return wasm::InstOperand{ wasm::InstOperand::Type::convertToF32Unsigned, Type };
+	template <bool F32>
+	struct FloatOperations {
+		static constexpr wasm::InstWidth Div() {
+			return wasm::InstWidth{ wasm::InstWidth::Type::floatDiv, F32 };
 		}
-		static constexpr wasm::InstOperand ToF64() {
-			if constexpr (Signed)
-				return wasm::InstOperand{ wasm::InstOperand::Type::convertToF64Signed, Type };
-			else
-				return wasm::InstOperand{ wasm::InstOperand::Type::convertToF64Unsigned, Type };
+		static constexpr wasm::InstWidth AsInt() {
+			return wasm::InstWidth{ wasm::InstWidth::Type::reinterpretAsInt, F32 };
 		}
-		static constexpr wasm::InstOperand FromF32() {
-			if constexpr (Signed)
-				return wasm::InstOperand{ wasm::InstOperand::Type::convertFromF32Signed, Type };
-			else
-				return wasm::InstOperand{ wasm::InstOperand::Type::convertFromF32Unsigned, Type };
+		static constexpr wasm::InstWidth Min() {
+			return wasm::InstWidth{ wasm::InstWidth::Type::floatMin, F32 };
 		}
-		static constexpr wasm::InstOperand FromF64() {
-			if constexpr (Signed)
-				return wasm::InstOperand{ wasm::InstOperand::Type::convertFromF64Signed, Type };
-			else
-				return wasm::InstOperand{ wasm::InstOperand::Type::convertFromF64Unsigned, Type };
+		static constexpr wasm::InstWidth Max() {
+			return wasm::InstWidth{ wasm::InstWidth::Type::floatMax, F32 };
 		}
-		static constexpr wasm::InstOperand AsFloat() {
-			return wasm::InstOperand{ wasm::InstOperand::Type::reinterpretAsFloat, Type };
+		static constexpr wasm::InstWidth Floor() {
+			return wasm::InstWidth{ wasm::InstWidth::Type::floatFloor, F32 };
 		}
-	};
-
-	template <wasm::OpType Type, bool Signed>
-	struct Bitwise {
-		static constexpr wasm::InstOperand And() {
-			return wasm::InstOperand{ wasm::InstOperand::Type::bitAnd, Type };
+		static constexpr wasm::InstWidth Round() {
+			return wasm::InstWidth{ wasm::InstWidth::Type::floatRound, F32 };
 		}
-		static constexpr wasm::InstOperand Or() {
-			return wasm::InstOperand{ wasm::InstOperand::Type::bitOr, Type };
+		static constexpr wasm::InstWidth Ceil() {
+			return wasm::InstWidth{ wasm::InstWidth::Type::floatCeil, F32 };
 		}
-		static constexpr wasm::InstOperand XOr() {
-			return wasm::InstOperand{ wasm::InstOperand::Type::bitXOr, Type };
+		static constexpr wasm::InstWidth Truncate() {
+			return wasm::InstWidth{ wasm::InstWidth::Type::floatTruncate, F32 };
 		}
-		static constexpr wasm::InstOperand ShiftLeft() {
-			return wasm::InstOperand{ wasm::InstOperand::Type::bitShiftLeft, Type };
+		static constexpr wasm::InstWidth Absolute() {
+			return wasm::InstWidth{ wasm::InstWidth::Type::floatAbsolute, F32 };
 		}
-		static constexpr wasm::InstOperand ShiftRight() {
-			if constexpr (Signed)
-				return wasm::InstOperand{ wasm::InstOperand::Type::bitShiftRightSigned, Type };
-			else
-				return wasm::InstOperand{ wasm::InstOperand::Type::bitShiftRightUnsigned, Type };
+		static constexpr wasm::InstWidth Negate() {
+			return wasm::InstWidth{ wasm::InstWidth::Type::floatNegate, F32 };
 		}
-		static constexpr wasm::InstOperand RotateLeft() {
-			return wasm::InstOperand{ wasm::InstOperand::Type::bitRotateLeft, Type };
+		static constexpr wasm::InstWidth SquareRoot() {
+			return wasm::InstWidth{ wasm::InstWidth::Type::floatSquareRoot, F32 };
 		}
-		static constexpr wasm::InstOperand RotateRight() {
-			return wasm::InstOperand{ wasm::InstOperand::Type::bitRotateRight, Type };
-		}
-		static constexpr wasm::InstOperand LeadingNulls() {
-			return wasm::InstOperand{ wasm::InstOperand::Type::bitLeadingNulls, Type };
-		}
-		static constexpr wasm::InstOperand TrailingNulls() {
-			return wasm::InstOperand{ wasm::InstOperand::Type::bitTrailingNulls, Type };
-		}
-		static constexpr wasm::InstOperand SetBits() {
-			return wasm::InstOperand{ wasm::InstOperand::Type::bitSetCount, Type };
-		}
-	};
-
-	template <wasm::OpType Type>
-	struct Float {
-		static constexpr wasm::InstOperand Min() {
-			return wasm::InstOperand{ wasm::InstOperand::Type::floatMin, Type };
-		}
-		static constexpr wasm::InstOperand Max() {
-			return wasm::InstOperand{ wasm::InstOperand::Type::floatMax, Type };
-		}
-		static constexpr wasm::InstOperand Floor() {
-			return wasm::InstOperand{ wasm::InstOperand::Type::floatFloor, Type };
-		}
-		static constexpr wasm::InstOperand Round() {
-			return wasm::InstOperand{ wasm::InstOperand::Type::floatRound, Type };
-		}
-		static constexpr wasm::InstOperand Ceil() {
-			return wasm::InstOperand{ wasm::InstOperand::Type::floatCeil, Type };
-		}
-		static constexpr wasm::InstOperand Truncate() {
-			return wasm::InstOperand{ wasm::InstOperand::Type::floatTruncate, Type };
-		}
-		static constexpr wasm::InstOperand Absolute() {
-			return wasm::InstOperand{ wasm::InstOperand::Type::floatAbsolute, Type };
-		}
-		static constexpr wasm::InstOperand Negate() {
-			return wasm::InstOperand{ wasm::InstOperand::Type::floatNegate, Type };
-		}
-		static constexpr wasm::InstOperand SquareRoot() {
-			return wasm::InstOperand{ wasm::InstOperand::Type::floatSquareRoot, Type };
-		}
-		static constexpr wasm::InstOperand CopySign() {
-			return wasm::InstOperand{ wasm::InstOperand::Type::floatCopySign, Type };
+		static constexpr wasm::InstWidth CopySign() {
+			return wasm::InstWidth{ wasm::InstWidth::Type::floatCopySign, F32 };
 		}
 	};
 

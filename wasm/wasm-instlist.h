@@ -109,68 +109,50 @@ namespace wasm::inst {
 	};
 
 	struct I32 :
-		public detail::Constant<wasm::OpType::i32, true>,
-		public detail::Compare<wasm::OpType::i32, true>,
-		public detail::Arithmetic<wasm::OpType::i32, true>,
-		public detail::SmallConvert<wasm::OpType::i32>,
-		public detail::IntConvert<wasm::OpType::i32, true>,
-		public detail::Bitwise<wasm::OpType::i32, true>,
+		public detail::Common<wasm::OpType::i32, true>,
+		public detail::SmallConvert<false, true>,
+		public detail::IntOperations<true, true>,
 		public detail::Memory<wasm::OpType::i32>,
 		public detail::IntMemory<wasm::OpType::i32, true>
 	{};
 
 	struct U32 :
-		public detail::Constant<wasm::OpType::i32, false>,
-		public detail::Compare<wasm::OpType::i32, false>,
-		public detail::Arithmetic<wasm::OpType::i32, false>,
-		public detail::SmallConvert<wasm::OpType::i32>,
-		public detail::IntConvert<wasm::OpType::i32, false>,
-		public detail::Bitwise<wasm::OpType::i32, false>,
+		public detail::Common<wasm::OpType::i32, false>,
+		public detail::SmallConvert<false, false>,
+		public detail::IntOperations<true, false>,
 		public detail::Memory<wasm::OpType::i32>,
 		public detail::IntMemory<wasm::OpType::i32, false>
 	{};
 
 	struct I64 :
-		public detail::Constant<wasm::OpType::i64, true>,
-		public detail::Compare<wasm::OpType::i64, true>,
-		public detail::Arithmetic<wasm::OpType::i64, true>,
-		public detail::LargeConvert<wasm::OpType::i64>,
-		public detail::IntConvert<wasm::OpType::i64, true>,
-		public detail::Bitwise<wasm::OpType::i64, true>,
+		public detail::Common<wasm::OpType::i64, true>,
+		public detail::LargeConvert<false>,
+		public detail::IntOperations<false, true>,
 		public detail::Memory<wasm::OpType::i64>,
 		public detail::IntMemory<wasm::OpType::i64, true>,
 		public detail::LargeMemory<wasm::OpType::i64, true>
 	{};
 
 	struct U64 :
-		public detail::Constant<wasm::OpType::i64, false>,
-		public detail::Compare<wasm::OpType::i64, false>,
-		public detail::Arithmetic<wasm::OpType::i64, false>,
-		public detail::LargeConvert<wasm::OpType::i64>,
-		public detail::IntConvert<wasm::OpType::i64, false>,
-		public detail::Bitwise<wasm::OpType::i64, false>,
+		public detail::Common<wasm::OpType::i64, false>,
+		public detail::LargeConvert<false>,
+		public detail::IntOperations<false, false>,
 		public detail::Memory<wasm::OpType::i64>,
 		public detail::IntMemory<wasm::OpType::i64, false>,
 		public detail::LargeMemory<wasm::OpType::i64, false>
 	{};
 
 	struct F32 :
-		public detail::Constant<wasm::OpType::f32, false>,
-		public detail::Compare<wasm::OpType::f32, false>,
-		public detail::Arithmetic<wasm::OpType::f32, false>,
-		public detail::SmallConvert<wasm::OpType::f32>,
-		public detail::FloatConvert<wasm::OpType::f32>,
-		public detail::Float<wasm::OpType::f32>,
+		public detail::Common<wasm::OpType::f32, false>,
+		public detail::SmallConvert<true, true>,
+		public detail::FloatOperations<true>,
 		public detail::Memory<wasm::OpType::f32>
 	{};
 
 	struct F64 :
-		public detail::Constant<wasm::OpType::f64, false>,
-		public detail::Compare<wasm::OpType::f64, false>,
-		public detail::Arithmetic<wasm::OpType::f64, false>,
-		public detail::LargeConvert<wasm::OpType::f64>,
-		public detail::FloatConvert<wasm::OpType::f64>,
-		public detail::Float<wasm::OpType::f64>,
+		public detail::Common<wasm::OpType::f64, false>,
+		public detail::LargeConvert<true>,
+		public detail::FloatOperations<false>,
 		public detail::Memory<wasm::OpType::f64>
 	{};
 

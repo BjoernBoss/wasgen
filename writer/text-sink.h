@@ -31,6 +31,7 @@ namespace writer::text {
 		void addInst(const wasm::InstSimple& inst) override;
 		void addInst(const wasm::InstConst& inst) override;
 		void addInst(const wasm::InstOperand& inst) override;
+		void addInst(const wasm::InstWidth& inst) override;
 		void addInst(const wasm::InstMemory& inst) override;
 		void addInst(const wasm::InstTable& inst) override;
 		void addInst(const wasm::InstLocal& inst) override;

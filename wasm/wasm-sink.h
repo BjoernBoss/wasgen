@@ -20,6 +20,7 @@ namespace wasm {
 		virtual void addInst(const wasm::InstSimple& inst) = 0;
 		virtual void addInst(const wasm::InstConst& inst) = 0;
 		virtual void addInst(const wasm::InstOperand& inst) = 0;
+		virtual void addInst(const wasm::InstWidth& inst) = 0;
 		virtual void addInst(const wasm::InstMemory& inst) = 0;
 		virtual void addInst(const wasm::InstTable& inst) = 0;
 		virtual void addInst(const wasm::InstLocal& inst) = 0;
@@ -88,6 +89,7 @@ namespace wasm {
 		void operator[](const wasm::InstSimple& inst);
 		void operator[](const wasm::InstConst& inst);
 		void operator[](const wasm::InstOperand& inst);
+		void operator[](const wasm::InstWidth& inst);
 		void operator[](const wasm::InstMemory& inst);
 		void operator[](const wasm::InstTable& inst);
 		void operator[](const wasm::InstLocal& inst);
