@@ -6,26 +6,7 @@ wasm::Module::~Module() {
 	fClose();
 }
 
-void wasm::Module::fClose() {
-	if (pClosed)
-		return;
-	pClosed = true;
-
-	/* close all remaining sinks */
-	for (size_t i = 0; i < pFunction.list.size(); ++i) {
-		if (pFunction.list[i].sink != 0)
-			pFunction.list[i].sink->fClose();
-	}
-
-	/* mark the module as closed */
-	pInterface->close(*this);
-}
-void wasm::Module::fCheckClosed() const {
-	if (pClosed)
-		util::fail(u8"Cannot change the closed module");
-}
-
-wasm::Prototype wasm::Module::prototype(std::initializer_list<wasm::Param> params, std::initializer_list<wasm::Type> result, std::u8string_view id) {
+wasm::Prototype wasm::Module::fPrototype(std::initializer_list<wasm::Param> params, std::initializer_list<wasm::Type> result, std::u8string_view id) {
 	fCheckClosed();
 
 	/* validate the id and the parameter */
@@ -56,8 +37,41 @@ wasm::Prototype wasm::Module::prototype(std::initializer_list<wasm::Param> param
 	pInterface->addPrototype(prototype);
 	return prototype;
 }
+wasm::Prototype wasm::Module::fNullPrototype() {
+	if (!pNullPrototype.valid())
+		pNullPrototype = fPrototype({}, {}, {});
+	return pNullPrototype;
+}
+void wasm::Module::fCheckClosed() const {
+	if (pClosed)
+		util::fail(u8"Cannot change the closed module");
+}
+void wasm::Module::fClose() {
+	if (pClosed)
+		return;
+	pClosed = true;
+
+	/* close all remaining sinks */
+	for (size_t i = 0; i < pFunction.list.size(); ++i) {
+		if (pFunction.list[i].sink != 0)
+			pFunction.list[i].sink->fClose();
+	}
+
+	/* mark the module as closed */
+	pInterface->close(*this);
+}
+
+wasm::Prototype wasm::Module::prototype(std::initializer_list<wasm::Param> params, std::initializer_list<wasm::Type> result, std::u8string_view id) {
+	return fPrototype(params, result, id);
+}
 wasm::Memory wasm::Module::memory(const wasm::Limit& limit, std::u8string_view id, const wasm::Import& imported, const wasm::Export& exported) {
 	fCheckClosed();
+
+	/* validate the imports */
+	if (!imported.valid())
+		pImportsClosed = true;
+	else if (pImportsClosed)
+		util::fail(u8"Cannot import memory with id [", id, u8"] after the first non-import object has been added");
 
 	/* validate the id */
 	std::u8string _id{ id };
@@ -80,6 +94,12 @@ wasm::Memory wasm::Module::memory(const wasm::Limit& limit, std::u8string_view i
 wasm::Table wasm::Module::table(bool functions, const wasm::Limit& limit, std::u8string_view id, const wasm::Import& imported, const wasm::Export& exported) {
 	fCheckClosed();
 
+	/* validate the imports */
+	if (!imported.valid())
+		pImportsClosed = true;
+	else if (pImportsClosed)
+		util::fail(u8"Cannot import table with id [", id, u8"] after the first non-import object has been added");
+
 	/* validate the id */
 	std::u8string _id{ id };
 	if (!_id.empty() && pTable.ids.contains(_id))
@@ -100,6 +120,12 @@ wasm::Table wasm::Module::table(bool functions, const wasm::Limit& limit, std::u
 }
 wasm::Global wasm::Module::global(wasm::Type type, bool mutating, std::u8string_view id, const wasm::Import& imported, const wasm::Export& exported) {
 	fCheckClosed();
+
+	/* validate the imports */
+	if (!imported.valid())
+		pImportsClosed = true;
+	else if (pImportsClosed)
+		util::fail(u8"Cannot import global with id [", id, u8"] after the first non-import object has been added");
 
 	/* validate the id */
 	std::u8string _id{ id };
@@ -122,15 +148,26 @@ wasm::Global wasm::Module::global(wasm::Type type, bool mutating, std::u8string_
 wasm::Function wasm::Module::function(const wasm::Prototype& prototype, std::u8string_view id, const wasm::Import& imported, const wasm::Export& exported) {
 	fCheckClosed();
 
+	/* validate the imports */
+	if (!imported.valid())
+		pImportsClosed = true;
+	else if (pImportsClosed)
+		util::fail(u8"Cannot import function with id [", id, u8"] after the first non-import object has been added");
+
+	/* check if the default prototype needs to be instantiated */
+	wasm::Prototype _prototype = prototype;
+	if (!_prototype.valid())
+		_prototype = fNullPrototype();
+
 	/* validate the id and the prototype */
 	std::u8string _id{ id };
 	if (!_id.empty() && pFunction.ids.contains(_id))
 		util::fail(u8"Function with id [", _id, u8"] already defined");
-	if (prototype.valid() && &prototype.module() != this)
+	if (&_prototype.module() != this)
 		util::fail(u8"Prototype for function with id [", _id, u8"] must originate from the same module");
 
 	/* setup the function */
-	detail::FunctionState state = { imported, exported, {}, prototype };
+	detail::FunctionState state = { imported, exported, {}, _prototype };
 
 	/* allocate the next id and register the next function */
 	if (!_id.empty())

@@ -90,6 +90,8 @@ namespace wasm {
 		Types<detail::GlobalState> pGlobal;
 		Types<detail::FunctionState> pFunction;
 		wasm::ModuleInterface* pInterface = 0;
+		wasm::Prototype pNullPrototype;
+		bool pImportsClosed = false;
 		bool pClosed = false;
 
 	public:
@@ -100,8 +102,10 @@ namespace wasm {
 		~Module();
 
 	private:
-		void fClose();
+		wasm::Prototype fPrototype(std::initializer_list<wasm::Param> params, std::initializer_list<wasm::Type> result, std::u8string_view id);
+		wasm::Prototype fNullPrototype();
 		void fCheckClosed() const;
+		void fClose();
 
 	public:
 		wasm::Prototype prototype(std::initializer_list<wasm::Param> params, std::initializer_list<wasm::Type> result, std::u8string_view id = {});

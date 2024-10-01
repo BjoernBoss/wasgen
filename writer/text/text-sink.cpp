@@ -420,8 +420,7 @@ void writer::text::Sink::addInst(const wasm::InstTable& inst) {
 	}
 
 	/* add the table references and write the line out */
-	if (inst.table.valid())
-		str::BuildTo(line, u8" ", inst.table.toString());
+	str::BuildTo(line, u8" ", inst.table.toString());
 	if (inst.type == wasm::InstTable::Type::copy && inst.destination.valid())
 		str::BuildTo(line, u8" ", inst.destination.toString());
 	fAddLine(line);
@@ -509,10 +508,8 @@ void writer::text::Sink::addInst(const wasm::InstIndirect& inst) {
 	}
 
 	/* add the table and prototype reference and write the line out */
-	if (inst.table.valid())
-		str::BuildTo(line, u8" (table ", inst.table.toString(), u8')');
-	if (inst.prototype.valid())
-		str::BuildTo(line, u8" (type ", inst.prototype.toString(), u8')');
+	str::BuildTo(line, u8" (table ", inst.table.toString(), u8')');
+	str::BuildTo(line, u8" (type ", inst.prototype.toString(), u8')');
 	fAddLine(line);
 }
 void writer::text::Sink::addInst(const wasm::InstBranch& inst) {

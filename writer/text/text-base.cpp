@@ -42,7 +42,5 @@ std::u8string writer::text::MakeLimit(const wasm::Limit& limit) {
 	return str::Build<std::u8string>(u8' ', limit.min);
 }
 std::u8string writer::text::MakePrototype(const wasm::Prototype& prototype) {
-	if (!prototype.valid())
-		return {};
 	return str::Build<std::u8string>(u8" (type ", prototype.toString(), u8')');
 }
