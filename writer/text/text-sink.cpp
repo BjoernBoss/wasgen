@@ -49,6 +49,8 @@ void writer::text::Sink::toggleConditional() {
 }
 void writer::text::Sink::close(const wasm::Sink& sink) {
 	str::BuildTo(pModule->pDefined, pLocals, pBody, u8"\n  )");
+
+	/* delete this sink (no reference will be held anymore) */
 	delete this;
 }
 void writer::text::Sink::addLocal(const wasm::Variable& local) {

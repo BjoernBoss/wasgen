@@ -11,11 +11,6 @@ namespace writer::binary {
 	class Module;
 	class Sink;
 
-	/*
-	*	No need to verify byte-order, as this is compiled to wasm,
-	*	which therefore implicitly uses little-endian byte-order
-	*/
-
 	uint32_t CountUInt(uint64_t value);
 	void WriteUInt(std::vector<uint8_t>& buffer, uint64_t value);
 	void WriteSInt(std::vector<uint8_t>& buffer, int64_t value);

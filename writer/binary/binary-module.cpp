@@ -12,7 +12,7 @@ void writer::binary::Module::fWriteExport(const wasm::Export& exported, uint8_t 
 	pExport.buffer.push_back(type);
 	++pExport.count;
 }
-void writer::binary::Module::fWriteSection(const Section& section, uint8_t id) {
+void writer::binary::Module::fWriteSection(const Section& section, uint32_t size, uint8_t id) {
 	if (section.count == 0)
 		return;
 
@@ -20,7 +20,7 @@ void writer::binary::Module::fWriteSection(const Section& section, uint8_t id) {
 	pOutput.push_back(id);
 
 	/* write the byte-size and count out */
-	binary::WriteUInt(pOutput, section.buffer.size() + binary::CountUInt(section.count));
+	binary::WriteUInt(pOutput, uint64_t(size + binary::CountUInt(section.count)));
 	binary::WriteUInt(pOutput, section.count);
 
 	/* write the actual data out */
@@ -41,24 +41,31 @@ void writer::binary::Module::close(const wasm::Module& module) {
 	binary::WriteBytes(pOutput, { 0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00 });
 
 	/* write all sections out in order */
-	fWriteSection(pPrototype, 0x01);
-	fWriteSection(pImport, 0x02);
-	fWriteSection(pFunction, 0x03);
-	fWriteSection(pTable, 0x04);
-	fWriteSection(pMemory, 0x05);
-	fWriteSection(pGlobal, 0x06);
-	fWriteSection(pExport, 0x07);
+	fWriteSection(pPrototype, uint32_t(pPrototype.buffer.size()), 0x01);
+	fWriteSection(pImport, uint32_t(pImport.buffer.size()), 0x02);
+	fWriteSection(pFunction, uint32_t(pFunction.buffer.size()), 0x03);
+	fWriteSection(pTable, uint32_t(pTable.buffer.size()), 0x04);
+	fWriteSection(pMemory, uint32_t(pMemory.buffer.size()), 0x05);
+	fWriteSection(pGlobal, uint32_t(pGlobal.buffer.size()), 0x06);
+	fWriteSection(pExport, uint32_t(pExport.buffer.size()), 0x07);
 
-	/* write all code-sections out (all sinks will already have been closed by the wasm-framework) */
-	fWriteSection(Section{ {}, uint32_t(pCode.size()) }, 0x0a);
+	/* compute the byte-size of the code-section and close all functions (all sinks will already have been closed by the wasm-framework) */
+	uint32_t codeSize = 0;
 	for (size_t i = 0; i < pCode.size(); ++i) {
 		/* check if the code-section needs to be closed properly */
-		if (pCode[i].buffer.empty())
-			pCode[i].buffer.push_back(0x0b);
+		if (pCode[i].empty())
+			pCode[i].push_back(0x0b);
 
-		/* write the size of the code-size out and the locals/code out */
-		binary::WriteUInt(pOutput, pCode[i].buffer.size() - pCode[i].localBytes);
-		pOutput.insert(pOutput.end(), pCode[i].buffer.begin(), pCode[i].buffer.end());
+		/* compute the estimated size */
+		codeSize += uint32_t(pCode[i].size()) + binary::CountUInt(pCode[i].size());
+	}
+
+	/* write the code-section out */
+	fWriteSection(Section{ {}, uint32_t(pCode.size()) }, codeSize, 0x0a);
+	for (size_t i = 0; i < pCode.size(); ++i) {
+		/* write the size of the body out and the body itself */
+		binary::WriteUInt(pOutput, pCode[i].size());
+		pOutput.insert(pOutput.end(), pCode[i].begin(), pCode[i].end());
 	}
 }
 void writer::binary::Module::addPrototype(const wasm::Prototype& prototype) {

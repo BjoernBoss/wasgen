@@ -57,18 +57,17 @@ void writer::binary::Sink::toggleConditional() {
 }
 void writer::binary::Sink::close(const wasm::Sink& sink) {
 	/* write the local data to the code-section */
-	binary::WriteUInt(pModule->pCode[pIndex].buffer, pLocals.size());
+	binary::WriteUInt(pModule->pCode[pIndex], pLocals.size());
 	for (size_t i = 0; i < pLocals.size(); ++i) {
-		binary::WriteUInt(pModule->pCode[pIndex].buffer, pLocals[i].count);
-		pModule->pCode[pIndex].buffer.push_back(binary::GetType(pLocals[i].type));
+		binary::WriteUInt(pModule->pCode[pIndex], pLocals[i].count);
+		pModule->pCode[pIndex].push_back(binary::GetType(pLocals[i].type));
 	}
 
-	/* write the closing instruction-byte */
-	pCode.push_back(0x0b);
-
 	/* write the expression to the code-section */
-	pModule->pCode[pIndex].localBytes = uint32_t(pModule->pCode[pIndex].buffer.size());
-	pModule->pCode[pIndex].buffer.insert(pModule->pCode[pIndex].buffer.end(), pCode.begin(), pCode.end());
+	pModule->pCode[pIndex].insert(pModule->pCode[pIndex].end(), pCode.begin(), pCode.end());
+
+	/* write the closing instruction-byte */
+	pModule->pCode[pIndex].push_back(0x0b);
 
 	/* delete this sink (no reference will be held anymore) */
 	delete this;
@@ -133,14 +132,22 @@ void writer::binary::Sink::addInst(const wasm::InstSimple& inst) {
 	}
 }
 void writer::binary::Sink::addInst(const wasm::InstConst& inst) {
-	if (std::holds_alternative<uint32_t>(inst.value))
+	if (std::holds_alternative<uint32_t>(inst.value)) {
+		fPush(0x41);
 		binary::WriteUInt(pCode, std::get<uint32_t>(inst.value));
-	else if (std::holds_alternative<uint64_t>(inst.value))
+	}
+	else if (std::holds_alternative<uint64_t>(inst.value)) {
+		fPush(0x42);
 		binary::WriteUInt(pCode, std::get<uint64_t>(inst.value));
-	else if (std::holds_alternative<float>(inst.value))
+	}
+	else if (std::holds_alternative<float>(inst.value)) {
+		fPush(0x43);
 		binary::WriteFloat(pCode, std::get<float>(inst.value));
-	else if (std::holds_alternative<double>(inst.value))
+	}
+	else if (std::holds_alternative<double>(inst.value)) {
+		fPush(0x44);
 		binary::WriteDouble(pCode, std::get<double>(inst.value));
+	}
 	else
 		util::fail(u8"Unknown wasm::InstConst type encountered");
 }
@@ -399,6 +406,8 @@ void writer::binary::Sink::addInst(const wasm::InstMemory& inst) {
 			fPush(0x40);
 			binary::WriteUInt(pCode, inst.memory.index());
 		}
+		else
+			fPush(0x00);
 		binary::WriteUInt(pCode, inst.offset);
 	}
 }

@@ -10,10 +10,6 @@ namespace writer::binary {
 			std::vector<uint8_t> buffer;
 			uint32_t count = 0;
 		};
-		struct Code {
-			std::vector<uint8_t> buffer;
-			uint32_t localBytes = 0;
-		};
 
 	private:
 		Section pPrototype;
@@ -23,14 +19,14 @@ namespace writer::binary {
 		Section pGlobal;
 		Section pTable;
 		Section pMemory;
-		std::vector<Code> pCode;
+		std::vector<std::vector<uint8_t>> pCode;
 		std::vector<uint8_t> pOutput;
 		uint32_t pCodeOffset = 0;
 
 	private:
 		void fWriteImport(const wasm::Import& imported, uint8_t type);
 		void fWriteExport(const wasm::Export& exported, uint8_t type);
-		void fWriteSection(const Section& section, uint8_t id);
+		void fWriteSection(const Section& section, uint32_t size, uint8_t id);
 
 	public:
 		const std::vector<uint8_t>& output() const;
