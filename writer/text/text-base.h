@@ -19,4 +19,7 @@ namespace writer::text {
 	std::u8string MakeImport(const wasm::Import& imp);
 	std::u8string MakeLimit(const wasm::Limit& limit);
 	std::u8string MakePrototype(const wasm::Prototype& prototype);
+
+	/* convert the operand to a string (without leading space) */
+	std::u8string_view MakeOperand(wasm::OpType operand);
 }

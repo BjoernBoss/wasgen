@@ -63,15 +63,6 @@ namespace wasm {
 		enum class Type : uint8_t {
 			equal,
 			notEqual,
-			equalZero,
-			greaterSigned,
-			greaterUnsigned,
-			lessSigned,
-			lessUnsigned,
-			greaterEqualSigned,
-			greaterEqualUnsigned,
-			lessEqualSigned,
-			lessEqualUnsigned,
 			add,
 			sub,
 			mul
@@ -89,6 +80,19 @@ namespace wasm {
 	struct InstWidth {
 	public:
 		enum class Type : uint8_t {
+			equalZero,
+			greater,
+			less,
+			greaterEqual,
+			lessEqual,
+			greaterSigned,
+			greaterUnsigned,
+			lessSigned,
+			lessUnsigned,
+			greaterEqualSigned,
+			greaterEqualUnsigned,
+			lessEqualSigned,
+			lessEqualUnsigned,
 			divSigned,
 			divUnsigned,
 			modSigned,
@@ -113,7 +117,6 @@ namespace wasm {
 			bitLeadingNulls,
 			bitTrailingNulls,
 			bitSetCount,
-
 			floatDiv,
 			reinterpretAsInt,
 			floatMin,

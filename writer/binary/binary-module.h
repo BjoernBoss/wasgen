@@ -3,8 +3,6 @@
 #include "binary-base.h"
 
 namespace writer::binary {
-	/* no need to verify byte-order, as this is compiled to wasm,
-	*	which therefore implicitly uses little-endian byte-order */
 	class Module final : public wasm::ModuleInterface {
 		friend class binary::Sink;
 	private:
@@ -27,6 +25,7 @@ namespace writer::binary {
 		Section pMemory;
 		std::vector<Code> pCode;
 		std::vector<uint8_t> pOutput;
+		uint32_t pCodeOffset = 0;
 
 	private:
 		void fWriteImport(const wasm::Import& imported, uint8_t type);

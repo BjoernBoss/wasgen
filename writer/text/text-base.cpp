@@ -44,3 +44,19 @@ std::u8string writer::text::MakeLimit(const wasm::Limit& limit) {
 std::u8string writer::text::MakePrototype(const wasm::Prototype& prototype) {
 	return str::Build<std::u8string>(u8" (type ", prototype.toString(), u8')');
 }
+
+std::u8string_view writer::text::MakeOperand(wasm::OpType operand) {
+	switch (operand) {
+	case wasm::OpType::i32:
+		return u8"i32";
+	case wasm::OpType::i64:
+		return u8"i64";
+	case wasm::OpType::f32:
+		return u8"f32";
+	case wasm::OpType::f64:
+		return u8"f64";
+	default:
+		util::fail(u8"Unknown operand type [", size_t(operand), u8"] encountered");
+		return u8"";
+	}
+}

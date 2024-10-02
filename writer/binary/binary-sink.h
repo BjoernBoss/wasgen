@@ -1,23 +1,30 @@
 #pragma once
 
-#include "text-base.h"
+#include "binary-base.h"
 
-namespace writer::text {
+namespace writer::binary {
 	class Sink final : public wasm::SinkInterface {
-		friend class text::Module;
+		friend class binary::Module;
 	private:
-		text::Module* pModule = 0;
-		std::u8string pLocals;
-		std::u8string pBody;
-		std::u8string pDepth;
+		struct Local {
+			uint32_t count = 0;
+			wasm::Type type = wasm::Type::i32;
+		};
 
 	private:
-		Sink(text::Module* module, std::u8string header);
+		binary::Module* pModule = 0;
+		std::vector<Local> pLocals;
+		std::vector<uint8_t> pCode;
+		uint32_t pIndex = 0;
 
 	private:
-		void fAddLine(const std::u8string_view& str);
-		void fPush(const std::u8string_view& name);
-		void fPop();
+		Sink(binary::Module* module, uint32_t index);
+
+	private:
+		void fPush(uint8_t byte);
+		void fPush(std::initializer_list<uint8_t> bytes);
+		void fPushWidth(bool _32, uint8_t i32, uint8_t i64);
+		void fPushSelect(wasm::OpType operand, uint8_t i32, uint8_t i64, uint8_t f32, uint8_t f64);
 
 	public:
 		void pushScope(const wasm::Target& target) override;

@@ -25,35 +25,8 @@ namespace wasm::detail {
 		static constexpr wasm::InstOperand Equal() {
 			return wasm::InstOperand{ wasm::InstOperand::Type::equal, Type };
 		}
-		static constexpr wasm::InstOperand EqualZero() {
-			return wasm::InstOperand{ wasm::InstOperand::Type::equalZero, Type };
-		}
 		static constexpr wasm::InstOperand NotEqual() {
 			return wasm::InstOperand{ wasm::InstOperand::Type::notEqual, Type };
-		}
-		static constexpr wasm::InstOperand Greater() {
-			if constexpr (Signed)
-				return wasm::InstOperand{ wasm::InstOperand::Type::greaterSigned, Type };
-			else
-				return wasm::InstOperand{ wasm::InstOperand::Type::greaterUnsigned, Type };
-		}
-		static constexpr wasm::InstOperand Less() {
-			if constexpr (Signed)
-				return wasm::InstOperand{ wasm::InstOperand::Type::lessSigned, Type };
-			else
-				return wasm::InstOperand{ wasm::InstOperand::Type::lessUnsigned, Type };
-		}
-		static constexpr wasm::InstOperand GreaterEqual() {
-			if constexpr (Signed)
-				return wasm::InstOperand{ wasm::InstOperand::Type::greaterEqualSigned, Type };
-			else
-				return wasm::InstOperand{ wasm::InstOperand::Type::greaterEqualUnsigned, Type };
-		}
-		static constexpr wasm::InstOperand LessEqual() {
-			if constexpr (Signed)
-				return wasm::InstOperand{ wasm::InstOperand::Type::lessEqualSigned, Type };
-			else
-				return wasm::InstOperand{ wasm::InstOperand::Type::lessEqualUnsigned, Type };
 		}
 		static constexpr wasm::InstOperand Add() {
 			return wasm::InstOperand{ wasm::InstOperand::Type::add, Type };
@@ -90,6 +63,33 @@ namespace wasm::detail {
 
 	template <bool I32, bool Signed>
 	struct IntOperations {
+		static constexpr wasm::InstWidth EqualZero() {
+			return wasm::InstWidth{ wasm::InstWidth::Type::equalZero, I32 };
+		}
+		static constexpr wasm::InstWidth Greater() {
+			if constexpr (Signed)
+				return wasm::InstWidth{ wasm::InstWidth::Type::greaterSigned, I32 };
+			else
+				return wasm::InstWidth{ wasm::InstWidth::Type::greaterUnsigned, I32 };
+		}
+		static constexpr wasm::InstWidth Less() {
+			if constexpr (Signed)
+				return wasm::InstWidth{ wasm::InstWidth::Type::lessSigned, I32 };
+			else
+				return wasm::InstWidth{ wasm::InstWidth::Type::lessUnsigned, I32 };
+		}
+		static constexpr wasm::InstWidth GreaterEqual() {
+			if constexpr (Signed)
+				return wasm::InstWidth{ wasm::InstWidth::Type::greaterEqualSigned, I32 };
+			else
+				return wasm::InstWidth{ wasm::InstWidth::Type::greaterEqualUnsigned, I32 };
+		}
+		static constexpr wasm::InstWidth LessEqual() {
+			if constexpr (Signed)
+				return wasm::InstWidth{ wasm::InstWidth::Type::lessEqualSigned, I32 };
+			else
+				return wasm::InstWidth{ wasm::InstWidth::Type::lessEqualUnsigned, I32 };
+		}
 		static constexpr wasm::InstWidth Div() {
 			if constexpr (Signed)
 				return wasm::InstWidth{ wasm::InstWidth::Type::divSigned, I32 };
@@ -166,6 +166,18 @@ namespace wasm::detail {
 
 	template <bool F32>
 	struct FloatOperations {
+		static constexpr wasm::InstWidth Greater() {
+			return wasm::InstWidth{ wasm::InstWidth::Type::greater, F32 };
+		}
+		static constexpr wasm::InstWidth Less() {
+			return wasm::InstWidth{ wasm::InstWidth::Type::less, F32 };
+		}
+		static constexpr wasm::InstWidth GreaterEqual() {
+			return wasm::InstWidth{ wasm::InstWidth::Type::greaterEqual, F32 };
+		}
+		static constexpr wasm::InstWidth LessEqual() {
+			return wasm::InstWidth{ wasm::InstWidth::Type::lessEqual, F32 };
+		}
 		static constexpr wasm::InstWidth Div() {
 			return wasm::InstWidth{ wasm::InstWidth::Type::floatDiv, F32 };
 		}

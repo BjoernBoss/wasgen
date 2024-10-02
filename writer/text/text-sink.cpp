@@ -1,8 +1,7 @@
-#include "text-sink.h"
 #include "text-module.h"
+#include "text-sink.h"
 
-writer::text::Sink::Sink(text::Module* module, std::u8string header) {
-	pModule = module;
+writer::text::Sink::Sink(text::Module* module, std::u8string header) : pModule{ module } {
 	pLocals = std::move(header);
 	pDepth = u8"\n    ";
 }
@@ -17,22 +16,6 @@ void writer::text::Sink::fPush(const std::u8string_view& name) {
 void writer::text::Sink::fPop() {
 	pDepth.resize(pDepth.size() - 2);
 	str::BuildTo(pBody, pDepth, u8')');
-}
-
-std::u8string_view writer::text::Sink::fOperand(wasm::OpType operand) const {
-	switch (operand) {
-	case wasm::OpType::i32:
-		return u8"i32";
-	case wasm::OpType::i64:
-		return u8"i64";
-	case wasm::OpType::f32:
-		return u8"f32";
-	case wasm::OpType::f64:
-		return u8"f64";
-	default:
-		util::fail(u8"Unknown operand type [", size_t(operand), u8"] encountered");
-		return u8"";
-	}
 }
 
 void writer::text::Sink::pushScope(const wasm::Target& target) {
@@ -147,52 +130,24 @@ void writer::text::Sink::addInst(const wasm::InstConst& inst) {
 	fAddLine(line);
 }
 void writer::text::Sink::addInst(const wasm::InstOperand& inst) {
-	std::u8string line{ fOperand(inst.operand) };
-	line.push_back(u8'.');
+	std::u8string line{ text::MakeOperand(inst.operand) };
 
 	/* add the general instruction-type */
 	switch (inst.type) {
 	case wasm::InstOperand::Type::equal:
-		line.append(u8"eq");
+		line.append(u8".eq");
 		break;
 	case wasm::InstOperand::Type::notEqual:
-		line.append(u8"ne");
-		break;
-	case wasm::InstOperand::Type::equalZero:
-		line.append(u8"eqz");
-		break;
-	case wasm::InstOperand::Type::greaterSigned:
-		line.append(u8"gt_s");
-		break;
-	case wasm::InstOperand::Type::greaterUnsigned:
-		line.append(u8"gt_u");
-		break;
-	case wasm::InstOperand::Type::lessSigned:
-		line.append(u8"lt_s");
-		break;
-	case wasm::InstOperand::Type::lessUnsigned:
-		line.append(u8"lt_u");
-		break;
-	case wasm::InstOperand::Type::greaterEqualSigned:
-		line.append(u8"ge_s");
-		break;
-	case wasm::InstOperand::Type::greaterEqualUnsigned:
-		line.append(u8"ge_u");
-		break;
-	case wasm::InstOperand::Type::lessEqualSigned:
-		line.append(u8"le_s");
-		break;
-	case wasm::InstOperand::Type::lessEqualUnsigned:
-		line.append(u8"le_u");
+		line.append(u8".ne");
 		break;
 	case wasm::InstOperand::Type::add:
-		line.append(u8"add");
+		line.append(u8".add");
 		break;
 	case wasm::InstOperand::Type::sub:
-		line.append(u8"sub");
+		line.append(u8".sub");
 		break;
 	case wasm::InstOperand::Type::mul:
-		line.append(u8"mul");
+		line.append(u8".mul");
 		break;
 	default:
 		util::fail(u8"Unknown wasm::InstOperand type [", size_t(inst.type), u8"] encountered");
@@ -207,6 +162,45 @@ void writer::text::Sink::addInst(const wasm::InstWidth& inst) {
 
 	/* write the general instruction-type out */
 	switch (inst.type) {
+	case wasm::InstWidth::Type::equalZero:
+		fAddLine(str::Build<std::u8string>(u8'i', width, u8".eqz"));
+		break;
+	case wasm::InstWidth::Type::greater:
+		fAddLine(str::Build<std::u8string>(u8'f', width, u8".gt"));
+		break;
+	case wasm::InstWidth::Type::less:
+		fAddLine(str::Build<std::u8string>(u8'f', width, u8".lt"));
+		break;
+	case wasm::InstWidth::Type::greaterEqual:
+		fAddLine(str::Build<std::u8string>(u8'f', width, u8".ge"));
+		break;
+	case wasm::InstWidth::Type::lessEqual:
+		fAddLine(str::Build<std::u8string>(u8'f', width, u8".le"));
+		break;
+	case wasm::InstWidth::Type::greaterSigned:
+		fAddLine(str::Build<std::u8string>(u8'i', width, u8".gt_s"));
+		break;
+	case wasm::InstWidth::Type::greaterUnsigned:
+		fAddLine(str::Build<std::u8string>(u8'i', width, u8".gt_u"));
+		break;
+	case wasm::InstWidth::Type::lessSigned:
+		fAddLine(str::Build<std::u8string>(u8'i', width, u8".lt_s"));
+		break;
+	case wasm::InstWidth::Type::lessUnsigned:
+		fAddLine(str::Build<std::u8string>(u8'i', width, u8".lt_u"));
+		break;
+	case wasm::InstWidth::Type::greaterEqualSigned:
+		fAddLine(str::Build<std::u8string>(u8'i', width, u8".ge_s"));
+		break;
+	case wasm::InstWidth::Type::greaterEqualUnsigned:
+		fAddLine(str::Build<std::u8string>(u8'i', width, u8".ge_u"));
+		break;
+	case wasm::InstWidth::Type::lessEqualSigned:
+		fAddLine(str::Build<std::u8string>(u8'i', width, u8".le_s"));
+		break;
+	case wasm::InstWidth::Type::lessEqualUnsigned:
+		fAddLine(str::Build<std::u8string>(u8'i', width, u8".le_u"));
+		break;
 	case wasm::InstWidth::Type::divSigned:
 		fAddLine(str::Build<std::u8string>(u8'i', width, u8".div_s"));
 		break;
@@ -378,12 +372,11 @@ void writer::text::Sink::addInst(const wasm::InstMemory& inst) {
 
 	/* construct the common load/store instruction */
 	if (!name.empty())
-		str::BuildTo(line, fOperand(inst.operand), name);
+		str::BuildTo(line, text::MakeOperand(inst.operand), name);
 
 	/* add the memory references */
-	if (inst.memory.valid())
-		str::BuildTo(line, u8" ", inst.memory.toString());
-	if (inst.type == wasm::InstMemory::Type::copy && inst.destination.valid())
+	str::BuildTo(line, u8" ", inst.memory.toString());
+	if (inst.type == wasm::InstMemory::Type::copy)
 		str::BuildTo(line, u8" ", inst.destination.toString());
 
 	/* add the offset and write the line out */
@@ -421,7 +414,7 @@ void writer::text::Sink::addInst(const wasm::InstTable& inst) {
 
 	/* add the table references and write the line out */
 	str::BuildTo(line, u8" ", inst.table.toString());
-	if (inst.type == wasm::InstTable::Type::copy && inst.destination.valid())
+	if (inst.type == wasm::InstTable::Type::copy)
 		str::BuildTo(line, u8" ", inst.destination.toString());
 	fAddLine(line);
 }

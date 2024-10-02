@@ -168,11 +168,11 @@ void wasm::Sink::operator[](const wasm::InstMemory& inst) {
 		util::fail(fError(), u8"Memories must be constructed");
 	if (&inst.memory.module() != &pFunction.module())
 		util::fail(fError(), u8"Memory [", inst.memory.toString(), u8"] must originate from same module as function");
-	if (inst.type == wasm::InstMemory::Type::copy && inst.destination.valid()) {
+	if (inst.type == wasm::InstMemory::Type::copy) {
+		if (!inst.destination.valid())
+			util::fail(fError(), u8"Memories must be constructed");
 		if (&inst.destination.module() != &pFunction.module())
 			util::fail(fError(), u8"Memory [", inst.destination.toString(), u8"] must originate from same module as function");
-		if (!inst.memory.valid())
-			util::fail(fError(), u8"Memory copy operation using two separate memories must name both explicitly to prevent ambiguities");
 	}
 
 	/* add the instruction to the interface */
@@ -186,7 +186,9 @@ void wasm::Sink::operator[](const wasm::InstTable& inst) {
 		util::fail(fError(), u8"Tables must be constructed");
 	if (&inst.table.module() != &pFunction.module())
 		util::fail(fError(), u8"Table [", inst.table.toString(), u8"] must originate from same module as function");
-	if (inst.type == wasm::InstTable::Type::copy && inst.destination.valid()) {
+	if (inst.type == wasm::InstTable::Type::copy) {
+		if (!inst.destination.valid())
+			util::fail(fError(), u8"Tables must be constructed");
 		if (&inst.destination.module() != &pFunction.module())
 			util::fail(fError(), u8"Table [", inst.destination.toString(), u8"] must originate from same module as function");
 	}
