@@ -5,27 +5,26 @@ wasm::Sink::Sink(const wasm::Function& function) {
 	/* validate that the function can be used as sink-target */
 	if (!function.valid())
 		util::fail(u8"Functions must be constructed to create a sink to them");
-	if (function.imported().valid())
+	if (function.imported())
 		util::fail(u8"Sinks cannot be created for imported function [", function.toString(), u8"]");
-	wasm::Prototype prototype = function.prototype();
+	pModule = &wasm::Function{ function }.module();
 
 	/* check if the module is closed or the function has already been bound */
-	wasm::Module& module = wasm::Function{ function }.module();
-	module.fCheckClosed();
-	if (module.pFunction.list[function.index()].bound)
+	pModule->fCheckClosed();
+	if (pModule->pFunction.list[function.index()].bound)
 		util::fail(u8"Sink cannot be created for function [", function.toString(), u8"] for which a sink has already been created before");
-	module.pFunction.list[function.index()].bound = true;
+	pModule->pFunction.list[function.index()].bound = true;
 
 	/* setup the sink-state */
 	pFunction = function;
-	const auto& params = prototype.parameter();
+	const auto& params = function.prototype().parameter();
 	for (size_t i = 0; i < params.size(); ++i)
 		pVariables.list.push_back({ {}, params[i].type });
 	pParameter = uint32_t(pVariables.list.size());
-	module.pFunction.list[function.index()].sink = this;
+	pModule->pFunction.list[function.index()].sink = this;
 
 	/* setup the sink-interface */
-	pInterface = module.pInterface->sink(pFunction);
+	pInterface = pModule->pInterface->sink(pFunction);
 }
 wasm::Sink::~Sink() {
 	fClose();
@@ -41,7 +40,7 @@ void wasm::Sink::fClose() {
 
 	/* close all remaining scopes and unregister the sink from the function */
 	fPopUntil(0);
-	pFunction.module().pFunction.list[pFunction.index()].sink = 0;
+	pModule->pFunction.list[pFunction.index()].sink = 0;
 
 	/* mark the sink as closed */
 	pInterface->close(*this);
@@ -69,10 +68,10 @@ void wasm::Sink::fSetupTarget(const wasm::Prototype& prototype, std::u8string_vi
 	/* check if the default prototype needs to be instantiated */
 	wasm::Prototype _prototype = prototype;
 	if (!_prototype.valid())
-		_prototype = pFunction.module().fNullPrototype();
+		_prototype = pModule->fNullPrototype();
 
 	/* validate the prototype */
-	if (&_prototype.module() != &pFunction.module())
+	if (&_prototype.module() != pModule)
 		util::fail(fError(), u8"Prototype [", _prototype.toString(), u8"] must originate from same module as function");
 
 	/* no need to validate the uniqueness of the id, as the name can be duplicated */
@@ -108,6 +107,7 @@ void wasm::Sink::fCloseTarget(uint32_t index, size_t stamp) {
 }
 
 wasm::Variable wasm::Sink::parameter(uint32_t index) {
+	/* validate the parameter-index */
 	if (index >= pParameter)
 		util::fail(fError(), u8"Parameter index [", index, u8"] out of bounds");
 	return wasm::Variable{ *this, index };
@@ -118,7 +118,7 @@ wasm::Variable wasm::Sink::local(wasm::Type type, std::u8string_view id) {
 	/* validate the id */
 	std::u8string _id{ id };
 	if (!_id.empty() && pVariables.ids.contains(_id))
-		util::fail(fError(), u8"Variable with id [", _id, u8"] already defined in sink");
+		util::fail(fError(), u8"Variable [", _id, u8"] already defined in sink");
 
 	/* setup the variable-state */
 	detail::VariableState state = { {}, type };
@@ -166,12 +166,12 @@ void wasm::Sink::operator[](const wasm::InstMemory& inst) {
 	/* validate the instruction-operands */
 	if (!inst.memory.valid())
 		util::fail(fError(), u8"Memories must be constructed");
-	if (&inst.memory.module() != &pFunction.module())
+	if (&inst.memory.module() != pModule)
 		util::fail(fError(), u8"Memory [", inst.memory.toString(), u8"] must originate from same module as function");
 	if (inst.type == wasm::InstMemory::Type::copy) {
 		if (!inst.destination.valid())
 			util::fail(fError(), u8"Memories must be constructed");
-		if (&inst.destination.module() != &pFunction.module())
+		if (&inst.destination.module() != pModule)
 			util::fail(fError(), u8"Memory [", inst.destination.toString(), u8"] must originate from same module as function");
 	}
 
@@ -184,12 +184,12 @@ void wasm::Sink::operator[](const wasm::InstTable& inst) {
 	/* validate the instruction-operands */
 	if (!inst.table.valid())
 		util::fail(fError(), u8"Tables must be constructed");
-	if (&inst.table.module() != &pFunction.module())
+	if (&inst.table.module() != pModule)
 		util::fail(fError(), u8"Table [", inst.table.toString(), u8"] must originate from same module as function");
 	if (inst.type == wasm::InstTable::Type::copy) {
 		if (!inst.destination.valid())
 			util::fail(fError(), u8"Tables must be constructed");
-		if (&inst.destination.module() != &pFunction.module())
+		if (&inst.destination.module() != pModule)
 			util::fail(fError(), u8"Table [", inst.destination.toString(), u8"] must originate from same module as function");
 	}
 
@@ -214,7 +214,7 @@ void wasm::Sink::operator[](const wasm::InstGlobal& inst) {
 	/* validate the instruction-operands */
 	if (!inst.global.valid())
 		util::fail(fError(), u8"Globals must be constructed");
-	if (&inst.global.module() != &pFunction.module())
+	if (&inst.global.module() != pModule)
 		util::fail(fError(), u8"Global [", inst.global.toString(), u8"] must originate from same module as function");
 
 	/* add the instruction to the interface */
@@ -226,7 +226,7 @@ void wasm::Sink::operator[](const wasm::InstFunction& inst) {
 	/* validate the instruction-operands */
 	if (!inst.function.valid())
 		util::fail(fError(), u8"Functions must be constructed");
-	if (&inst.function.module() != &pFunction.module())
+	if (&inst.function.module() != pModule)
 		util::fail(fError(), u8"Function [", inst.function.toString(), u8"] must originate from same module as function");
 
 	/* add the instruction to the interface */
@@ -238,14 +238,14 @@ void wasm::Sink::operator[](const wasm::InstIndirect& inst) {
 	/* check if the default-prototype needs to be instantiated */
 	wasm::Prototype _prototype = inst.prototype;
 	if (!_prototype.valid())
-		_prototype = pFunction.module().fNullPrototype();
+		_prototype = pModule->fNullPrototype();
 
 	/* validate the instruction-operands */
 	if (!inst.table.valid())
 		util::fail(fError(), u8"Tables must be constructed");
-	if (&inst.table.module() != &pFunction.module())
+	if (&inst.table.module() != pModule)
 		util::fail(fError(), u8"Table [", inst.table.toString(), u8"] must originate from same module as function");
-	if (&_prototype.module() != &pFunction.module())
+	if (&_prototype.module() != pModule)
 		util::fail(fError(), u8"Prototype [", _prototype.toString(), u8"] must originate from same module as function");
 
 	/* add the instruction to the interface */

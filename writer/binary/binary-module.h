@@ -16,16 +16,19 @@ namespace writer::binary {
 		Section pFunction;
 		Section pImport;
 		Section pExport;
-		Section pGlobal;
 		Section pTable;
 		Section pMemory;
+		Section pElement;
+		Section pData;
 		std::vector<std::vector<uint8_t>> pCode;
+		std::vector<std::vector<uint8_t>> pGlobal;
 		std::vector<uint8_t> pOutput;
 		uint32_t pCodeOffset = 0;
+		uint32_t pGlobOffset = 0;
 
 	private:
-		void fWriteImport(const wasm::Import& imported, uint8_t type);
-		void fWriteExport(const wasm::Export& exported, uint8_t type);
+		void fWriteImport(const std::u8string& importModule, std::u8string_view id, uint8_t type);
+		void fWriteExport(std::u8string_view id, uint8_t type);
 		void fWriteSection(const Section& section, uint32_t size, uint8_t id);
 
 	public:
@@ -39,5 +42,8 @@ namespace writer::binary {
 		void addTable(const wasm::Table& table) override;
 		void addGlobal(const wasm::Global& global) override;
 		void addFunction(const wasm::Function& function) override;
+		void setValue(const wasm::Global& global, const wasm::Value& value) override;
+		void writeData(const wasm::Memory& memory, const wasm::Value& offset, const std::vector<uint8_t>& data) override;
+		void writeElements(const wasm::Table& table, const wasm::Value& offset, const std::vector<wasm::Value>& values) override;
 	};
 }

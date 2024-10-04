@@ -218,45 +218,45 @@ namespace wasm::detail {
 
 	template <wasm::OpType Type>
 	struct Memory {
-		static constexpr wasm::InstMemory Load(const wasm::Memory& memory = {}, uint32_t offset = 0) {
+		static constexpr wasm::InstMemory Load(const wasm::Memory& memory, uint32_t offset = 0) {
 			return wasm::InstMemory{ wasm::InstMemory::Type::load, memory, {}, offset, Type };
 		}
-		static constexpr wasm::InstMemory Store(const wasm::Memory& memory = {}, uint32_t offset = 0) {
+		static constexpr wasm::InstMemory Store(const wasm::Memory& memory, uint32_t offset = 0) {
 			return wasm::InstMemory{ wasm::InstMemory::Type::store, memory, {}, offset, Type };
 		}
 	};
 
 	template <wasm::OpType Type, bool Signed>
 	struct LargeMemory {
-		static constexpr wasm::InstMemory Load32(const wasm::Memory& memory = {}, uint32_t offset = 0) {
+		static constexpr wasm::InstMemory Load32(const wasm::Memory& memory, uint32_t offset = 0) {
 			if constexpr (Signed)
 				return wasm::InstMemory{ wasm::InstMemory::Type::load32Signed, memory, {}, offset, Type };
 			else
 				return wasm::InstMemory{ wasm::InstMemory::Type::load32Unsigned, memory, {}, offset, Type };
 		}
-		static constexpr wasm::InstMemory Store32(const wasm::Memory& memory = {}, uint32_t offset = 0) {
+		static constexpr wasm::InstMemory Store32(const wasm::Memory& memory, uint32_t offset = 0) {
 			return wasm::InstMemory{ wasm::InstMemory::Type::store32, memory, {}, offset, Type };
 		}
 	};
 
 	template <wasm::OpType Type, bool Signed>
 	struct IntMemory {
-		static constexpr wasm::InstMemory Load8(const wasm::Memory& memory = {}, uint32_t offset = 0) {
+		static constexpr wasm::InstMemory Load8(const wasm::Memory& memory, uint32_t offset = 0) {
 			if constexpr (Signed)
 				return wasm::InstMemory{ wasm::InstMemory::Type::load8Signed, memory, {}, offset, Type };
 			else
 				return wasm::InstMemory{ wasm::InstMemory::Type::load8Unsigned, memory, {}, offset, Type };
 		}
-		static constexpr wasm::InstMemory Load16(const wasm::Memory& memory = {}, uint32_t offset = 0) {
+		static constexpr wasm::InstMemory Load16(const wasm::Memory& memory, uint32_t offset = 0) {
 			if constexpr (Signed)
 				return wasm::InstMemory{ wasm::InstMemory::Type::load16Signed, memory, {}, offset, Type };
 			else
 				return wasm::InstMemory{ wasm::InstMemory::Type::load16Unsigned, memory, {}, offset, Type };
 		}
-		static constexpr wasm::InstMemory Store8(const wasm::Memory& memory = {}, uint32_t offset = 0) {
+		static constexpr wasm::InstMemory Store8(const wasm::Memory& memory, uint32_t offset = 0) {
 			return wasm::InstMemory{ wasm::InstMemory::Type::store8, memory, {}, offset, Type };
 		}
-		static constexpr wasm::InstMemory Store16(const wasm::Memory& memory = {}, uint32_t offset = 0) {
+		static constexpr wasm::InstMemory Store16(const wasm::Memory& memory, uint32_t offset = 0) {
 			return wasm::InstMemory{ wasm::InstMemory::Type::store16, memory, {}, offset, Type };
 		}
 	};

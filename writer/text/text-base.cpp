@@ -14,8 +14,6 @@ std::u8string_view writer::text::MakeType(wasm::Type type) {
 		return u8" externref";
 	case wasm::Type::refFunction:
 		return u8" funcref";
-	case wasm::Type::v128:
-		return u8" v128";
 	default:
 		util::fail(u8"Unknown wasm type [", size_t(type), u8"] encountered");
 		return u8"";
@@ -26,15 +24,15 @@ std::u8string writer::text::MakeId(std::u8string_view id) {
 		return {};
 	return str::Build<std::u8string>(u8" $", id);
 }
-std::u8string writer::text::MakeExport(const wasm::Export& exp) {
-	if (!exp.valid())
+std::u8string writer::text::MakeExport(bool exported, std::u8string_view id) {
+	if (!exported)
 		return {};
-	return str::Build<std::u8string>(u8" (export \"", exp.name, u8"\")");
+	return str::Build<std::u8string>(u8" (export \"", id, u8"\")");
 }
-std::u8string writer::text::MakeImport(const wasm::Import& imp) {
-	if (!imp.valid())
+std::u8string writer::text::MakeImport(const std::u8string& importModule, std::u8string_view id) {
+	if (importModule.empty())
 		return {};
-	return str::Build<std::u8string>(u8" (import \"", imp.module, u8"\" \"", imp.name, u8"\")");
+	return str::Build<std::u8string>(u8" (import \"", importModule, u8"\" \"", id, u8"\")");
 }
 std::u8string writer::text::MakeLimit(const wasm::Limit& limit) {
 	if (limit.maxValid())
@@ -57,6 +55,30 @@ std::u8string_view writer::text::MakeOperand(wasm::OpType operand) {
 		return u8"f64";
 	default:
 		util::fail(u8"Unknown operand type [", size_t(operand), u8"] encountered");
+		return u8"";
+	}
+}
+std::u8string writer::text::MakeValue(const wasm::Value& value) {
+	switch (value.type()) {
+	case wasm::ValType::i32:
+		return str::Build<std::u8string>(u8"i32.const ", value.i32());
+	case wasm::ValType::i64:
+		return str::Build<std::u8string>(u8"i64.const ", value.i64());
+	case wasm::ValType::f32:
+		return str::Build<std::u8string>(u8"f32.const ", value.f32());
+	case wasm::ValType::f64:
+		return str::Build<std::u8string>(u8"f64.const ", value.f64());
+	case wasm::ValType::refExtern:
+		return u8"ref.null extern";
+	case wasm::ValType::refFunction:
+		if (value.function().valid())
+			return str::Build<std::u8string>(u8"ref.func ", value.function().toString());
+		return u8"ref.null func";
+	case wasm::ValType::global:
+		return str::Build<std::u8string>(u8"global.get ", value.global().toString());
+	case wasm::ValType::invalid:
+	default:
+		util::fail(u8"Unknown value type [", size_t(value.type()), u8"] encountered");
 		return u8"";
 	}
 }

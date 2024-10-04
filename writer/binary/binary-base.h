@@ -21,4 +21,5 @@ namespace writer::binary {
 	uint8_t GetType(wasm::Type type);
 	void WriteString(std::vector<uint8_t>& buffer, std::u8string_view str);
 	void WriteLimit(std::vector<uint8_t>& buffer, const wasm::Limit& limit);
+	void WriteValue(std::vector<uint8_t>& buffer, const wasm::Value& value);
 }

@@ -21,7 +21,6 @@ namespace wasm {
 		i64,
 		f32,
 		f64,
-		v128,
 		refExtern,
 		refFunction
 	};
@@ -40,25 +39,6 @@ namespace wasm {
 		constexpr Limit(uint32_t min = 0, uint32_t max = std::numeric_limits<uint32_t>::max()) : min{ min }, max{ std::max<uint32_t>(min, max) } {}
 		constexpr bool maxValid() const {
 			return (max >= min && max != std::numeric_limits<uint32_t>::max());
-		}
-	};
-
-	/* specify imports/exports for wasm-types */
-	struct Import {
-		std::u8string module;
-		std::u8string name;
-		constexpr Import() = default;
-		constexpr Import(std::u8string module, std::u8string name) : module{ module }, name{ name } {}
-		constexpr bool valid() const {
-			return (!module.empty() && !name.empty());
-		}
-	};
-	struct Export {
-		std::u8string name;
-		constexpr Export() = default;
-		constexpr Export(std::u8string name) : name{ name } {}
-		constexpr bool valid() const {
-			return !name.empty();
 		}
 	};
 

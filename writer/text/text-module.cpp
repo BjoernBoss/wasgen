@@ -15,14 +15,8 @@ wasm::SinkInterface* writer::text::Module::sink(const wasm::Function& function) 
 	return new text::Sink{ this, std::move(header) };
 }
 void writer::text::Module::close(const wasm::Module& module) {
-	/* flush all remaining functions to the body (all sinks will already have been closed by the wasm-framework) */
-	for (size_t i = 0; i < pFunctions.size(); ++i) {
-		if (!pFunctions[i].empty())
-			str::BuildTo(pDefined, pFunctions[i], u8')');
-		pFunctions[i].clear();
-	}
-
-	/* merge the remaining content together to construct the complete module-text */
+	/* merge the remaining content together to construct the complete module-text (all globals will
+	*	have been set and all functions will have been sunken and flushed by the wasm-framework) */
 	if (pImports.empty() && pDefined.empty())
 		pOutput = u8"(module)";
 	else
@@ -45,60 +39,125 @@ void writer::text::Module::addPrototype(const wasm::Prototype& prototype) {
 	pDefined.append(u8"))");
 }
 void writer::text::Module::addMemory(const wasm::Memory& memory) {
-	const wasm::Import& imp = memory.imported();
-
-	str::BuildTo((imp.valid() ? pImports : pDefined),
+	str::BuildTo((memory.imported() ? pImports : pDefined),
 		u8"\n  (memory",
 		text::MakeId(memory.id()),
-		text::MakeExport(memory.exported()),
-		text::MakeImport(imp),
+		text::MakeExport(memory.exported(), memory.id()),
+		text::MakeImport(memory.importModule(), memory.id()),
 		text::MakeLimit(memory.limit()),
 		u8')');
 }
 void writer::text::Module::addTable(const wasm::Table& table) {
-	const wasm::Import& imp = table.imported();
-
-	str::BuildTo((imp.valid() ? pImports : pDefined),
+	str::BuildTo((table.imported() ? pImports : pDefined),
 		u8"\n  (table",
 		text::MakeId(table.id()),
-		text::MakeExport(table.exported()),
-		text::MakeImport(imp),
+		text::MakeExport(table.exported(), table.id()),
+		text::MakeImport(table.importModule(), table.id()),
 		text::MakeLimit(table.limit()),
 		table.functions() ? u8" funcref)" : u8" externref)");
 }
 void writer::text::Module::addGlobal(const wasm::Global& global) {
+	std::u8string globText;
+
 	/* construct the type-description */
 	std::u8string typeString = (global.mutating() ?
 		str::Build<std::u8string>(u8" (mut", text::MakeType(global.type()), u8')') :
 		std::u8string(text::MakeType(global.type())));
 
-	/* construct the actual global-definition and write it out to the corresponding body */
-	const wasm::Import& imp = global.imported();
-	str::BuildTo((imp.valid() ? pImports : pDefined),
+	/* construct the global text */
+	str::BuildTo(globText,
 		u8"\n  (global",
 		text::MakeId(global.id()),
-		text::MakeExport(global.exported()),
-		text::MakeImport(imp),
-		typeString,
-		u8')');
+		text::MakeExport(global.exported(), global.id()),
+		text::MakeImport(global.importModule(), global.id()),
+		typeString);
+
+	/* check if this is an import, in which case it can be produced immediately, otherwise a value will be written later */
+	if (global.imported()) {
+		pGlobals.emplace_back();
+		pImports.append(globText).append(1, u8')');
+	}
+	else
+		pGlobals.push_back(std::move(globText));
 }
 void writer::text::Module::addFunction(const wasm::Function& function) {
 	std::u8string funcText;
 
 	/* construct the function-header text */
-	const wasm::Import& imp = function.imported();
 	str::BuildTo(funcText, u8"\n  (func",
 		text::MakeId(function.id()),
-		text::MakeExport(function.exported()),
-		text::MakeImport(imp),
+		text::MakeExport(function.exported(), function.id()),
+		text::MakeImport(function.importModule(), function.id()),
 		text::MakePrototype(function.prototype())
 	);
 
 	/* check if this is an import, in which case it can be produced immediately, otherwise a proper sink needs to be set-up */
-	if (imp.valid()) {
+	if (function.imported()) {
 		pFunctions.emplace_back();
 		pImports.append(funcText).append(1, u8')');
 	}
 	else
 		pFunctions.push_back(std::move(funcText));
+}
+void writer::text::Module::setValue(const wasm::Global& global, const wasm::Value& value) {
+	/* write the value to the global and flush it out */
+	str::BuildTo(pDefined,
+		pGlobals[global.index()],
+		u8' ',
+		text::MakeValue(value), u8')');
+	pGlobals[global.index()].clear();
+}
+void writer::text::Module::writeData(const wasm::Memory& memory, const wasm::Value& offset, const std::vector<uint8_t>& data) {
+	std::u8string dataText;
+
+	/* construct the data-string */
+	for (size_t i = 0; i < data.size(); ++i) {
+		switch (char8_t(data[i])) {
+		case u8'\t':
+			dataText.append(u8"\\t");
+			break;
+		case u8'\n':
+			dataText.append(u8"\\n");
+			break;
+		case u8'\r':
+			dataText.append(u8"\\r");
+			break;
+		case u8'\"':
+			dataText.append(u8"\\\"");
+			break;
+		case u8'\\':
+			dataText.append(u8"\\\\");
+			break;
+		default:
+			if (cp::prop::IsAscii(char32_t(data[i])) && !cp::prop::IsControl(char32_t(data[i])))
+				dataText.push_back(char8_t(data[i]));
+			else
+				str::FormatTo(dataText, u8"\\{:02x}", data[i]);
+			break;
+		}
+	}
+
+	/* write the data-definition out */
+	str::BuildTo(pDefined,
+		u8"\n  (data (memory ",
+		memory.toString(),
+		u8") (offset ",
+		text::MakeValue(offset),
+		u8") \"",
+		dataText,
+		u8"\")");
+}
+void writer::text::Module::writeElements(const wasm::Table& table, const wasm::Value& offset, const std::vector<wasm::Value>& values) {
+	/* write the elements header out */
+	str::BuildTo(pDefined,
+		u8"\n  (elem (table ",
+		table.toString(),
+		u8") (offset ",
+		text::MakeValue(offset),
+		(table.functions() ? u8") funcref" : u8") externref"));
+
+	/* write the items out and close the element list */
+	for (size_t i = 0; i < values.size(); ++i)
+		str::BuildTo(pDefined, u8" (item ", text::MakeValue(values[i]), u8')');
+	pDefined.push_back(u8')');
 }

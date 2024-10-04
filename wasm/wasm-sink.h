@@ -4,6 +4,7 @@
 #include "wasm-variable.h"
 #include "wasm-target.h"
 #include "wasm-function.h"
+#include "wasm-global.h"
 #include "wasm-instruction.h"
 
 #include "../util/logging.h"
@@ -48,6 +49,7 @@ namespace wasm {
 		};
 
 	private:
+		wasm::Module* pModule = 0;
 		struct {
 			std::vector<detail::VariableState> list;
 			std::unordered_set<std::u8string> ids;

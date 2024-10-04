@@ -6,6 +6,7 @@
 #include "wasm-table.h"
 #include "wasm-global.h"
 #include "wasm-function.h"
+#include "wasm-value.h"
 
 #include "../util/logging.h"
 
@@ -20,6 +21,9 @@ namespace wasm {
 		virtual void addTable(const wasm::Table& table) = 0;
 		virtual void addGlobal(const wasm::Global& global) = 0;
 		virtual void addFunction(const wasm::Function& function) = 0;
+		virtual void setValue(const wasm::Global& global, const wasm::Value& value) = 0;
+		virtual void writeData(const wasm::Memory& memory, const wasm::Value& offset, const std::vector<uint8_t>& data) = 0;
+		virtual void writeElements(const wasm::Table& table, const wasm::Value& offset, const std::vector<wasm::Value>& values) = 0;
 	};
 
 	/* write wasm-objects out to the module-implementation */
@@ -102,17 +106,20 @@ namespace wasm {
 		~Module();
 
 	private:
-		wasm::Prototype fPrototype(std::initializer_list<wasm::Param> params, std::initializer_list<wasm::Type> result, std::u8string_view id);
+		wasm::Prototype fPrototype(std::u8string_view id, std::initializer_list<wasm::Param> params, std::initializer_list<wasm::Type> result);
 		wasm::Prototype fNullPrototype();
 		void fCheckClosed() const;
 		void fClose();
 
 	public:
-		wasm::Prototype prototype(std::initializer_list<wasm::Param> params, std::initializer_list<wasm::Type> result, std::u8string_view id = {});
-		wasm::Memory memory(const wasm::Limit& limit = {}, std::u8string_view id = {}, const wasm::Import& imported = {}, const wasm::Export& exported = {});
-		wasm::Table table(bool functions, const wasm::Limit& limit = {}, std::u8string_view id = {}, const wasm::Import& imported = {}, const wasm::Export& exported = {});
-		wasm::Global global(wasm::Type type, bool mutating, std::u8string_view id = {}, const wasm::Import& imported = {}, const wasm::Export& exported = {});
-		wasm::Function function(const wasm::Prototype& prototype = {}, std::u8string_view id = {}, const wasm::Import& imported = {}, const wasm::Export& exported = {});
+		wasm::Prototype prototype(std::u8string_view id, std::initializer_list<wasm::Param> params, std::initializer_list<wasm::Type> result);
+		wasm::Memory memory(std::u8string_view id, const wasm::Limit& limit = {}, std::u8string_view importModule = {}, bool exported = false);
+		wasm::Table table(std::u8string_view id, bool functions, const wasm::Limit& limit = {}, std::u8string_view importModule = {}, bool exported = false);
+		wasm::Global global(std::u8string_view id, wasm::Type type, bool mutating, std::u8string_view importModule = {}, bool exported = false);
+		wasm::Function function(std::u8string_view id, const wasm::Prototype& prototype = {}, std::u8string_view importModule = {}, bool exported = false);
+		void value(const wasm::Global& global, const wasm::Value& value);
+		void data(const wasm::Memory& memory, const wasm::Value& offset, const std::vector<uint8_t>& data);
+		void elements(const wasm::Table& table, const wasm::Value& offset, const std::vector<wasm::Value>& values);
 		void close();
 
 	public:

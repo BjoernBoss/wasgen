@@ -6,11 +6,11 @@
 namespace wasm {
 	namespace detail {
 		struct FunctionState {
-			wasm::Import imported;
-			wasm::Export exported;
+			std::u8string importModule;
 			std::u8string_view id;
 			wasm::Prototype prototype;
 			wasm::Sink* sink = 0;
+			bool exported = false;
 			bool bound = false;
 		};
 	}
@@ -25,11 +25,14 @@ namespace wasm {
 		constexpr Function(wasm::Module& module, uint32_t index) : ModuleMember{ module, index } {}
 
 	public:
-		constexpr const wasm::Import& imported() const {
-			return fGet()->imported;
+		constexpr bool imported() const {
+			return !fGet()->importModule.empty();
 		}
-		constexpr const wasm::Export& exported() const {
+		constexpr bool exported() const {
 			return fGet()->exported;
+		}
+		constexpr const std::u8string& importModule() const {
+			return fGet()->importModule;
 		}
 		constexpr wasm::Prototype prototype() const {
 			return fGet()->prototype;

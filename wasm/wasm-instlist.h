@@ -22,10 +22,10 @@ namespace wasm::inst {
 		static constexpr wasm::InstFunction Tail(const wasm::Function& fn) {
 			return wasm::InstFunction{ wasm::InstFunction::Type::callTail, fn };
 		}
-		static constexpr wasm::InstIndirect Indirect(const wasm::Table& table = {}, const wasm::Prototype& type = {}) {
+		static constexpr wasm::InstIndirect Indirect(const wasm::Table& table, const wasm::Prototype& type = {}) {
 			return wasm::InstIndirect{ wasm::InstIndirect::Type::callNormal, table, type };
 		}
-		static constexpr wasm::InstIndirect IndirectTail(const wasm::Table& table = {}, const wasm::Prototype& type = {}) {
+		static constexpr wasm::InstIndirect IndirectTail(const wasm::Table& table, const wasm::Prototype& type = {}) {
 			return wasm::InstIndirect{ wasm::InstIndirect::Type::callTail, table, type };
 		}
 	};
@@ -52,16 +52,16 @@ namespace wasm::inst {
 	};
 
 	struct Memory {
-		static constexpr wasm::InstMemory Grow(const wasm::Memory& memory = {}) {
+		static constexpr wasm::InstMemory Grow(const wasm::Memory& memory) {
 			return wasm::InstMemory{ wasm::InstMemory::Type::grow, memory, {}, 0, wasm::OpType::i32 };
 		}
-		static constexpr wasm::InstMemory Size(const wasm::Memory& memory = {}) {
+		static constexpr wasm::InstMemory Size(const wasm::Memory& memory) {
 			return wasm::InstMemory{ wasm::InstMemory::Type::size, memory, {}, 0, wasm::OpType::i32 };
 		}
-		static constexpr wasm::InstMemory Fill(const wasm::Memory& memory = {}) {
+		static constexpr wasm::InstMemory Fill(const wasm::Memory& memory) {
 			return wasm::InstMemory{ wasm::InstMemory::Type::fill, memory, {}, 0, wasm::OpType::i32 };
 		}
-		static constexpr wasm::InstMemory Copy(const wasm::Memory& memory = {}) {
+		static constexpr wasm::InstMemory Copy(const wasm::Memory& memory) {
 			return wasm::InstMemory{ wasm::InstMemory::Type::copy, memory, memory, 0, wasm::OpType::i32 };
 		}
 		static constexpr wasm::InstMemory Copy(const wasm::Memory& dest, const wasm::Memory& source) {
@@ -70,22 +70,22 @@ namespace wasm::inst {
 	};
 
 	struct Table {
-		static constexpr wasm::InstTable Get(const wasm::Table& table = {}) {
+		static constexpr wasm::InstTable Get(const wasm::Table& table) {
 			return wasm::InstTable{ wasm::InstTable::Type::get, table, {} };
 		}
-		static constexpr wasm::InstTable Set(const wasm::Table& table = {}) {
+		static constexpr wasm::InstTable Set(const wasm::Table& table) {
 			return wasm::InstTable{ wasm::InstTable::Type::set, table, {} };
 		}
-		static constexpr wasm::InstTable Size(const wasm::Table& table = {}) {
+		static constexpr wasm::InstTable Size(const wasm::Table& table) {
 			return wasm::InstTable{ wasm::InstTable::Type::size, table, {} };
 		}
-		static constexpr wasm::InstTable Grow(const wasm::Table& table = {}) {
+		static constexpr wasm::InstTable Grow(const wasm::Table& table) {
 			return wasm::InstTable{ wasm::InstTable::Type::grow, table, {} };
 		}
-		static constexpr wasm::InstTable Fill(const wasm::Table& table = {}) {
+		static constexpr wasm::InstTable Fill(const wasm::Table& table) {
 			return wasm::InstTable{ wasm::InstTable::Type::fill, table, {} };
 		}
-		static constexpr wasm::InstTable Copy(const wasm::Table& table = {}) {
+		static constexpr wasm::InstTable Copy(const wasm::Table& table) {
 			return wasm::InstTable{ wasm::InstTable::Type::copy, table, table };
 		}
 		static constexpr wasm::InstTable Copy(const wasm::Table& dest, const wasm::Table& source) {

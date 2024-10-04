@@ -56,18 +56,20 @@ void writer::binary::Sink::toggleConditional() {
 	fPush(0x05);
 }
 void writer::binary::Sink::close(const wasm::Sink& sink) {
-	/* write the local data to the code-section */
-	binary::WriteUInt(pModule->pCode[pIndex], pLocals.size());
+	std::vector<uint8_t>& buffer = pModule->pCode[pIndex];
+
+	/* write the local data to the buffer */
+	binary::WriteUInt(buffer, pLocals.size());
 	for (size_t i = 0; i < pLocals.size(); ++i) {
-		binary::WriteUInt(pModule->pCode[pIndex], pLocals[i].count);
-		pModule->pCode[pIndex].push_back(binary::GetType(pLocals[i].type));
+		binary::WriteUInt(buffer, pLocals[i].count);
+		buffer.push_back(binary::GetType(pLocals[i].type));
 	}
 
-	/* write the expression to the code-section */
-	pModule->pCode[pIndex].insert(pModule->pCode[pIndex].end(), pCode.begin(), pCode.end());
+	/* write the expression to the buffer */
+	buffer.insert(buffer.end(), pCode.begin(), pCode.end());
 
 	/* write the closing instruction-byte */
-	pModule->pCode[pIndex].push_back(0x0b);
+	buffer.push_back(0x0b);
 
 	/* delete this sink (no reference will be held anymore) */
 	delete this;

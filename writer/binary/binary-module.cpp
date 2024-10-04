@@ -1,14 +1,14 @@
 #include "binary-module.h"
 #include "binary-sink.h"
 
-void writer::binary::Module::fWriteImport(const wasm::Import& imported, uint8_t type) {
-	binary::WriteString(pImport.buffer, imported.module);
-	binary::WriteString(pImport.buffer, imported.name);
+void writer::binary::Module::fWriteImport(const std::u8string& importModule, std::u8string_view id, uint8_t type) {
+	binary::WriteString(pImport.buffer, importModule);
+	binary::WriteString(pImport.buffer, id);
 	pImport.buffer.push_back(type);
 	++pImport.count;
 }
-void writer::binary::Module::fWriteExport(const wasm::Export& exported, uint8_t type) {
-	binary::WriteString(pExport.buffer, exported.name);
+void writer::binary::Module::fWriteExport(std::u8string_view id, uint8_t type) {
+	binary::WriteString(pExport.buffer, id);
 	pExport.buffer.push_back(type);
 	++pExport.count;
 }
@@ -37,6 +37,8 @@ wasm::SinkInterface* writer::binary::Module::sink(const wasm::Function& function
 	return new binary::Sink{ this, uint32_t(function.index() - pCodeOffset) };
 }
 void writer::binary::Module::close(const wasm::Module& module) {
+	/* all globals will have been set and all functions will have been sunken and flushed by the wasm-framework */
+
 	/* write the magic and version out */
 	binary::WriteBytes(pOutput, { 0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00 });
 
@@ -46,27 +48,31 @@ void writer::binary::Module::close(const wasm::Module& module) {
 	fWriteSection(pFunction, uint32_t(pFunction.buffer.size()), 0x03);
 	fWriteSection(pTable, uint32_t(pTable.buffer.size()), 0x04);
 	fWriteSection(pMemory, uint32_t(pMemory.buffer.size()), 0x05);
-	fWriteSection(pGlobal, uint32_t(pGlobal.buffer.size()), 0x06);
+
+	/* write the global section out */
+	uint32_t globSize = 0;
+	for (size_t i = 0; i < pGlobal.size(); ++i)
+		globSize += uint32_t(pGlobal[i].size());
+	fWriteSection(Section{ {}, uint32_t(pGlobal.size()) }, globSize, 0x06);
+	for (size_t i = 0; i < pGlobal.size(); ++i)
+		pOutput.insert(pOutput.end(), pGlobal[i].begin(), pGlobal[i].end());
+
+	/* write the intermediate sections out */
 	fWriteSection(pExport, uint32_t(pExport.buffer.size()), 0x07);
-
-	/* compute the byte-size of the code-section and close all functions (all sinks will already have been closed by the wasm-framework) */
-	uint32_t codeSize = 0;
-	for (size_t i = 0; i < pCode.size(); ++i) {
-		/* check if the code-section needs to be closed properly */
-		if (pCode[i].empty())
-			pCode[i].push_back(0x0b);
-
-		/* compute the estimated size */
-		codeSize += uint32_t(pCode[i].size()) + binary::CountUInt(pCode[i].size());
-	}
+	fWriteSection(pElement, uint32_t(pElement.buffer.size()), 0x09);
 
 	/* write the code-section out */
+	uint32_t codeSize = 0;
+	for (size_t i = 0; i < pCode.size(); ++i)
+		codeSize += uint32_t(pCode[i].size()) + binary::CountUInt(pCode[i].size());
 	fWriteSection(Section{ {}, uint32_t(pCode.size()) }, codeSize, 0x0a);
 	for (size_t i = 0; i < pCode.size(); ++i) {
-		/* write the size of the body out and the body itself */
 		binary::WriteUInt(pOutput, pCode[i].size());
 		pOutput.insert(pOutput.end(), pCode[i].begin(), pCode[i].end());
 	}
+
+	/* write the data-section out */
+	fWriteSection(pData, uint32_t(pData.buffer.size()), 0x0b);
 }
 void writer::binary::Module::addPrototype(const wasm::Prototype& prototype) {
 	const std::vector<wasm::Param>& params = prototype.parameter();
@@ -88,15 +94,15 @@ void writer::binary::Module::addPrototype(const wasm::Prototype& prototype) {
 }
 void writer::binary::Module::addMemory(const wasm::Memory& memory) {
 	/* check if an export can be written out */
-	if (memory.exported().valid()) {
-		fWriteExport(memory.exported(), 0x02);
+	if (memory.exported()) {
+		fWriteExport(memory.id(), 0x02);
 		binary::WriteUInt(pExport.buffer, memory.index());
 	}
 
 	/* check if this is an import or setup the memory-entry */
-	std::vector<uint8_t>& buffer = (memory.imported().valid() ? pImport : pMemory).buffer;
-	if (memory.imported().valid())
-		fWriteImport(memory.imported(), 0x02);
+	std::vector<uint8_t>& buffer = (memory.imported() ? pImport : pMemory).buffer;
+	if (memory.imported())
+		fWriteImport(memory.importModule(), memory.id(), 0x02);
 	else
 		++pMemory.count;
 
@@ -105,15 +111,15 @@ void writer::binary::Module::addMemory(const wasm::Memory& memory) {
 }
 void writer::binary::Module::addTable(const wasm::Table& table) {
 	/* check if an export can be written out */
-	if (table.exported().valid()) {
-		fWriteExport(table.exported(), 0x01);
+	if (table.exported()) {
+		fWriteExport(table.id(), 0x01);
 		binary::WriteUInt(pExport.buffer, table.index());
 	}
 
 	/* check if this is an import or setup the table-entry */
-	std::vector<uint8_t>& buffer = (table.imported().valid() ? pImport : pTable).buffer;
-	if (table.imported().valid())
-		fWriteImport(table.imported(), 0x01);
+	std::vector<uint8_t>& buffer = (table.imported() ? pImport : pTable).buffer;
+	if (table.imported())
+		fWriteImport(table.importModule(), table.id(), 0x01);
 	else
 		++pTable.count;
 
@@ -123,61 +129,35 @@ void writer::binary::Module::addTable(const wasm::Table& table) {
 }
 void writer::binary::Module::addGlobal(const wasm::Global& global) {
 	/* check if an export can be written out */
-	if (global.exported().valid()) {
-		fWriteExport(global.exported(), 0x03);
+	if (global.exported()) {
+		fWriteExport(global.id(), 0x03);
 		binary::WriteUInt(pExport.buffer, global.index());
 	}
 
-	/* check if this is an import or setup the global */
-	std::vector<uint8_t>& buffer = (global.imported().valid() ? pImport : pGlobal).buffer;
-	if (global.imported().valid())
-		fWriteImport(global.imported(), 0x03);
-	else
-		++pGlobal.count;
-
-	/* write the global out and check if the actual value needs to be written out as well */
-	binary::WriteBytes(buffer, { binary::GetType(global.type()), uint8_t(global.mutating() ? 0x01 : 0x00) });
-	if (global.imported().valid())
-		return;
-
-	/* write the initial value out */
-	switch (global.type()) {
-	case wasm::Type::i32:
-		pGlobal.buffer.push_back(0x41);
-		binary::WriteUInt(pGlobal.buffer, 0);
-		break;
-	case wasm::Type::i64:
-		pGlobal.buffer.push_back(0x42);
-		binary::WriteSInt(pGlobal.buffer, 0);
-		break;
-	case wasm::Type::f32:
-		pGlobal.buffer.push_back(0x43);
-		binary::WriteFloat(pGlobal.buffer, 0.0f);
-		break;
-	case wasm::Type::f64:
-		pGlobal.buffer.push_back(0x44);
-		binary::WriteDouble(pGlobal.buffer, 0.0);
-		break;
-	case wasm::Type::refFunction:
-		binary::WriteBytes(pGlobal.buffer, { 0xd0, 0x70 });
-		break;
-	case wasm::Type::refExtern:
-		binary::WriteBytes(pGlobal.buffer, { 0xd0, 0x6f });
-		break;
+	/* check if this is an import or allocate the global entry */
+	if (global.imported())
+		fWriteImport(global.importModule(), global.id(), 0x03);
+	else {
+		if (pGlobal.empty())
+			pGlobOffset = global.index();
+		pGlobal.emplace_back();
 	}
-	pGlobal.buffer.push_back(0xb0);
+	std::vector<uint8_t>& buffer = (global.imported() ? pImport.buffer : pGlobal.back());
+
+	/* write the global-header out */
+	binary::WriteBytes(buffer, { binary::GetType(global.type()), uint8_t(global.mutating() ? 0x01 : 0x00) });
 }
 void writer::binary::Module::addFunction(const wasm::Function& function) {
 	/* check if an export can be written out */
-	if (function.exported().valid()) {
-		fWriteExport(function.exported(), 0x00);
+	if (function.exported()) {
+		fWriteExport(function.id(), 0x00);
 		binary::WriteUInt(pExport.buffer, function.index());
 	}
 
 	/* check if this is an import or setup the function-entry and allocate the code-entry */
-	std::vector<uint8_t>& buffer = (function.imported().valid() ? pImport : pFunction).buffer;
-	if (function.imported().valid())
-		fWriteImport(function.imported(), 0x00);
+	std::vector<uint8_t>& buffer = (function.imported() ? pImport : pFunction).buffer;
+	if (function.imported())
+		fWriteImport(function.importModule(), function.id(), 0x00);
 	else {
 		if (pCode.empty())
 			pCodeOffset = function.index();
@@ -187,4 +167,47 @@ void writer::binary::Module::addFunction(const wasm::Function& function) {
 
 	/* write the function type out */
 	binary::WriteUInt(buffer, function.prototype().index());
+}
+void writer::binary::Module::setValue(const wasm::Global& global, const wasm::Value& value) {
+	writer::binary::WriteValue(pGlobal[size_t(global.index() - pGlobOffset)], value);
+}
+void writer::binary::Module::writeData(const wasm::Memory& memory, const wasm::Value& offset, const std::vector<uint8_t>& data) {
+	/* setup the next data entry */
+	++pData.count;
+	pData.buffer.push_back(0x02);
+
+	/* write the memory-index and offset out */
+	binary::WriteUInt(pData.buffer, memory.index());
+	binary::WriteValue(pData.buffer, offset);
+
+	/* write the data-vector out */
+	binary::WriteUInt(pData.buffer, data.size());
+	pData.buffer.insert(pData.buffer.end(), data.begin(), data.end());
+}
+void writer::binary::Module::writeElements(const wasm::Table& table, const wasm::Value& offset, const std::vector<wasm::Value>& values) {
+	/* check if the entire list of values consists of functions */
+	bool allFunctions = std::all_of(values.begin(), values.end(),
+		[](const wasm::Value& value) { return (value.type() == wasm::ValType::refFunction && value.function().valid()); }
+	);
+
+	/* setup the next element entry */
+	++pElement.count;
+	pElement.buffer.push_back(allFunctions ? 0x02 : 0x06);
+
+	/* write the table-index, offset, and ref-type out */
+	binary::WriteUInt(pElement.buffer, table.index());
+	binary::WriteValue(pElement.buffer, offset);
+	if (allFunctions)
+		pElement.buffer.push_back(0x00);
+	else
+		pElement.buffer.push_back(binary::GetType(table.functions() ? wasm::Type::refFunction : wasm::Type::refExtern));
+
+	/* write the element-vector out */
+	binary::WriteUInt(pElement.buffer, values.size());
+	if (allFunctions) {
+		for (size_t i = 0; i < values.size(); ++i)
+			binary::WriteUInt(pElement.buffer, values[i].function().index());
+	}
+	else for (size_t i = 0; i < values.size(); ++i)
+		binary::WriteValue(pElement.buffer, values[i]);
 }

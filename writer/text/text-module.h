@@ -7,6 +7,7 @@ namespace writer::text {
 		friend class text::Sink;
 	private:
 		std::vector<std::u8string> pFunctions;
+		std::vector<std::u8string> pGlobals;
 		std::u8string pImports;
 		std::u8string pDefined;
 		std::u8string pOutput;
@@ -22,5 +23,8 @@ namespace writer::text {
 		void addTable(const wasm::Table& table) override;
 		void addGlobal(const wasm::Global& global) override;
 		void addFunction(const wasm::Function& function) override;
+		void setValue(const wasm::Global& global, const wasm::Value& value) override;
+		void writeData(const wasm::Memory& memory, const wasm::Value& offset, const std::vector<uint8_t>& data) override;
+		void writeElements(const wasm::Table& table, const wasm::Value& offset, const std::vector<wasm::Value>& values) override;
 	};
 }
