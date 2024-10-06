@@ -7,7 +7,7 @@ wasm::Sink::Sink(const wasm::Function& function) {
 		util::fail(u8"Functions must be constructed to create a sink to them");
 	if (function.imported())
 		util::fail(u8"Sinks cannot be created for imported function [", function.toString(), u8"]");
-	pModule = &wasm::Function{ function }.module();
+	pModule = &function.module();
 
 	/* check if the module is closed or the function has already been bound */
 	pModule->fCheckClosed();
@@ -62,20 +62,15 @@ bool wasm::Sink::fCheckTarget(uint32_t index, size_t stamp, bool soft) const {
 		util::fail(fError(), u8"Target [", index, u8"] is out of scope");
 	return false;
 }
-void wasm::Sink::fSetupTarget(const wasm::Prototype& prototype, std::u8string_view id, wasm::ScopeType type, wasm::Target& target) {
-	fCheckClosed();
-
-	/* check if the default prototype needs to be instantiated */
-	wasm::Prototype _prototype = prototype;
-	if (!_prototype.valid())
-		_prototype = pModule->fNullPrototype();
-
+void wasm::Sink::fSetupValidTarget(const wasm::Prototype& prototype, std::u8string_view id, wasm::ScopeType type, wasm::Target& target) {
 	/* validate the prototype */
-	if (&_prototype.module() != pModule)
-		util::fail(fError(), u8"Prototype [", _prototype.toString(), u8"] must originate from same module as function");
+	if (!prototype.valid())
+		util::fail(fError(), u8"Prototype must be constructed");
+	if (&prototype.module() != pModule)
+		util::fail(fError(), u8"Prototype [", prototype.toString(), u8"] must originate from same module as function");
 
 	/* no need to validate the uniqueness of the id, as the name can be duplicated */
-	detail::TargetState state = { _prototype, std::u8string{ id }, ++pNextStamp, type, false };
+	detail::TargetState state = { prototype, std::u8string{ id }, ++pNextStamp, type, false };
 	pTargets.push_back(std::move(state));
 	uint32_t index = uint32_t(pTargets.size() - 1);
 
@@ -85,6 +80,14 @@ void wasm::Sink::fSetupTarget(const wasm::Prototype& prototype, std::u8string_vi
 
 	/* notify the interface about the added scope */
 	pInterface->pushScope(target);
+}
+void wasm::Sink::fSetupTarget(const wasm::Prototype& prototype, std::u8string_view id, wasm::ScopeType type, wasm::Target& target) {
+	fCheckClosed();
+	fSetupValidTarget(prototype, id, type, target);
+}
+void wasm::Sink::fSetupTarget(std::initializer_list<wasm::Type> params, std::initializer_list<wasm::Type> result, std::u8string_view id, wasm::ScopeType type, wasm::Target& target) {
+	fCheckClosed();
+	fSetupValidTarget(pModule->prototype(params, result), id, type, target);
 }
 void wasm::Sink::fToggleTarget(uint32_t index, size_t stamp) {
 	/* ignore the target if its already out of scope or already toggled */
@@ -235,21 +238,18 @@ void wasm::Sink::operator[](const wasm::InstFunction& inst) {
 void wasm::Sink::operator[](const wasm::InstIndirect& inst) {
 	fCheckClosed();
 
-	/* check if the default-prototype needs to be instantiated */
-	wasm::Prototype _prototype = inst.prototype;
-	if (!_prototype.valid())
-		_prototype = pModule->fNullPrototype();
-
 	/* validate the instruction-operands */
 	if (!inst.table.valid())
 		util::fail(fError(), u8"Tables must be constructed");
 	if (&inst.table.module() != pModule)
 		util::fail(fError(), u8"Table [", inst.table.toString(), u8"] must originate from same module as function");
-	if (&_prototype.module() != pModule)
-		util::fail(fError(), u8"Prototype [", _prototype.toString(), u8"] must originate from same module as function");
+	if (!inst.prototype.valid())
+		util::fail(fError(), u8"Prototype must be constructed");
+	if (&inst.prototype.module() != pModule)
+		util::fail(fError(), u8"Prototype [", inst.prototype.toString(), u8"] must originate from same module as function");
 
 	/* add the instruction to the interface */
-	pInterface->addInst(wasm::InstIndirect{ inst.type, inst.table, _prototype });
+	pInterface->addInst(inst);
 }
 void wasm::Sink::operator[](const wasm::InstBranch& inst) {
 	fCheckClosed();

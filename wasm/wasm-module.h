@@ -86,8 +86,23 @@ namespace wasm {
 				return wasm::Function{ *_this, index };
 			}
 		};
+		struct PrototypeKey {
+			std::vector<wasm::Type> list;
+			size_t params = 0;
+		};
+		struct PrototypeKeyOps {
+			std::size_t operator()(const Module::PrototypeKey& k) const {
+				std::size_t h0 = std::hash<size_t>{}(k.params);
+				std::size_t h1 = std::hash<std::u8string_view>{}(std::u8string_view{ reinterpret_cast<const char8_t*>(k.list.data()), sizeof(wasm::Type) * k.list.size() });
+				return h0 ^ (h1 << 1);
+			}
+			bool operator()(const Module::PrototypeKey& l, const Module::PrototypeKey& r) const {
+				return (l.params == r.params && l.list == r.list);
+			}
+		};
 
 	private:
+		std::unordered_map<Module::PrototypeKey, uint32_t, PrototypeKeyOps, PrototypeKeyOps> pAnonTypes;
 		Types<detail::PrototypeState> pPrototype;
 		Types<detail::MemoryState> pMemory;
 		Types<detail::TableState> pTable;
@@ -107,16 +122,19 @@ namespace wasm {
 
 	private:
 		wasm::Prototype fPrototype(std::u8string_view id, std::initializer_list<wasm::Param> params, std::initializer_list<wasm::Type> result);
-		wasm::Prototype fNullPrototype();
+		wasm::Prototype fPrototype(std::initializer_list<wasm::Type> params, std::initializer_list<wasm::Type> result);
+		wasm::Function fFunction(std::u8string_view id, const wasm::Prototype& prototype, const wasm::Exchange& exchange);
 		void fCheckClosed() const;
 		void fClose();
 
 	public:
+		wasm::Prototype prototype(std::initializer_list<wasm::Type> params, std::initializer_list<wasm::Type> result);
 		wasm::Prototype prototype(std::u8string_view id, std::initializer_list<wasm::Param> params, std::initializer_list<wasm::Type> result);
-		wasm::Memory memory(std::u8string_view id, const wasm::Limit& limit = {}, std::u8string_view importModule = {}, bool exported = false);
-		wasm::Table table(std::u8string_view id, bool functions, const wasm::Limit& limit = {}, std::u8string_view importModule = {}, bool exported = false);
-		wasm::Global global(std::u8string_view id, wasm::Type type, bool mutating, std::u8string_view importModule = {}, bool exported = false);
-		wasm::Function function(std::u8string_view id, const wasm::Prototype& prototype = {}, std::u8string_view importModule = {}, bool exported = false);
+		wasm::Memory memory(std::u8string_view id, const wasm::Limit& limit, const wasm::Exchange& exchange = {});
+		wasm::Table table(std::u8string_view id, bool functions, const wasm::Limit& limit, const wasm::Exchange& exchange = {});
+		wasm::Global global(std::u8string_view id, wasm::Type type, bool mutating, const wasm::Exchange& exchange = {});
+		wasm::Function function(std::u8string_view id, const wasm::Prototype& prototype, const wasm::Exchange& exchange = {});
+		wasm::Function function(std::u8string_view id, std::initializer_list<wasm::Type> params, std::initializer_list<wasm::Type> result, const wasm::Exchange& exchange = {});
 		void value(const wasm::Global& global, const wasm::Value& value);
 		void data(const wasm::Memory& memory, const wasm::Value& offset, const std::vector<uint8_t>& data);
 		void elements(const wasm::Table& table, const wasm::Value& offset, const std::vector<wasm::Value>& values);

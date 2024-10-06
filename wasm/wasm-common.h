@@ -8,6 +8,7 @@
 #include <string>
 #include <variant>
 #include <initializer_list>
+#include <unordered_map>
 
 namespace wasm {
 	class Module;
@@ -25,10 +26,37 @@ namespace wasm {
 		refFunction
 	};
 
+	/* exchange to define imports/exports/transports */
+	struct Exchange {
+	public:
+		std::u8string_view importModule;
+		bool exported = false;
+
+	public:
+		constexpr Exchange() = default;
+		explicit constexpr Exchange(std::u8string_view importModule, bool exported) : importModule{ importModule }, exported{ exported } {}
+	};
+
+	/* explicitly mark this as an import */
+	struct Import : public wasm::Exchange {
+		explicit constexpr Import(std::u8string_view importModule) : wasm::Exchange{ importModule, false } {}
+	};
+
+	/* explicitly mark this as an export */
+	struct Export : public wasm::Exchange {
+		explicit constexpr Export() : wasm::Exchange{ u8"", true } {}
+	};
+
+	/* explicitly mark this as a transport */
+	struct Transport : public wasm::Exchange {
+		explicit constexpr Transport(std::u8string_view importModule) : wasm::Exchange{ importModule, true } {}
+	};
+
 	/* parameter to construct any prototype-parameter */
 	struct Param {
 		std::u8string id;
 		wasm::Type type;
+		constexpr Param(wasm::Type type) : id{}, type{ type } {}
 		constexpr Param(std::u8string id, wasm::Type type) : id{ id }, type{ type } {}
 	};
 
@@ -46,7 +74,7 @@ namespace wasm {
 		template <class Type>
 		class ModuleMember {
 		private:
-			wasm::Module* pModule = 0;
+			mutable wasm::Module* pModule = 0;
 			uint32_t pIndex = std::numeric_limits<uint32_t>::max();
 
 		protected:
@@ -60,10 +88,7 @@ namespace wasm {
 			constexpr bool valid() const {
 				return (pModule != 0);
 			}
-			constexpr const wasm::Module& module() const {
-				return *pModule;
-			}
-			constexpr wasm::Module& module() {
+			constexpr wasm::Module& module() const {
 				return *pModule;
 			}
 			constexpr std::u8string_view id() const {
@@ -83,7 +108,7 @@ namespace wasm {
 		template <class Type>
 		class SinkMember {
 		protected:
-			wasm::Sink* pSink = 0;
+			mutable wasm::Sink* pSink = 0;
 			uint32_t pIndex = std::numeric_limits<uint32_t>::max();
 
 		protected:
@@ -94,10 +119,7 @@ namespace wasm {
 			constexpr const Type* fGet() const;
 
 		public:
-			constexpr const wasm::Sink& sink() const {
-				return *pSink;
-			}
-			constexpr wasm::Sink& sink() {
+			constexpr wasm::Sink& sink() const {
 				return *pSink;
 			}
 		};

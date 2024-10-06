@@ -7,8 +7,6 @@ wasm::Module::~Module() {
 }
 
 wasm::Prototype wasm::Module::fPrototype(std::u8string_view id, std::initializer_list<wasm::Param> params, std::initializer_list<wasm::Type> result) {
-	fCheckClosed();
-
 	/* validate the id and the parameter */
 	std::u8string _id{ id };
 	if (!_id.empty() && pPrototype.ids.contains(_id))
@@ -37,10 +35,76 @@ wasm::Prototype wasm::Module::fPrototype(std::u8string_view id, std::initializer
 	pInterface->addPrototype(prototype);
 	return prototype;
 }
-wasm::Prototype wasm::Module::fNullPrototype() {
-	if (!pNullPrototype.valid())
-		pNullPrototype = fPrototype({}, {}, {});
-	return pNullPrototype;
+wasm::Prototype wasm::Module::fPrototype(std::initializer_list<wasm::Type> params, std::initializer_list<wasm::Type> result) {
+	/* check if its the null-type */
+	if (params.size() == 0 && result.size() == 0 && pNullPrototype.valid())
+		return pNullPrototype;
+
+	/* setup the type-key */
+	PrototypeKey key{};
+	key.list.insert(key.list.end(), params);
+	key.list.insert(key.list.end(), result);
+	key.params = params.size();
+
+	/* lookup the type in the map of anonymous-types */
+	auto it = pAnonTypes.find(key);
+	if (it != pAnonTypes.end())
+		return wasm::Prototype{ *this, it->second };
+
+	/* setup the prototype-state */
+	detail::PrototypeState state;
+	for (wasm::Type param : params)
+		state.parameter.emplace_back(param);
+	state.result.insert(state.result.end(), result);
+
+	/* allocate the next id and register the next prototype */
+	pPrototype.list.push_back(std::move(state));
+	wasm::Prototype prototype{ *this, uint32_t(pPrototype.list.size() - 1) };
+
+	/* check if this is the null-type and otherwise insert it into the map */
+	if (params.size() == 0 && result.size() == 0)
+		pNullPrototype = prototype;
+	else {
+		std::pair<PrototypeKey, uint32_t> value{ std::move(key), prototype.index() };
+		pAnonTypes.insert(std::move(value));
+	}
+
+	/* notify the interface about the added prototype */
+	pInterface->addPrototype(prototype);
+	return prototype;
+}
+wasm::Function wasm::Module::fFunction(std::u8string_view id, const wasm::Prototype& prototype, const wasm::Exchange& exchange) {
+	/* validate the import/export parameter */
+	if ((!exchange.importModule.empty() || exchange.exported) && id.empty())
+		util::fail(u8"Importing or exporting requires explicit id names");
+
+	/* validate the imports */
+	if (exchange.importModule.empty())
+		pImportsClosed = true;
+	else if (pImportsClosed)
+		util::fail(u8"Cannot import function [", id, u8"] after the first non-import object has been added");
+
+	/* validate the id and the prototype */
+	std::u8string _id{ id };
+	if (!_id.empty() && pFunction.ids.contains(_id))
+		util::fail(u8"Function [", _id, u8"] already defined");
+	if (!prototype.valid())
+		util::fail(u8"Prototype for function [", _id, u8"] must be constructed");
+	if (&prototype.module() != this)
+		util::fail(u8"Prototype for function [", _id, u8"] must originate from this module");
+
+	/* setup the function */
+	detail::FunctionState state = { std::u8string{ exchange.importModule }, {}, prototype, 0, exchange.exported, false };
+
+	/* allocate the next id and register the next function */
+	if (!_id.empty())
+		state.id = *pFunction.ids.insert(_id).first;
+	pFunction.list.push_back(std::move(state));
+	wasm::Function function{ *this, uint32_t(pFunction.list.size() - 1) };
+
+	/* notify the interface about the added function */
+	pInterface->addFunction(function);
+	return function;
 }
 void wasm::Module::fCheckClosed() const {
 	if (pClosed)
@@ -71,18 +135,23 @@ void wasm::Module::fClose() {
 	pInterface->close(*this);
 }
 
+wasm::Prototype wasm::Module::prototype(std::initializer_list<wasm::Type> params, std::initializer_list<wasm::Type> result) {
+	fCheckClosed();
+	return fPrototype(params, result);
+}
 wasm::Prototype wasm::Module::prototype(std::u8string_view id, std::initializer_list<wasm::Param> params, std::initializer_list<wasm::Type> result) {
+	fCheckClosed();
 	return fPrototype(id, params, result);
 }
-wasm::Memory wasm::Module::memory(std::u8string_view id, const wasm::Limit& limit, std::u8string_view importModule, bool exported) {
+wasm::Memory wasm::Module::memory(std::u8string_view id, const wasm::Limit& limit, const wasm::Exchange& exchange) {
 	fCheckClosed();
 
 	/* validate the import/export parameter */
-	if ((!importModule.empty() || exported) && id.empty())
+	if ((!exchange.importModule.empty() || exchange.exported) && id.empty())
 		util::fail(u8"Importing or exporting requires explicit id names");
 
 	/* validate the imports */
-	if (importModule.empty())
+	if (exchange.importModule.empty())
 		pImportsClosed = true;
 	else if (pImportsClosed)
 		util::fail(u8"Cannot import memory [", id, u8"] after the first non-import object has been added");
@@ -93,7 +162,7 @@ wasm::Memory wasm::Module::memory(std::u8string_view id, const wasm::Limit& limi
 		util::fail(u8"Memory [", _id, u8"] already defined");
 
 	/* setup the memory-state */
-	detail::MemoryState state = { std::u8string{ importModule }, limit, {}, exported };
+	detail::MemoryState state = { std::u8string{ exchange.importModule }, limit, {}, exchange.exported };
 
 	/* allocate the next id and register the next memory */
 	if (!_id.empty())
@@ -105,15 +174,15 @@ wasm::Memory wasm::Module::memory(std::u8string_view id, const wasm::Limit& limi
 	pInterface->addMemory(memory);
 	return memory;
 }
-wasm::Table wasm::Module::table(std::u8string_view id, bool functions, const wasm::Limit& limit, std::u8string_view importModule, bool exported) {
+wasm::Table wasm::Module::table(std::u8string_view id, bool functions, const wasm::Limit& limit, const wasm::Exchange& exchange) {
 	fCheckClosed();
 
 	/* validate the import/export parameter */
-	if ((!importModule.empty() || exported) && id.empty())
+	if ((!exchange.importModule.empty() || exchange.exported) && id.empty())
 		util::fail(u8"Importing or exporting requires explicit id names");
 
 	/* validate the imports */
-	if (importModule.empty())
+	if (exchange.importModule.empty())
 		pImportsClosed = true;
 	else if (pImportsClosed)
 		util::fail(u8"Cannot import table [", id, u8"] after the first non-import object has been added");
@@ -124,7 +193,7 @@ wasm::Table wasm::Module::table(std::u8string_view id, bool functions, const was
 		util::fail(u8"Table [", _id, u8"] already defined");
 
 	/* setup the table-state */
-	detail::TableState state = { std::u8string{ importModule }, limit, {}, exported, functions };
+	detail::TableState state = { std::u8string{ exchange.importModule }, limit, {}, exchange.exported, functions };
 
 	/* allocate the next id and register the next table */
 	if (!_id.empty())
@@ -136,15 +205,15 @@ wasm::Table wasm::Module::table(std::u8string_view id, bool functions, const was
 	pInterface->addTable(table);
 	return table;
 }
-wasm::Global wasm::Module::global(std::u8string_view id, wasm::Type type, bool mutating, std::u8string_view importModule, bool exported) {
+wasm::Global wasm::Module::global(std::u8string_view id, wasm::Type type, bool mutating, const wasm::Exchange& exchange) {
 	fCheckClosed();
 
 	/* validate the import/export parameter */
-	if ((!importModule.empty() || exported) && id.empty())
+	if ((!exchange.importModule.empty() || exchange.exported) && id.empty())
 		util::fail(u8"Importing or exporting requires explicit id names");
 
 	/* validate the imports */
-	if (importModule.empty())
+	if (exchange.importModule.empty())
 		pImportsClosed = true;
 	else if (pImportsClosed)
 		util::fail(u8"Cannot import global [", id, u8"] after the first non-import object has been added");
@@ -155,7 +224,7 @@ wasm::Global wasm::Module::global(std::u8string_view id, wasm::Type type, bool m
 		util::fail(u8"Global [", _id, u8"] already defined");
 
 	/* setup the global */
-	detail::GlobalState state = { std::u8string{ importModule }, {}, type, exported, mutating, false };
+	detail::GlobalState state = { std::u8string{ exchange.importModule }, {}, type, exchange.exported, mutating, false };
 
 	/* allocate the next id and register the next global */
 	if (!_id.empty())
@@ -167,43 +236,13 @@ wasm::Global wasm::Module::global(std::u8string_view id, wasm::Type type, bool m
 	pInterface->addGlobal(global);
 	return global;
 }
-wasm::Function wasm::Module::function(std::u8string_view id, const wasm::Prototype& prototype, std::u8string_view importModule, bool exported) {
+wasm::Function wasm::Module::function(std::u8string_view id, const wasm::Prototype& prototype, const wasm::Exchange& exchange) {
 	fCheckClosed();
-
-	/* validate the import/export parameter */
-	if ((!importModule.empty() || exported) && id.empty())
-		util::fail(u8"Importing or exporting requires explicit id names");
-
-	/* validate the imports */
-	if (importModule.empty())
-		pImportsClosed = true;
-	else if (pImportsClosed)
-		util::fail(u8"Cannot import function [", id, u8"] after the first non-import object has been added");
-
-	/* check if the default prototype needs to be instantiated */
-	wasm::Prototype _prototype = prototype;
-	if (!_prototype.valid())
-		_prototype = fNullPrototype();
-
-	/* validate the id and the prototype */
-	std::u8string _id{ id };
-	if (!_id.empty() && pFunction.ids.contains(_id))
-		util::fail(u8"Function [", _id, u8"] already defined");
-	if (&_prototype.module() != this)
-		util::fail(u8"Prototype for function [", _id, u8"] must originate from this module");
-
-	/* setup the function */
-	detail::FunctionState state = { std::u8string{ importModule }, {}, _prototype, 0, exported, false };
-
-	/* allocate the next id and register the next function */
-	if (!_id.empty())
-		state.id = *pFunction.ids.insert(_id).first;
-	pFunction.list.push_back(std::move(state));
-	wasm::Function function{ *this, uint32_t(pFunction.list.size() - 1) };
-
-	/* notify the interface about the added function */
-	pInterface->addFunction(function);
-	return function;
+	return fFunction(id, prototype, exchange);
+}
+wasm::Function wasm::Module::function(std::u8string_view id, std::initializer_list<wasm::Type> params, std::initializer_list<wasm::Type> result, const wasm::Exchange& exchange) {
+	fCheckClosed();
+	return fFunction(id, fPrototype(params, result), exchange);
 }
 void wasm::Module::value(const wasm::Global& global, const wasm::Value& value) {
 	/* validate the global */

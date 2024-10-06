@@ -36,6 +36,7 @@ namespace wasm {
 
 	protected:
 		void fSetup(std::u8string_view label, const wasm::Prototype& prototype, wasm::ScopeType type);
+		void fSetup(std::u8string_view label, std::initializer_list<wasm::Type> params, std::initializer_list<wasm::Type> result, wasm::ScopeType type);
 		void fToggle();
 		void fClose();
 
@@ -50,7 +51,8 @@ namespace wasm {
 
 	/* create a conditional if/then/else block, which can be jumped to for a sink */
 	struct IfThen : public wasm::Target {
-		IfThen(wasm::Sink& sink, std::u8string_view label = {}, const wasm::Prototype& prototype = {});
+		IfThen(wasm::Sink& sink, std::u8string_view label, const wasm::Prototype& prototype);
+		IfThen(wasm::Sink& sink, std::u8string_view label = {}, std::initializer_list<wasm::Type> params = {}, std::initializer_list<wasm::Type> result = {});
 		~IfThen();
 		void close();
 		void otherwise();
@@ -58,14 +60,16 @@ namespace wasm {
 
 	/* create a loop block, which can be jumped to for a sink */
 	struct Loop : public wasm::Target {
-		Loop(wasm::Sink& sink, std::u8string_view label = {}, const wasm::Prototype& prototype = {});
+		Loop(wasm::Sink& sink, std::u8string_view label, const wasm::Prototype& prototype);
+		Loop(wasm::Sink& sink, std::u8string_view label = {}, std::initializer_list<wasm::Type> params = {}, std::initializer_list<wasm::Type> result = {});
 		~Loop();
 		void close();
 	};
 
 	/* create a jump block, which can be jumped to for a sink */
 	struct Block : public wasm::Target {
-		Block(wasm::Sink& sink, std::u8string_view label = {}, const wasm::Prototype& prototype = {});
+		Block(wasm::Sink& sink, std::u8string_view label, const wasm::Prototype& prototype);
+		Block(wasm::Sink& sink, std::u8string_view label = {}, std::initializer_list<wasm::Type> params = {}, std::initializer_list<wasm::Type> result = {});
 		~Block();
 		void close();
 	};

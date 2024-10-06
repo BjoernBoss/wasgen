@@ -22,10 +22,22 @@ namespace wasm::inst {
 		static constexpr wasm::InstFunction Tail(const wasm::Function& fn) {
 			return wasm::InstFunction{ wasm::InstFunction::Type::callTail, fn };
 		}
-		static constexpr wasm::InstIndirect Indirect(const wasm::Table& table, const wasm::Prototype& type = {}) {
+		static constexpr wasm::InstIndirect Indirect(const wasm::Table& table, const wasm::Prototype& type) {
 			return wasm::InstIndirect{ wasm::InstIndirect::Type::callNormal, table, type };
 		}
-		static constexpr wasm::InstIndirect IndirectTail(const wasm::Table& table, const wasm::Prototype& type = {}) {
+		static constexpr wasm::InstIndirect IndirectTail(const wasm::Table& table, const wasm::Prototype& type) {
+			return wasm::InstIndirect{ wasm::InstIndirect::Type::callTail, table, type };
+		}
+		static constexpr wasm::InstIndirect Indirect(const wasm::Table& table, std::initializer_list<wasm::Type> params = {}, std::initializer_list<wasm::Type> result = {}) {
+			wasm::Prototype type{};
+			if (table.valid())
+				type = table.module().prototype(params, result);
+			return wasm::InstIndirect{ wasm::InstIndirect::Type::callNormal, table, type };
+		}
+		static constexpr wasm::InstIndirect IndirectTail(const wasm::Table& table, std::initializer_list<wasm::Type> params = {}, std::initializer_list<wasm::Type> result = {}) {
+			wasm::Prototype type{};
+			if (table.valid())
+				type = table.module().prototype(params, result);
 			return wasm::InstIndirect{ wasm::InstIndirect::Type::callTail, table, type };
 		}
 	};

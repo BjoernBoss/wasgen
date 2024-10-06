@@ -6,6 +6,9 @@ wasm::Target::Target(wasm::Sink& sink) : SinkMember{ sink, 0 } {}
 void wasm::Target::fSetup(std::u8string_view label, const wasm::Prototype& prototype, wasm::ScopeType type) {
 	pSink->fSetupTarget(prototype, label, type, *this);
 }
+void wasm::Target::fSetup(std::u8string_view label, std::initializer_list<wasm::Type> params, std::initializer_list<wasm::Type> result, wasm::ScopeType type) {
+	pSink->fSetupTarget(params, result, label, type, *this);
+}
 void wasm::Target::fToggle() {
 	pSink->fToggleTarget(pIndex, pStamp);
 }
@@ -44,6 +47,9 @@ std::u8string wasm::Target::toString() const {
 wasm::IfThen::IfThen(wasm::Sink& sink, std::u8string_view label, const wasm::Prototype& prototype) : Target{ sink } {
 	fSetup(label, prototype, wasm::ScopeType::conditional);
 }
+wasm::IfThen::IfThen(wasm::Sink& sink, std::u8string_view label, std::initializer_list<wasm::Type> params, std::initializer_list<wasm::Type> result) : Target{ sink } {
+	fSetup(label, params, result, wasm::ScopeType::conditional);
+}
 wasm::IfThen::~IfThen() {
 	fClose();
 }
@@ -58,6 +64,9 @@ void wasm::IfThen::otherwise() {
 wasm::Loop::Loop(wasm::Sink& sink, std::u8string_view label, const wasm::Prototype& prototype) : Target{ sink } {
 	fSetup(label, prototype, wasm::ScopeType::loop);
 }
+wasm::Loop::Loop(wasm::Sink& sink, std::u8string_view label, std::initializer_list<wasm::Type> params, std::initializer_list<wasm::Type> result) : Target{ sink } {
+	fSetup(label, params, result, wasm::ScopeType::loop);
+}
 wasm::Loop::~Loop() {
 	fClose();
 }
@@ -68,6 +77,9 @@ void wasm::Loop::close() {
 
 wasm::Block::Block(wasm::Sink& sink, std::u8string_view label, const wasm::Prototype& prototype) : Target{ sink } {
 	fSetup(label, prototype, wasm::ScopeType::block);
+}
+wasm::Block::Block(wasm::Sink& sink, std::u8string_view label, std::initializer_list<wasm::Type> params, std::initializer_list<wasm::Type> result) : Target{ sink } {
+	fSetup(label, params, result, wasm::ScopeType::block);
 }
 wasm::Block::~Block() {
 	fClose();
