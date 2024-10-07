@@ -31,6 +31,8 @@ The library lives in the `wasm` namespace. The fundamental idea is to create a `
 
 The `writer::BinaryWriter` produces `WASM`, and the `writer::TextWriter` produces a `utf-8` encoded `WAT` string.
 
+Note: When using the library incorrectly, such as defining imports after the first non-imports have been added, a `wasm::Exception` will be thrown.
+
 The following example to produce `WAT`:
 ```C++
 namespace I = wasm::inst;
