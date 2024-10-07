@@ -108,6 +108,97 @@ wasm::Function wasm::Module::fFunction(std::u8string_view id, const wasm::Protot
 	pInterface->addFunction(function);
 	return function;
 }
+void wasm::Module::fData(const wasm::Memory& memory, const wasm::Value& offset, const uint8_t* data, uint32_t count) {
+	/* validate the memory */
+	if (!memory.valid())
+		throw wasm::Exception{ L"Memory is required to be constructed to write data to it" };
+	if (&memory.module() != this)
+		throw wasm::Exception{ L"Memory [", memory.toString(), L"] must originate from this module" };
+
+	/* validate the offset */
+	if (!offset.valid())
+		throw wasm::Exception{ L"Offset to write to memory [", memory.toString(), L"] is required to be constructed" };
+	if (offset.type() != wasm::ValType::i32 && offset.type() != wasm::ValType::global)
+		throw wasm::Exception{ L"Offset to write to memory [", memory.toString(), L"] must be of type i32 or a global-import" };
+	if (offset.type() == wasm::ValType::global) {
+		if (!offset.global().valid())
+			throw wasm::Exception{ L"Imported offset to write to memory [", memory.toString(), L"] must be constructed" };
+		if (&offset.global().module() != this)
+			throw wasm::Exception{ L"Imported offset to write to memory [", memory.toString(), L"] must originate from this module" };
+		if (offset.global().type() != wasm::Type::i32 || !offset.global().imported() || offset.global().mutating())
+			throw wasm::Exception{ L"Imported offset to write to memory [", memory.toString(), L"] must be an immutable imported i32" };
+	}
+
+	/* pass the validated data to the interface */
+	pInterface->writeData(memory, offset, data, count);
+}
+void wasm::Module::fElements(const wasm::Table& table, const wasm::Value& offset, const wasm::Value* values, uint32_t count) {
+	/* validate the memory */
+	if (!table.valid())
+		throw wasm::Exception{ L"Table is required to be constructed to write elements to it" };
+	if (&table.module() != this)
+		throw wasm::Exception{ L"Table [", table.toString(), L"] must originate from this module" };
+
+	/* validate the offset */
+	if (!offset.valid())
+		throw wasm::Exception{ L"Offset to write to table [", table.toString(), L"] is required to be constructed" };
+	if (offset.type() != wasm::ValType::i32 && offset.type() != wasm::ValType::global)
+		throw wasm::Exception{ L"Offset to write to table [", table.toString(), L"] must be of type i32 or a global-import" };
+	if (offset.type() == wasm::ValType::global) {
+		if (!offset.global().valid())
+			throw wasm::Exception{ L"Imported offset to write to table [", table.toString(), L"] must be constructed" };
+		if (&offset.global().module() != this)
+			throw wasm::Exception{ L"Imported offset to write to table [", table.toString(), L"] must originate from this module" };
+		if (offset.global().type() != wasm::Type::i32 || !offset.global().imported() || offset.global().mutating())
+			throw wasm::Exception{ L"Imported offset to write to table [", table.toString(), L"] must be an immutable imported i32" };
+	}
+
+	/* validate the values */
+	wasm::Type _type{};
+	for (uint32_t i = 0; i < count; ++i) {
+		const wasm::Value& value = values[i];
+
+		switch (value.type()) {
+		case wasm::ValType::i32:
+			_type = wasm::Type::i32;
+			break;
+		case wasm::ValType::i64:
+			_type = wasm::Type::i64;
+			break;
+		case wasm::ValType::f32:
+			_type = wasm::Type::f32;
+			break;
+		case wasm::ValType::f64:
+			_type = wasm::Type::f64;
+			break;
+		case wasm::ValType::refExtern:
+			_type = wasm::Type::refExtern;
+			break;
+		case wasm::ValType::refFunction:
+			_type = wasm::Type::refFunction;
+			if (value.function().valid() && &value.function().module() != this)
+				throw wasm::Exception{ L"Function value for table [", table.toString(), L"] must originate from this module" };
+			break;
+		case wasm::ValType::global:
+			if (!value.global().valid())
+				throw wasm::Exception{ L"Imported value for table [", table.toString(), L"] must be constructed" };
+			if (&value.global().module() != this)
+				throw wasm::Exception{ L"Imported value for table [", table.toString(), L"] must originate from this module" };
+			if (!value.global().imported() || value.global().mutating())
+				throw wasm::Exception{ L"Imported value for table [", table.toString(), L"] must be imported and immutable" };
+			_type = value.global().type();
+			break;
+		case wasm::ValType::invalid:
+			throw wasm::Exception{ L"Value for table [", table.toString(), L"] is required to be constructed" };
+			break;
+		}
+		if (_type != (table.functions() ? wasm::Type::refFunction : wasm::Type::refExtern))
+			throw wasm::Exception{ L"Value for table [", table.toString(), L"] must match its type" };
+	}
+
+	/* pass the validated data to the interface */
+	pInterface->writeElements(table, offset, values, count);
+}
 void wasm::Module::fCheckClosed() const {
 	if (pClosed)
 		throw wasm::Exception{ L"Cannot change the closed module" };
@@ -247,6 +338,8 @@ wasm::Function wasm::Module::function(std::u8string_view id, std::initializer_li
 	return fFunction(id, fPrototype(params, result), exchange);
 }
 void wasm::Module::value(const wasm::Global& global, const wasm::Value& value) {
+	fCheckClosed();
+
 	/* validate the global */
 	if (!global.valid())
 		throw wasm::Exception{ L"Global is required to be constructed to set its value" };
@@ -303,93 +396,20 @@ void wasm::Module::value(const wasm::Global& global, const wasm::Value& value) {
 	pInterface->setValue(global, value);
 }
 void wasm::Module::data(const wasm::Memory& memory, const wasm::Value& offset, const std::vector<uint8_t>& data) {
-	/* validate the memory */
-	if (!memory.valid())
-		throw wasm::Exception{ L"Memory is required to be constructed to write data to it" };
-	if (&memory.module() != this)
-		throw wasm::Exception{ L"Memory [", memory.toString(), L"] must originate from this module" };
-
-	/* validate the offset */
-	if (!offset.valid())
-		throw wasm::Exception{ L"Offset to write to memory [", memory.toString(), L"] is required to be constructed" };
-	if (offset.type() != wasm::ValType::i32 && offset.type() != wasm::ValType::global)
-		throw wasm::Exception{ L"Offset to write to memory [", memory.toString(), L"] must be of type i32 or a global-import" };
-	if (offset.type() == wasm::ValType::global) {
-		if (!offset.global().valid())
-			throw wasm::Exception{ L"Imported offset to write to memory [", memory.toString(), L"] must be constructed" };
-		if (&offset.global().module() != this)
-			throw wasm::Exception{ L"Imported offset to write to memory [", memory.toString(), L"] must originate from this module" };
-		if (offset.global().type() != wasm::Type::i32 || !offset.global().imported() || offset.global().mutating())
-			throw wasm::Exception{ L"Imported offset to write to memory [", memory.toString(), L"] must be an immutable imported i32" };
-	}
-
-	/* pass the validated data to the interface */
-	pInterface->writeData(memory, offset, data);
+	fCheckClosed();
+	fData(memory, offset, data.data(), uint32_t(data.size()));
+}
+void wasm::Module::data(const wasm::Memory& memory, const wasm::Value& offset, const uint8_t* data, size_t count) {
+	fCheckClosed();
+	fData(memory, offset, data, uint32_t(count));
 }
 void wasm::Module::elements(const wasm::Table& table, const wasm::Value& offset, const std::vector<wasm::Value>& values) {
-	/* validate the memory */
-	if (!table.valid())
-		throw wasm::Exception{ L"Table is required to be constructed to write elements to it" };
-	if (&table.module() != this)
-		throw wasm::Exception{ L"Table [", table.toString(), L"] must originate from this module" };
-
-	/* validate the offset */
-	if (!offset.valid())
-		throw wasm::Exception{ L"Offset to write to table [", table.toString(), L"] is required to be constructed" };
-	if (offset.type() != wasm::ValType::i32 && offset.type() != wasm::ValType::global)
-		throw wasm::Exception{ L"Offset to write to table [", table.toString(), L"] must be of type i32 or a global-import" };
-	if (offset.type() == wasm::ValType::global) {
-		if (!offset.global().valid())
-			throw wasm::Exception{ L"Imported offset to write to table [", table.toString(), L"] must be constructed" };
-		if (&offset.global().module() != this)
-			throw wasm::Exception{ L"Imported offset to write to table [", table.toString(), L"] must originate from this module" };
-		if (offset.global().type() != wasm::Type::i32 || !offset.global().imported() || offset.global().mutating())
-			throw wasm::Exception{ L"Imported offset to write to table [", table.toString(), L"] must be an immutable imported i32" };
-	}
-
-	/* validate the values */
-	wasm::Type _type{};
-	for (const wasm::Value& value : values) {
-		switch (value.type()) {
-		case wasm::ValType::i32:
-			_type = wasm::Type::i32;
-			break;
-		case wasm::ValType::i64:
-			_type = wasm::Type::i64;
-			break;
-		case wasm::ValType::f32:
-			_type = wasm::Type::f32;
-			break;
-		case wasm::ValType::f64:
-			_type = wasm::Type::f64;
-			break;
-		case wasm::ValType::refExtern:
-			_type = wasm::Type::refExtern;
-			break;
-		case wasm::ValType::refFunction:
-			_type = wasm::Type::refFunction;
-			if (value.function().valid() && &value.function().module() != this)
-				throw wasm::Exception{ L"Function value for table [", table.toString(), L"] must originate from this module" };
-			break;
-		case wasm::ValType::global:
-			if (!value.global().valid())
-				throw wasm::Exception{ L"Imported value for table [", table.toString(), L"] must be constructed" };
-			if (&value.global().module() != this)
-				throw wasm::Exception{ L"Imported value for table [", table.toString(), L"] must originate from this module" };
-			if (!value.global().imported() || value.global().mutating())
-				throw wasm::Exception{ L"Imported value for table [", table.toString(), L"] must be imported and immutable" };
-			_type = value.global().type();
-			break;
-		case wasm::ValType::invalid:
-			throw wasm::Exception{ L"Value for table [", table.toString(), L"] is required to be constructed" };
-			break;
-		}
-		if (_type != (table.functions() ? wasm::Type::refFunction : wasm::Type::refExtern))
-			throw wasm::Exception{ L"Value for table [", table.toString(), L"] must match its type" };
-	}
-
-	/* pass the validated data to the interface */
-	pInterface->writeElements(table, offset, values);
+	fCheckClosed();
+	fElements(table, offset, values.data(), uint32_t(values.size()));
+}
+void wasm::Module::elements(const wasm::Table& table, const wasm::Value& offset, const wasm::Value* values, size_t count) {
+	fCheckClosed();
+	fElements(table, offset, values, uint32_t(count));
 }
 void wasm::Module::close() {
 	fClose();

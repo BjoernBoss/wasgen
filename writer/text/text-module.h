@@ -30,7 +30,7 @@ namespace writer::text {
 		void addGlobal(const wasm::Global& global) override;
 		void addFunction(const wasm::Function& function) override;
 		void setValue(const wasm::Global& global, const wasm::Value& value) override;
-		void writeData(const wasm::Memory& memory, const wasm::Value& offset, const std::vector<uint8_t>& data) override;
-		void writeElements(const wasm::Table& table, const wasm::Value& offset, const std::vector<wasm::Value>& values) override;
+		void writeData(const wasm::Memory& memory, const wasm::Value& offset, const uint8_t* data, uint32_t count) override;
+		void writeElements(const wasm::Table& table, const wasm::Value& offset, const wasm::Value* values, uint32_t count) override;
 	};
 }

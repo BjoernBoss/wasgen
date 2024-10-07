@@ -173,7 +173,7 @@ void writer::binary::Module::addFunction(const wasm::Function& function) {
 void writer::binary::Module::setValue(const wasm::Global& global, const wasm::Value& value) {
 	writer::binary::WriteValue(pGlobal[size_t(global.index() - pGlobOffset)], value);
 }
-void writer::binary::Module::writeData(const wasm::Memory& memory, const wasm::Value& offset, const std::vector<uint8_t>& data) {
+void writer::binary::Module::writeData(const wasm::Memory& memory, const wasm::Value& offset, const uint8_t* data, uint32_t count) {
 	/* setup the next data entry */
 	++pData.count;
 	pData.buffer.push_back(0x02);
@@ -183,12 +183,12 @@ void writer::binary::Module::writeData(const wasm::Memory& memory, const wasm::V
 	binary::WriteValue(pData.buffer, offset);
 
 	/* write the data-vector out */
-	binary::WriteUInt(pData.buffer, data.size());
-	pData.buffer.insert(pData.buffer.end(), data.begin(), data.end());
+	binary::WriteUInt(pData.buffer, count);
+	pData.buffer.insert(pData.buffer.end(), data, data + count);
 }
-void writer::binary::Module::writeElements(const wasm::Table& table, const wasm::Value& offset, const std::vector<wasm::Value>& values) {
+void writer::binary::Module::writeElements(const wasm::Table& table, const wasm::Value& offset, const wasm::Value* values, uint32_t count) {
 	/* check if the entire list of values consists of functions */
-	bool allFunctions = std::all_of(values.begin(), values.end(),
+	bool allFunctions = std::all_of(values, values + count,
 		[](const wasm::Value& value) { return (value.type() == wasm::ValType::refFunction && value.function().valid()); }
 	);
 
@@ -205,11 +205,11 @@ void writer::binary::Module::writeElements(const wasm::Table& table, const wasm:
 		pElement.buffer.push_back(binary::GetType(table.functions() ? wasm::Type::refFunction : wasm::Type::refExtern));
 
 	/* write the element-vector out */
-	binary::WriteUInt(pElement.buffer, values.size());
+	binary::WriteUInt(pElement.buffer, count);
 	if (allFunctions) {
-		for (size_t i = 0; i < values.size(); ++i)
+		for (uint32_t i = 0; i < count; ++i)
 			binary::WriteUInt(pElement.buffer, values[i].function().index());
 	}
-	else for (size_t i = 0; i < values.size(); ++i)
+	else for (uint32_t i = 0; i < count; ++i)
 		binary::WriteValue(pElement.buffer, values[i]);
 }

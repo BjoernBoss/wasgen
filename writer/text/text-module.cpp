@@ -111,11 +111,11 @@ void writer::text::Module::setValue(const wasm::Global& global, const wasm::Valu
 		text::MakeValue(value), u8')');
 	pGlobals[global.index()].clear();
 }
-void writer::text::Module::writeData(const wasm::Memory& memory, const wasm::Value& offset, const std::vector<uint8_t>& data) {
+void writer::text::Module::writeData(const wasm::Memory& memory, const wasm::Value& offset, const uint8_t* data, uint32_t count) {
 	std::u8string dataText;
 
 	/* construct the data-string */
-	for (size_t i = 0; i < data.size(); ++i) {
+	for (size_t i = 0; i < count; ++i) {
 		switch (char8_t(data[i])) {
 		case u8'\t':
 			dataText.append(u8"\\t");
@@ -151,7 +151,7 @@ void writer::text::Module::writeData(const wasm::Memory& memory, const wasm::Val
 		dataText,
 		u8"\")");
 }
-void writer::text::Module::writeElements(const wasm::Table& table, const wasm::Value& offset, const std::vector<wasm::Value>& values) {
+void writer::text::Module::writeElements(const wasm::Table& table, const wasm::Value& offset, const wasm::Value* values, uint32_t count) {
 	/* write the elements header out */
 	str::BuildTo(pDefined,
 		u8'\n', pIndent, u8"(elem (table ",
@@ -161,7 +161,7 @@ void writer::text::Module::writeElements(const wasm::Table& table, const wasm::V
 		(table.functions() ? u8") funcref" : u8") externref"));
 
 	/* write the items out and close the element list */
-	for (size_t i = 0; i < values.size(); ++i)
+	for (uint32_t i = 0; i < count; ++i)
 		str::BuildTo(pDefined, u8" (item ", text::MakeValue(values[i]), u8')');
 	pDefined.push_back(u8')');
 }

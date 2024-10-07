@@ -22,8 +22,8 @@ namespace wasm {
 		virtual void addGlobal(const wasm::Global& global) = 0;
 		virtual void addFunction(const wasm::Function& function) = 0;
 		virtual void setValue(const wasm::Global& global, const wasm::Value& value) = 0;
-		virtual void writeData(const wasm::Memory& memory, const wasm::Value& offset, const std::vector<uint8_t>& data) = 0;
-		virtual void writeElements(const wasm::Table& table, const wasm::Value& offset, const std::vector<wasm::Value>& values) = 0;
+		virtual void writeData(const wasm::Memory& memory, const wasm::Value& offset, const uint8_t* data, uint32_t count) = 0;
+		virtual void writeElements(const wasm::Table& table, const wasm::Value& offset, const wasm::Value* values, uint32_t count) = 0;
 	};
 
 	/* write wasm-objects out to the module-implementation */
@@ -124,6 +124,8 @@ namespace wasm {
 		wasm::Prototype fPrototype(std::u8string_view id, std::initializer_list<wasm::Param> params, std::initializer_list<wasm::Type> result);
 		wasm::Prototype fPrototype(std::initializer_list<wasm::Type> params, std::initializer_list<wasm::Type> result);
 		wasm::Function fFunction(std::u8string_view id, const wasm::Prototype& prototype, const wasm::Exchange& exchange);
+		void fData(const wasm::Memory& memory, const wasm::Value& offset, const uint8_t* data, uint32_t count);
+		void fElements(const wasm::Table& table, const wasm::Value& offset, const wasm::Value* values, uint32_t count);
 		void fCheckClosed() const;
 		void fClose();
 
@@ -137,7 +139,9 @@ namespace wasm {
 		wasm::Function function(std::u8string_view id, std::initializer_list<wasm::Type> params, std::initializer_list<wasm::Type> result, const wasm::Exchange& exchange = {});
 		void value(const wasm::Global& global, const wasm::Value& value);
 		void data(const wasm::Memory& memory, const wasm::Value& offset, const std::vector<uint8_t>& data);
+		void data(const wasm::Memory& memory, const wasm::Value& offset, const uint8_t* data, size_t count);
 		void elements(const wasm::Table& table, const wasm::Value& offset, const std::vector<wasm::Value>& values);
+		void elements(const wasm::Table& table, const wasm::Value& offset, const wasm::Value* values, size_t count);
 		void close();
 
 	public:
