@@ -3,6 +3,8 @@
 #include "text-module.h"
 #include "text-sink.h"
 
+writer::text::Module::Module(std::u8string_view indent) : pIndent{ indent } {}
+
 const std::u8string& writer::text::Module::output() const {
 	if (pOutput.empty())
 		throw wasm::Exception{ L"Cannot produce text-writer module output before the wrapping wasm::Module has been closed" };
@@ -29,7 +31,7 @@ void writer::text::Module::addPrototype(const wasm::Prototype& prototype) {
 	const std::vector<wasm::Type>& results = prototype.result();
 
 	/* write the actual type to the definition-body */
-	str::BuildTo(pDefined, u8"\n  (type", text::MakeId(prototype.id()), u8" (func");
+	str::BuildTo(pDefined, u8'\n', pIndent, u8"(type", text::MakeId(prototype.id()), u8" (func");
 	for (size_t i = 0; i < params.size(); ++i)
 		str::BuildTo(pDefined, u8" (param", text::MakeId(params[i].id), text::MakeType(params[i].type), u8')');
 	if (!results.empty()) {
@@ -42,7 +44,7 @@ void writer::text::Module::addPrototype(const wasm::Prototype& prototype) {
 }
 void writer::text::Module::addMemory(const wasm::Memory& memory) {
 	str::BuildTo((memory.imported() ? pImports : pDefined),
-		u8"\n  (memory",
+		u8'\n', pIndent, u8"(memory",
 		text::MakeId(memory.id()),
 		text::MakeExport(memory.exported(), memory.id()),
 		text::MakeImport(memory.importModule(), memory.id()),
@@ -51,7 +53,7 @@ void writer::text::Module::addMemory(const wasm::Memory& memory) {
 }
 void writer::text::Module::addTable(const wasm::Table& table) {
 	str::BuildTo((table.imported() ? pImports : pDefined),
-		u8"\n  (table",
+		u8'\n', pIndent, u8"(table",
 		text::MakeId(table.id()),
 		text::MakeExport(table.exported(), table.id()),
 		text::MakeImport(table.importModule(), table.id()),
@@ -68,7 +70,7 @@ void writer::text::Module::addGlobal(const wasm::Global& global) {
 
 	/* construct the global text */
 	str::BuildTo(globText,
-		u8"\n  (global",
+		u8'\n', pIndent, u8"(global",
 		text::MakeId(global.id()),
 		text::MakeExport(global.exported(), global.id()),
 		text::MakeImport(global.importModule(), global.id()),
@@ -86,7 +88,7 @@ void writer::text::Module::addFunction(const wasm::Function& function) {
 	std::u8string funcText;
 
 	/* construct the function-header text */
-	str::BuildTo(funcText, u8"\n  (func",
+	str::BuildTo(funcText, u8'\n', pIndent, u8"(func",
 		text::MakeId(function.id()),
 		text::MakeExport(function.exported(), function.id()),
 		text::MakeImport(function.importModule(), function.id()),
@@ -141,7 +143,7 @@ void writer::text::Module::writeData(const wasm::Memory& memory, const wasm::Val
 
 	/* write the data-definition out */
 	str::BuildTo(pDefined,
-		u8"\n  (data (memory ",
+		u8'\n', pIndent, u8"(data (memory ",
 		memory.toString(),
 		u8") (offset ",
 		text::MakeValue(offset),
@@ -152,7 +154,7 @@ void writer::text::Module::writeData(const wasm::Memory& memory, const wasm::Val
 void writer::text::Module::writeElements(const wasm::Table& table, const wasm::Value& offset, const std::vector<wasm::Value>& values) {
 	/* write the elements header out */
 	str::BuildTo(pDefined,
-		u8"\n  (elem (table ",
+		u8'\n', pIndent, u8"(elem (table ",
 		table.toString(),
 		u8") (offset ",
 		text::MakeValue(offset),

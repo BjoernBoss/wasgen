@@ -7,7 +7,9 @@
 #include <vector>
 #include <string>
 
-#include "../wasm.h"
+#include "../../wasm-module.h"
+#include "../../wasm-sink.h"
+#include "../../wasm-instlist.h"
 
 namespace writer::text {
 	class Module;

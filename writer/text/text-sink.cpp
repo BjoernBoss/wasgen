@@ -5,7 +5,7 @@
 
 writer::text::Sink::Sink(text::Module* module, std::u8string header) : pModule{ module } {
 	pLocals = std::move(header);
-	pDepth = u8"\n    ";
+	str::BuildTo(pDepth, u8'\n', pModule->pIndent, pModule->pIndent);
 }
 
 void writer::text::Sink::fAddLine(const std::u8string_view& str) {
@@ -13,10 +13,10 @@ void writer::text::Sink::fAddLine(const std::u8string_view& str) {
 }
 void writer::text::Sink::fPush(const std::u8string_view& name) {
 	str::BuildTo(pBody, pDepth, u8'(', name);
-	pDepth.append(u8"  ");
+	pDepth.append(pModule->pIndent);
 }
 void writer::text::Sink::fPop() {
-	pDepth.resize(pDepth.size() - 2);
+	pDepth.resize(pDepth.size() - pModule->pIndent.size());
 	str::BuildTo(pBody, pDepth, u8')');
 }
 
@@ -57,7 +57,7 @@ void writer::text::Sink::close(const wasm::Sink& sink) {
 }
 void writer::text::Sink::addLocal(const wasm::Variable& local) {
 	str::BuildTo(pLocals,
-		u8"\n    (local",
+		u8'\n', pModule->pIndent, pModule->pIndent, u8"(local",
 		text::MakeId(local.id()),
 		text::MakeType(local.type()),
 		u8')');

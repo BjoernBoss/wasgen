@@ -13,9 +13,13 @@ namespace writer::text {
 		std::u8string pImports;
 		std::u8string pDefined;
 		std::u8string pOutput;
+		std::u8string pIndent;
 
 	public:
 		const std::u8string& output() const;
+
+	public:
+		Module(std::u8string_view indent = u8"\t");
 
 	public:
 		wasm::SinkInterface* sink(const wasm::Function& function) override;
