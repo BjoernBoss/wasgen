@@ -2,7 +2,7 @@
 /* Copyright (c) 2024 Bjoern Boss Henrichsen */
 #pragma once
 
-#include "wasm-common.h"
+#include "../wasm-common.h"
 #include "wasm-prototype.h"
 
 namespace wasm {

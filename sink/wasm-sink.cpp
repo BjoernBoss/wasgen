@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: BSD-3-Clause */
 /* Copyright (c) 2024 Bjoern Boss Henrichsen */
 #include "wasm-sink.h"
-#include "wasm-module.h"
+#include "../objects/wasm-module.h"
 
 wasm::Sink::Sink(const wasm::Function& function) {
 	/* validate that the function can be used as sink-target */

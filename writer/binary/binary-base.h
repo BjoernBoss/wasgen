@@ -6,9 +6,9 @@
 #include <algorithm>
 #include <vector>
 
-#include "../../wasm-module.h"
-#include "../../wasm-sink.h"
-#include "../../wasm-instlist.h"
+#include "../../objects/wasm-module.h"
+#include "../../sink/wasm-sink.h"
+#include "../../inst/wasm-instlist.h"
 
 namespace writer::binary {
 	class Module;

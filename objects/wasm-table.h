@@ -2,28 +2,27 @@
 /* Copyright (c) 2024 Bjoern Boss Henrichsen */
 #pragma once
 
-#include "wasm-common.h"
+#include "../wasm-common.h"
 
 namespace wasm {
 	namespace detail {
-		struct GlobalState {
+		struct TableState {
 			std::u8string importModule;
+			wasm::Limit limit;
 			std::u8string_view id;
-			wasm::Type type = wasm::Type::i32;
 			bool exported = false;
-			bool mutating = false;
-			bool assigned = false;
+			bool functions = false;
 		};
 	}
 
-	/* describe a wasm-global object */
-	class Global : public detail::ModuleMember<detail::GlobalState> {
+	/* describe a wasm-table object */
+	class Table : public detail::ModuleMember<detail::TableState> {
 		friend class wasm::Module;
 	public:
-		constexpr Global() = default;
+		constexpr Table() = default;
 
 	private:
-		constexpr Global(wasm::Module& module, uint32_t index) : ModuleMember{ module, index } {}
+		constexpr Table(wasm::Module& module, uint32_t index) : ModuleMember{ module, index } {}
 
 	public:
 		constexpr bool imported() const {
@@ -35,11 +34,11 @@ namespace wasm {
 		constexpr const std::u8string& importModule() const {
 			return fGet()->importModule;
 		}
-		constexpr wasm::Type type() const {
-			return fGet()->type;
+		constexpr const wasm::Limit& limit() const {
+			return fGet()->limit;
 		}
-		constexpr bool mutating() const {
-			return fGet()->mutating;
+		constexpr bool functions() const {
+			return fGet()->functions;
 		}
 	};
 }

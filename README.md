@@ -15,9 +15,9 @@ This library consists of multiple cpp files. Simply clone the repository, ensure
 
 The following `cpp` files exist, which need to be included into the compilation:
 
-    wasm-module.cpp
-    wasm-sink.cpp
-    wasm-target.cpp
+    objects/wasm-module.cpp
+    sink/wasm-sink.cpp
+    sink/wasm-target.cpp
     writer/binary/binary-base.cpp
     writer/binary/binary-module.cpp
     writer/binary/binary-sink.cpp

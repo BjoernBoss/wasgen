@@ -2,27 +2,26 @@
 /* Copyright (c) 2024 Bjoern Boss Henrichsen */
 #pragma once
 
-#include "wasm-common.h"
+#include "../wasm-common.h"
 
 namespace wasm {
 	namespace detail {
-		struct TableState {
+		struct MemoryState {
 			std::u8string importModule;
 			wasm::Limit limit;
 			std::u8string_view id;
 			bool exported = false;
-			bool functions = false;
 		};
 	}
 
-	/* describe a wasm-table object */
-	class Table : public detail::ModuleMember<detail::TableState> {
+	/* describe a wasm-memory object */
+	class Memory : public detail::ModuleMember<detail::MemoryState> {
 		friend class wasm::Module;
 	public:
-		constexpr Table() = default;
+		constexpr Memory() = default;
 
 	private:
-		constexpr Table(wasm::Module& module, uint32_t index) : ModuleMember{ module, index } {}
+		constexpr Memory(wasm::Module& module, uint32_t index) : ModuleMember{ module, index } {}
 
 	public:
 		constexpr bool imported() const {
@@ -36,9 +35,6 @@ namespace wasm {
 		}
 		constexpr const wasm::Limit& limit() const {
 			return fGet()->limit;
-		}
-		constexpr bool functions() const {
-			return fGet()->functions;
 		}
 	};
 }

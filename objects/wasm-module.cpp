@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: BSD-3-Clause */
 /* Copyright (c) 2024 Bjoern Boss Henrichsen */
 #include "wasm-module.h"
-#include "wasm-sink.h"
+#include "../sink/wasm-sink.h"
 
 wasm::Module::Module(wasm::ModuleInterface* interface) : pInterface{ interface } {}
 wasm::Module::~Module() {

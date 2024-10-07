@@ -2,12 +2,12 @@
 /* Copyright (c) 2024 Bjoern Boss Henrichsen */
 #pragma once
 
-#include "wasm-common.h"
+#include "../wasm-common.h"
+#include "../objects/wasm-function.h"
+#include "../objects/wasm-global.h"
+#include "../inst/wasm-instruction.h"
 #include "wasm-variable.h"
 #include "wasm-target.h"
-#include "wasm-function.h"
-#include "wasm-global.h"
-#include "wasm-instruction.h"
 
 namespace wasm {
 	/* sink interface used to write the instructions out */

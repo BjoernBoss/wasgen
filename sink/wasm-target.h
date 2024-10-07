@@ -2,8 +2,8 @@
 /* Copyright (c) 2024 Bjoern Boss Henrichsen */
 #pragma once
 
-#include "wasm-common.h"
-#include "wasm-prototype.h"
+#include "../wasm-common.h"
+#include "../objects/wasm-prototype.h"
 
 namespace wasm {
 	enum class ScopeType : uint8_t {

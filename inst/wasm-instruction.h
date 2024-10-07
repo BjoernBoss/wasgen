@@ -2,13 +2,13 @@
 /* Copyright (c) 2024 Bjoern Boss Henrichsen */
 #pragma once
 
-#include "wasm-memory.h"
-#include "wasm-table.h"
-#include "wasm-global.h"
-#include "wasm-prototype.h"
-#include "wasm-function.h"
-#include "wasm-variable.h"
-#include "wasm-target.h"
+#include "../objects/wasm-memory.h"
+#include "../objects/wasm-table.h"
+#include "../objects/wasm-global.h"
+#include "../objects/wasm-prototype.h"
+#include "../objects/wasm-function.h"
+#include "../sink/wasm-variable.h"
+#include "../sink/wasm-target.h"
 
 namespace wasm {
 	/* supported operand types */
