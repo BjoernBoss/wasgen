@@ -29,7 +29,7 @@ void writer::binary::Module::fWriteSection(const Section& section, uint32_t size
 
 const std::vector<uint8_t>& writer::binary::Module::output() const {
 	if (pOutput.empty())
-		util::fail(u8"Cannot produce binary-writer module output before the wrapping wasm::Module has been closed");
+		throw wasm::Exception{ L"Cannot produce binary-writer module output before the wrapping wasm::Module has been closed" };
 	return pOutput;
 }
 

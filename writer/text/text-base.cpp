@@ -15,7 +15,7 @@ std::u8string_view writer::text::MakeType(wasm::Type type) {
 	case wasm::Type::refFunction:
 		return u8" funcref";
 	default:
-		util::fail(u8"Unknown wasm type [", size_t(type), u8"] encountered");
+		throw wasm::Exception{ L"Unknown wasm type [", size_t(type), L"] encountered" };
 		return u8"";
 	}
 }
@@ -54,7 +54,7 @@ std::u8string_view writer::text::MakeOperand(wasm::OpType operand) {
 	case wasm::OpType::f64:
 		return u8"f64";
 	default:
-		util::fail(u8"Unknown operand type [", size_t(operand), u8"] encountered");
+		throw wasm::Exception{ L"Unknown operand type [", size_t(operand), L"] encountered" };
 		return u8"";
 	}
 }
@@ -78,7 +78,7 @@ std::u8string writer::text::MakeValue(const wasm::Value& value) {
 		return str::Build<std::u8string>(u8"global.get ", value.global().toString());
 	case wasm::ValType::invalid:
 	default:
-		util::fail(u8"Unknown value type [", size_t(value.type()), u8"] encountered");
+		throw wasm::Exception{ L"Unknown value type [", size_t(value.type()), L"] encountered" };
 		return u8"";
 	}
 }

@@ -4,15 +4,15 @@
 wasm::Sink::Sink(const wasm::Function& function) {
 	/* validate that the function can be used as sink-target */
 	if (!function.valid())
-		util::fail(u8"Functions must be constructed to create a sink to them");
+		throw wasm::Exception{ L"Functions must be constructed to create a sink to them" };
 	if (function.imported())
-		util::fail(u8"Sinks cannot be created for imported function [", function.toString(), u8"]");
+		throw wasm::Exception{ L"Sinks cannot be created for imported function [", function.toString(), L"]" };
 	pModule = &function.module();
 
 	/* check if the module is closed or the function has already been bound */
 	pModule->fCheckClosed();
 	if (pModule->pFunction.list[function.index()].bound)
-		util::fail(u8"Sink cannot be created for function [", function.toString(), u8"] for which a sink has already been created before");
+		throw wasm::Exception{ L"Sink cannot be created for function [", function.toString(), L"] for which a sink has already been created before" };
 	pModule->pFunction.list[function.index()].bound = true;
 
 	/* setup the sink-state */
@@ -47,7 +47,7 @@ void wasm::Sink::fClose() {
 }
 void wasm::Sink::fCheckClosed() const {
 	if (pClosed)
-		util::fail(fError(), u8"Cannot change the closed");
+		throw wasm::Exception{ fError(), L"Cannot change the closed" };
 }
 void wasm::Sink::fPopUntil(uint32_t size) {
 	while (pTargets.size() > size) {
@@ -59,15 +59,15 @@ bool wasm::Sink::fCheckTarget(uint32_t index, size_t stamp, bool soft) const {
 	if (index < pTargets.size() && pTargets[index].stamp == stamp)
 		return true;
 	if (!soft)
-		util::fail(fError(), u8"Target [", index, u8"] is out of scope");
+		throw wasm::Exception{ fError(), L"Target [", index, L"] is out of scope" };
 	return false;
 }
 void wasm::Sink::fSetupValidTarget(const wasm::Prototype& prototype, std::u8string_view id, wasm::ScopeType type, wasm::Target& target) {
 	/* validate the prototype */
 	if (!prototype.valid())
-		util::fail(fError(), u8"Prototype must be constructed");
+		throw wasm::Exception{ fError(), L"Prototype must be constructed" };
 	if (&prototype.module() != pModule)
-		util::fail(fError(), u8"Prototype [", prototype.toString(), u8"] must originate from same module as function");
+		throw wasm::Exception{ fError(), L"Prototype [", prototype.toString(), L"] must originate from same module as function" };
 
 	/* no need to validate the uniqueness of the id, as the name can be duplicated */
 	detail::TargetState state = { prototype, std::u8string{ id }, ++pNextStamp, type, false };
@@ -112,7 +112,7 @@ void wasm::Sink::fCloseTarget(uint32_t index, size_t stamp) {
 wasm::Variable wasm::Sink::parameter(uint32_t index) {
 	/* validate the parameter-index */
 	if (index >= pParameter)
-		util::fail(fError(), u8"Parameter index [", index, u8"] out of bounds");
+		throw wasm::Exception{ fError(), L"Parameter index [", index, L"] out of bounds" };
 	return wasm::Variable{ *this, index };
 }
 wasm::Variable wasm::Sink::local(wasm::Type type, std::u8string_view id) {
@@ -121,7 +121,7 @@ wasm::Variable wasm::Sink::local(wasm::Type type, std::u8string_view id) {
 	/* validate the id */
 	std::u8string _id{ id };
 	if (!_id.empty() && pVariables.ids.contains(_id))
-		util::fail(fError(), u8"Variable [", _id, u8"] already defined in sink");
+		throw wasm::Exception{ fError(), L"Variable [", _id, L"] already defined in sink" };
 
 	/* setup the variable-state */
 	detail::VariableState state = { {}, type };
@@ -168,14 +168,14 @@ void wasm::Sink::operator[](const wasm::InstMemory& inst) {
 
 	/* validate the instruction-operands */
 	if (!inst.memory.valid())
-		util::fail(fError(), u8"Memories must be constructed");
+		throw wasm::Exception{ fError(), L"Memories must be constructed" };
 	if (&inst.memory.module() != pModule)
-		util::fail(fError(), u8"Memory [", inst.memory.toString(), u8"] must originate from same module as function");
+		throw wasm::Exception{ fError(), L"Memory [", inst.memory.toString(), L"] must originate from same module as function" };
 	if (inst.type == wasm::InstMemory::Type::copy) {
 		if (!inst.destination.valid())
-			util::fail(fError(), u8"Memories must be constructed");
+			throw wasm::Exception{ fError(), L"Memories must be constructed" };
 		if (&inst.destination.module() != pModule)
-			util::fail(fError(), u8"Memory [", inst.destination.toString(), u8"] must originate from same module as function");
+			throw wasm::Exception{ fError(), L"Memory [", inst.destination.toString(), L"] must originate from same module as function" };
 	}
 
 	/* add the instruction to the interface */
@@ -186,14 +186,14 @@ void wasm::Sink::operator[](const wasm::InstTable& inst) {
 
 	/* validate the instruction-operands */
 	if (!inst.table.valid())
-		util::fail(fError(), u8"Tables must be constructed");
+		throw wasm::Exception{ fError(), L"Tables must be constructed" };
 	if (&inst.table.module() != pModule)
-		util::fail(fError(), u8"Table [", inst.table.toString(), u8"] must originate from same module as function");
+		throw wasm::Exception{ fError(), L"Table [", inst.table.toString(), L"] must originate from same module as function" };
 	if (inst.type == wasm::InstTable::Type::copy) {
 		if (!inst.destination.valid())
-			util::fail(fError(), u8"Tables must be constructed");
+			throw wasm::Exception{ fError(), L"Tables must be constructed" };
 		if (&inst.destination.module() != pModule)
-			util::fail(fError(), u8"Table [", inst.destination.toString(), u8"] must originate from same module as function");
+			throw wasm::Exception{ fError(), L"Table [", inst.destination.toString(), L"] must originate from same module as function" };
 	}
 
 	/* add the instruction to the interface */
@@ -204,9 +204,9 @@ void wasm::Sink::operator[](const wasm::InstLocal& inst) {
 
 	/* validate the instruction-operands */
 	if (!inst.variable.valid())
-		util::fail(fError(), u8"Locals must be constructed");
+		throw wasm::Exception{ fError(), L"Locals must be constructed" };
 	if (&inst.variable.sink() != this)
-		util::fail(fError(), u8"Local [", inst.variable.toString(), u8"] must originate from sink");
+		throw wasm::Exception{ fError(), L"Local [", inst.variable.toString(), L"] must originate from sink" };
 
 	/* add the instruction to the interface */
 	pInterface->addInst(inst);
@@ -216,9 +216,9 @@ void wasm::Sink::operator[](const wasm::InstGlobal& inst) {
 
 	/* validate the instruction-operands */
 	if (!inst.global.valid())
-		util::fail(fError(), u8"Globals must be constructed");
+		throw wasm::Exception{ fError(), L"Globals must be constructed" };
 	if (&inst.global.module() != pModule)
-		util::fail(fError(), u8"Global [", inst.global.toString(), u8"] must originate from same module as function");
+		throw wasm::Exception{ fError(), L"Global [", inst.global.toString(), L"] must originate from same module as function" };
 
 	/* add the instruction to the interface */
 	pInterface->addInst(inst);
@@ -228,9 +228,9 @@ void wasm::Sink::operator[](const wasm::InstFunction& inst) {
 
 	/* validate the instruction-operands */
 	if (!inst.function.valid())
-		util::fail(fError(), u8"Functions must be constructed");
+		throw wasm::Exception{ fError(), L"Functions must be constructed" };
 	if (&inst.function.module() != pModule)
-		util::fail(fError(), u8"Function [", inst.function.toString(), u8"] must originate from same module as function");
+		throw wasm::Exception{ fError(), L"Function [", inst.function.toString(), L"] must originate from same module as function" };
 
 	/* add the instruction to the interface */
 	pInterface->addInst(inst);
@@ -240,13 +240,13 @@ void wasm::Sink::operator[](const wasm::InstIndirect& inst) {
 
 	/* validate the instruction-operands */
 	if (!inst.table.valid())
-		util::fail(fError(), u8"Tables must be constructed");
+		throw wasm::Exception{ fError(), L"Tables must be constructed" };
 	if (&inst.table.module() != pModule)
-		util::fail(fError(), u8"Table [", inst.table.toString(), u8"] must originate from same module as function");
+		throw wasm::Exception{ fError(), L"Table [", inst.table.toString(), L"] must originate from same module as function" };
 	if (!inst.prototype.valid())
-		util::fail(fError(), u8"Prototype must be constructed");
+		throw wasm::Exception{ fError(), L"Prototype must be constructed" };
 	if (&inst.prototype.module() != pModule)
-		util::fail(fError(), u8"Prototype [", inst.prototype.toString(), u8"] must originate from same module as function");
+		throw wasm::Exception{ fError(), L"Prototype [", inst.prototype.toString(), L"] must originate from same module as function" };
 
 	/* add the instruction to the interface */
 	pInterface->addInst(inst);
@@ -256,17 +256,17 @@ void wasm::Sink::operator[](const wasm::InstBranch& inst) {
 
 	/* validate the instruction-operands */
 	if (!inst.target.valid())
-		util::fail(fError(), u8"Targets must be constructed and not out of scope");
+		throw wasm::Exception{ fError(), L"Targets must be constructed and not out of scope" };
 	if (&inst.target.sink() != this)
-		util::fail(fError(), u8"Target [", inst.target.toString(), u8"] must originate from sink");
+		throw wasm::Exception{ fError(), L"Target [", inst.target.toString(), L"] must originate from sink" };
 	if (inst.type == wasm::InstBranch::Type::table) {
 		for (size_t i = 0; i < inst.list.size(); ++i) {
 			const wasm::Target& target = inst.list.begin()[i];
 
 			if (!target.valid())
-				util::fail(fError(), u8"Targets must be constructed and not out of scope");
+				throw wasm::Exception{ fError(), L"Targets must be constructed and not out of scope" };
 			if (&target.sink() != this)
-				util::fail(fError(), u8"Target [", target.toString(), u8"] must originate from sink");
+				throw wasm::Exception{ fError(), L"Target [", target.toString(), L"] must originate from sink" };
 		}
 	}
 

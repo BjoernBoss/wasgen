@@ -5,8 +5,7 @@
 #include <vector>
 #include <string>
 
-#include "../wasm/wasm.h"
-#include "../util/logging.h"
+#include "../wasm.h"
 
 namespace writer::text {
 	class Module;

@@ -3,7 +3,7 @@
 
 const std::u8string& writer::text::Module::output() const {
 	if (pOutput.empty())
-		util::fail(u8"Cannot produce text-writer module output before the wrapping wasm::Module has been closed");
+		throw wasm::Exception{ L"Cannot produce text-writer module output before the wrapping wasm::Module has been closed" };
 	return pOutput;
 }
 

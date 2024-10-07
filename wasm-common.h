@@ -16,6 +16,12 @@ namespace wasm {
 	class SinkInterface;
 	class ModuleInterface;
 
+	/* exception thrown when using wasm module/instructions/sinks in unsupported ways */
+	struct Exception : public str::BuildException {
+		template <class... Args>
+		constexpr Exception(const Args&... args) : str::BuildException{ args... } {}
+	};
+
 	/* native types supported by wasm */
 	enum class Type : uint8_t {
 		i32,

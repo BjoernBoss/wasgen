@@ -4,8 +4,7 @@
 #include <algorithm>
 #include <vector>
 
-#include "../wasm/wasm.h"
-#include "../util/logging.h"
+#include "../wasm.h"
 
 namespace writer::binary {
 	class Module;

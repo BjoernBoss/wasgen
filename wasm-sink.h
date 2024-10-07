@@ -7,8 +7,6 @@
 #include "wasm-global.h"
 #include "wasm-instruction.h"
 
-#include "../util/logging.h"
-
 namespace wasm {
 	/* sink interface used to write the instructions out */
 	class SinkInterface {

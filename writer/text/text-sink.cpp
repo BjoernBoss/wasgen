@@ -109,7 +109,7 @@ void writer::text::Sink::addInst(const wasm::InstSimple& inst) {
 		fAddLine(u8"f32.demote_f64");
 		break;
 	default:
-		util::fail(u8"Unknown wasm::InstSimple type [", size_t(inst.type), u8"] encountered");
+		throw wasm::Exception{ L"Unknown wasm::InstSimple type [", size_t(inst.type), L"] encountered" };
 		break;
 	}
 }
@@ -126,7 +126,7 @@ void writer::text::Sink::addInst(const wasm::InstConst& inst) {
 	else if (std::holds_alternative<double>(inst.value))
 		str::BuildTo(line, u8"f64.const ", std::get<double>(inst.value));
 	else
-		util::fail(u8"Unknown wasm::InstConst type encountered");
+		throw wasm::Exception{ L"Unknown wasm::InstConst type encountered" };
 
 	/* write the line out */
 	fAddLine(line);
@@ -152,7 +152,7 @@ void writer::text::Sink::addInst(const wasm::InstOperand& inst) {
 		line.append(u8".mul");
 		break;
 	default:
-		util::fail(u8"Unknown wasm::InstOperand type [", size_t(inst.type), u8"] encountered");
+		throw wasm::Exception{ L"Unknown wasm::InstOperand type [", size_t(inst.type), L"] encountered" };
 		break;
 	}
 
@@ -312,7 +312,7 @@ void writer::text::Sink::addInst(const wasm::InstWidth& inst) {
 		fAddLine(str::Build<std::u8string>(u8'f', width, u8".copysign"));
 		break;
 	default:
-		util::fail(u8"Unknown wasm::InstWidth type [", size_t(inst.type), u8"] encountered");
+		throw wasm::Exception{ L"Unknown wasm::InstWidth type [", size_t(inst.type), L"] encountered" };
 		break;
 	}
 }
@@ -368,7 +368,7 @@ void writer::text::Sink::addInst(const wasm::InstMemory& inst) {
 		line = u8"memory.fill";
 		break;
 	default:
-		util::fail(u8"Unknown wasm::InstMemory type [", size_t(inst.type), u8"] encountered");
+		throw wasm::Exception{ L"Unknown wasm::InstMemory type [", size_t(inst.type), L"] encountered" };
 		break;
 	}
 
@@ -410,7 +410,7 @@ void writer::text::Sink::addInst(const wasm::InstTable& inst) {
 		line = u8"table.fill";
 		break;
 	default:
-		util::fail(u8"Unknown wasm::InstTable type [", size_t(inst.type), u8"] encountered");
+		throw wasm::Exception{ L"Unknown wasm::InstTable type [", size_t(inst.type), L"] encountered" };
 		break;
 	}
 
@@ -435,7 +435,7 @@ void writer::text::Sink::addInst(const wasm::InstLocal& inst) {
 		line = u8"local.tee ";
 		break;
 	default:
-		util::fail(u8"Unknown wasm::InstLocal type [", size_t(inst.type), u8"] encountered");
+		throw wasm::Exception{ L"Unknown wasm::InstLocal type [", size_t(inst.type), L"] encountered" };
 		break;
 	}
 
@@ -455,7 +455,7 @@ void writer::text::Sink::addInst(const wasm::InstGlobal& inst) {
 		line = u8"global.set ";
 		break;
 	default:
-		util::fail(u8"Unknown wasm::InstGlobal type [", size_t(inst.type), u8"] encountered");
+		throw wasm::Exception{ L"Unknown wasm::InstGlobal type [", size_t(inst.type), L"] encountered" };
 		break;
 	}
 
@@ -478,7 +478,7 @@ void writer::text::Sink::addInst(const wasm::InstFunction& inst) {
 		line = u8"return_call ";
 		break;
 	default:
-		util::fail(u8"Unknown wasm::InstFunction type [", size_t(inst.type), u8"] encountered");
+		throw wasm::Exception{ L"Unknown wasm::InstFunction type [", size_t(inst.type), L"] encountered" };
 		break;
 	}
 
@@ -498,7 +498,7 @@ void writer::text::Sink::addInst(const wasm::InstIndirect& inst) {
 		line = u8"return_call_indirect ";
 		break;
 	default:
-		util::fail(u8"Unknown wasm::InstIndirect type [", size_t(inst.type), u8"] encountered");
+		throw wasm::Exception{ L"Unknown wasm::InstIndirect type [", size_t(inst.type), L"] encountered" };
 		break;
 	}
 
@@ -524,7 +524,7 @@ void writer::text::Sink::addInst(const wasm::InstBranch& inst) {
 			str::BuildTo(line, inst.list.begin()[i].get().toString(), u8' ');
 		break;
 	default:
-		util::fail(u8"Unknown wasm::InstBranch type [", size_t(inst.type), u8"] encountered");
+		throw wasm::Exception{ L"Unknown wasm::InstBranch type [", size_t(inst.type), L"] encountered" };
 		break;
 	}
 

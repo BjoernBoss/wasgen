@@ -57,7 +57,7 @@ uint8_t writer::binary::GetType(wasm::Type type) {
 	case wasm::Type::refExtern:
 		return 0x6f;
 	default:
-		util::fail(u8"Unknown wasm type [", size_t(type), u8"] encountered");
+		throw wasm::Exception{ L"Unknown wasm type [", size_t(type), L"] encountered" };
 		return 0;
 	}
 }
@@ -107,7 +107,7 @@ void writer::binary::WriteValue(std::vector<uint8_t>& buffer, const wasm::Value&
 		binary::WriteUInt(buffer, value.global().index());
 		break;
 	default:
-		util::fail(u8"Unknown wasm val-type [", size_t(value.type()), u8"] encountered");
+		throw wasm::Exception{ L"Unknown wasm val-type [", size_t(value.type()), L"] encountered" };
 		break;
 	}
 

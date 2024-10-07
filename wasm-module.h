@@ -8,8 +8,6 @@
 #include "wasm-function.h"
 #include "wasm-value.h"
 
-#include "../util/logging.h"
-
 namespace wasm {
 	/* module interface used to define a wasm-module */
 	class ModuleInterface {

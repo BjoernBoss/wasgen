@@ -10,13 +10,13 @@ wasm::Prototype wasm::Module::fPrototype(std::u8string_view id, std::initializer
 	/* validate the id and the parameter */
 	std::u8string _id{ id };
 	if (!_id.empty() && pPrototype.ids.contains(_id))
-		util::fail(u8"Prototype [", _id, u8"] already defined");
+		throw wasm::Exception{ L"Prototype [", _id, L"] already defined" };
 	std::unordered_set<std::u8string> names;
 	for (const auto& param : params) {
 		if (param.id.empty())
 			continue;
 		if (names.contains(param.id))
-			util::fail(u8"Parameter with name [", param.id, u8"] of prototype [", _id, u8"] already defined");
+			throw wasm::Exception{ L"Parameter with name [", param.id, L"] of prototype [", _id, L"] already defined" };
 		names.insert(param.id);
 	}
 
@@ -76,22 +76,22 @@ wasm::Prototype wasm::Module::fPrototype(std::initializer_list<wasm::Type> param
 wasm::Function wasm::Module::fFunction(std::u8string_view id, const wasm::Prototype& prototype, const wasm::Exchange& exchange) {
 	/* validate the import/export parameter */
 	if ((!exchange.importModule.empty() || exchange.exported) && id.empty())
-		util::fail(u8"Importing or exporting requires explicit id names");
+		throw wasm::Exception{ L"Importing or exporting requires explicit id names" };
 
 	/* validate the imports */
 	if (exchange.importModule.empty())
 		pImportsClosed = true;
 	else if (pImportsClosed)
-		util::fail(u8"Cannot import function [", id, u8"] after the first non-import object has been added");
+		throw wasm::Exception{ L"Cannot import function [", id, L"] after the first non-import object has been added" };
 
 	/* validate the id and the prototype */
 	std::u8string _id{ id };
 	if (!_id.empty() && pFunction.ids.contains(_id))
-		util::fail(u8"Function [", _id, u8"] already defined");
+		throw wasm::Exception{ L"Function [", _id, L"] already defined" };
 	if (!prototype.valid())
-		util::fail(u8"Prototype for function [", _id, u8"] must be constructed");
+		throw wasm::Exception{ L"Prototype for function [", _id, L"] must be constructed" };
 	if (&prototype.module() != this)
-		util::fail(u8"Prototype for function [", _id, u8"] must originate from this module");
+		throw wasm::Exception{ L"Prototype for function [", _id, L"] must originate from this module" };
 
 	/* setup the function */
 	detail::FunctionState state = { std::u8string{ exchange.importModule }, {}, prototype, 0, exchange.exported, false };
@@ -108,7 +108,7 @@ wasm::Function wasm::Module::fFunction(std::u8string_view id, const wasm::Protot
 }
 void wasm::Module::fCheckClosed() const {
 	if (pClosed)
-		util::fail(u8"Cannot change the closed module");
+		throw wasm::Exception{ L"Cannot change the closed module" };
 }
 void wasm::Module::fClose() {
 	if (pClosed)
@@ -120,7 +120,7 @@ void wasm::Module::fClose() {
 		if (!pGlobal.list[i].importModule.empty())
 			continue;
 		if (!pGlobal.list[i].assigned)
-			util::fail(u8"Global [", wasm::Global{ *this, uint32_t(i) }.toString(), u8"] requires to either be imported or a value assigned to it");
+			throw wasm::Exception{ L"Global [", wasm::Global{ *this, uint32_t(i) }.toString(), L"] requires to either be imported or a value assigned to it" };
 	}
 
 	/* instantiate all sinks to non-sunken functions and close all other remaining sinks */
@@ -148,18 +148,18 @@ wasm::Memory wasm::Module::memory(std::u8string_view id, const wasm::Limit& limi
 
 	/* validate the import/export parameter */
 	if ((!exchange.importModule.empty() || exchange.exported) && id.empty())
-		util::fail(u8"Importing or exporting requires explicit id names");
+		throw wasm::Exception{ L"Importing or exporting requires explicit id names" };
 
 	/* validate the imports */
 	if (exchange.importModule.empty())
 		pImportsClosed = true;
 	else if (pImportsClosed)
-		util::fail(u8"Cannot import memory [", id, u8"] after the first non-import object has been added");
+		throw wasm::Exception{ L"Cannot import memory [", id, L"] after the first non-import object has been added" };
 
 	/* validate the id */
 	std::u8string _id{ id };
 	if (!_id.empty() && pMemory.ids.contains(_id))
-		util::fail(u8"Memory [", _id, u8"] already defined");
+		throw wasm::Exception{ L"Memory [", _id, L"] already defined" };
 
 	/* setup the memory-state */
 	detail::MemoryState state = { std::u8string{ exchange.importModule }, limit, {}, exchange.exported };
@@ -179,18 +179,18 @@ wasm::Table wasm::Module::table(std::u8string_view id, bool functions, const was
 
 	/* validate the import/export parameter */
 	if ((!exchange.importModule.empty() || exchange.exported) && id.empty())
-		util::fail(u8"Importing or exporting requires explicit id names");
+		throw wasm::Exception{ L"Importing or exporting requires explicit id names" };
 
 	/* validate the imports */
 	if (exchange.importModule.empty())
 		pImportsClosed = true;
 	else if (pImportsClosed)
-		util::fail(u8"Cannot import table [", id, u8"] after the first non-import object has been added");
+		throw wasm::Exception{ L"Cannot import table [", id, L"] after the first non-import object has been added" };
 
 	/* validate the id */
 	std::u8string _id{ id };
 	if (!_id.empty() && pTable.ids.contains(_id))
-		util::fail(u8"Table [", _id, u8"] already defined");
+		throw wasm::Exception{ L"Table [", _id, L"] already defined" };
 
 	/* setup the table-state */
 	detail::TableState state = { std::u8string{ exchange.importModule }, limit, {}, exchange.exported, functions };
@@ -210,18 +210,18 @@ wasm::Global wasm::Module::global(std::u8string_view id, wasm::Type type, bool m
 
 	/* validate the import/export parameter */
 	if ((!exchange.importModule.empty() || exchange.exported) && id.empty())
-		util::fail(u8"Importing or exporting requires explicit id names");
+		throw wasm::Exception{ L"Importing or exporting requires explicit id names" };
 
 	/* validate the imports */
 	if (exchange.importModule.empty())
 		pImportsClosed = true;
 	else if (pImportsClosed)
-		util::fail(u8"Cannot import global [", id, u8"] after the first non-import object has been added");
+		throw wasm::Exception{ L"Cannot import global [", id, L"] after the first non-import object has been added" };
 
 	/* validate the id */
 	std::u8string _id{ id };
 	if (!_id.empty() && pGlobal.ids.contains(_id))
-		util::fail(u8"Global [", _id, u8"] already defined");
+		throw wasm::Exception{ L"Global [", _id, L"] already defined" };
 
 	/* setup the global */
 	detail::GlobalState state = { std::u8string{ exchange.importModule }, {}, type, exchange.exported, mutating, false };
@@ -247,11 +247,11 @@ wasm::Function wasm::Module::function(std::u8string_view id, std::initializer_li
 void wasm::Module::value(const wasm::Global& global, const wasm::Value& value) {
 	/* validate the global */
 	if (!global.valid())
-		util::fail(u8"Global is required to be constructed to set its value");
+		throw wasm::Exception{ L"Global is required to be constructed to set its value" };
 	if (&global.module() != this)
-		util::fail(u8"Global [", global.toString(), u8"] must originate from this module");
+		throw wasm::Exception{ L"Global [", global.toString(), L"] must originate from this module" };
 	if (global.imported())
-		util::fail(u8"Global [", global.toString(), u8"] cannot be set a value as it is being imported");
+		throw wasm::Exception{ L"Global [", global.toString(), L"] cannot be set a value as it is being imported" };
 
 	/* validate the value */
 	wasm::Type _type{};
@@ -274,27 +274,27 @@ void wasm::Module::value(const wasm::Global& global, const wasm::Value& value) {
 	case wasm::ValType::refFunction:
 		_type = wasm::Type::refFunction;
 		if (value.function().valid() && &value.function().module() != this)
-			util::fail(u8"Function value for global [", global.toString(), u8"] must originate from this module");
+			throw wasm::Exception{ L"Function value for global [", global.toString(), L"] must originate from this module" };
 		break;
 	case wasm::ValType::global:
 		if (!value.global().valid())
-			util::fail(u8"Imported value for global [", global.toString(), u8"] must be constructed");
+			throw wasm::Exception{ L"Imported value for global [", global.toString(), L"] must be constructed" };
 		if (&value.global().module() != this)
-			util::fail(u8"Imported value for global [", global.toString(), u8"] must originate from this module");
+			throw wasm::Exception{ L"Imported value for global [", global.toString(), L"] must originate from this module" };
 		if (!value.global().imported() || value.global().mutating())
-			util::fail(u8"Imported value for global [", global.toString(), u8"] must be imported and immutable");
+			throw wasm::Exception{ L"Imported value for global [", global.toString(), L"] must be imported and immutable" };
 		_type = value.global().type();
 		break;
 	case wasm::ValType::invalid:
-		util::fail(u8"Value for global [", global.toString(), u8"] is required to be constructed");
+		throw wasm::Exception{ L"Value for global [", global.toString(), L"] is required to be constructed" };
 		break;
 	}
 	if (_type != global.type())
-		util::fail(u8"Value for global [", global.toString(), u8"] must match its type");
+		throw wasm::Exception{ L"Value for global [", global.toString(), L"] must match its type" };
 
 	/* check if a value has already been assigned to the global */
 	if (pGlobal.list[global.index()].assigned)
-		util::fail(u8"Value for global [", global.toString(), u8"] can only be assigned once");
+		throw wasm::Exception{ L"Value for global [", global.toString(), L"] can only be assigned once" };
 
 	/* mark the value as written and notify the interface */
 	pGlobal.list[global.index()].assigned = true;
@@ -303,22 +303,22 @@ void wasm::Module::value(const wasm::Global& global, const wasm::Value& value) {
 void wasm::Module::data(const wasm::Memory& memory, const wasm::Value& offset, const std::vector<uint8_t>& data) {
 	/* validate the memory */
 	if (!memory.valid())
-		util::fail(u8"Memory is required to be constructed to write data to it");
+		throw wasm::Exception{ L"Memory is required to be constructed to write data to it" };
 	if (&memory.module() != this)
-		util::fail(u8"Memory [", memory.toString(), u8"] must originate from this module");
+		throw wasm::Exception{ L"Memory [", memory.toString(), L"] must originate from this module" };
 
 	/* validate the offset */
 	if (!offset.valid())
-		util::fail(u8"Offset to write to memory [", memory.toString(), u8"] is required to be constructed");
+		throw wasm::Exception{ L"Offset to write to memory [", memory.toString(), L"] is required to be constructed" };
 	if (offset.type() != wasm::ValType::i32 && offset.type() != wasm::ValType::global)
-		util::fail(u8"Offset to write to memory [", memory.toString(), u8"] must be of type i32 or a global-import");
+		throw wasm::Exception{ L"Offset to write to memory [", memory.toString(), L"] must be of type i32 or a global-import" };
 	if (offset.type() == wasm::ValType::global) {
 		if (!offset.global().valid())
-			util::fail(u8"Imported offset to write to memory [", memory.toString(), u8"] must be constructed");
+			throw wasm::Exception{ L"Imported offset to write to memory [", memory.toString(), L"] must be constructed" };
 		if (&offset.global().module() != this)
-			util::fail(u8"Imported offset to write to memory [", memory.toString(), u8"] must originate from this module");
+			throw wasm::Exception{ L"Imported offset to write to memory [", memory.toString(), L"] must originate from this module" };
 		if (offset.global().type() != wasm::Type::i32 || !offset.global().imported() || offset.global().mutating())
-			util::fail(u8"Imported offset to write to memory [", memory.toString(), u8"] must be an immutable imported i32");
+			throw wasm::Exception{ L"Imported offset to write to memory [", memory.toString(), L"] must be an immutable imported i32" };
 	}
 
 	/* pass the validated data to the interface */
@@ -327,22 +327,22 @@ void wasm::Module::data(const wasm::Memory& memory, const wasm::Value& offset, c
 void wasm::Module::elements(const wasm::Table& table, const wasm::Value& offset, const std::vector<wasm::Value>& values) {
 	/* validate the memory */
 	if (!table.valid())
-		util::fail(u8"Table is required to be constructed to write elements to it");
+		throw wasm::Exception{ L"Table is required to be constructed to write elements to it" };
 	if (&table.module() != this)
-		util::fail(u8"Table [", table.toString(), u8"] must originate from this module");
+		throw wasm::Exception{ L"Table [", table.toString(), L"] must originate from this module" };
 
 	/* validate the offset */
 	if (!offset.valid())
-		util::fail(u8"Offset to write to table [", table.toString(), u8"] is required to be constructed");
+		throw wasm::Exception{ L"Offset to write to table [", table.toString(), L"] is required to be constructed" };
 	if (offset.type() != wasm::ValType::i32 && offset.type() != wasm::ValType::global)
-		util::fail(u8"Offset to write to table [", table.toString(), u8"] must be of type i32 or a global-import");
+		throw wasm::Exception{ L"Offset to write to table [", table.toString(), L"] must be of type i32 or a global-import" };
 	if (offset.type() == wasm::ValType::global) {
 		if (!offset.global().valid())
-			util::fail(u8"Imported offset to write to table [", table.toString(), u8"] must be constructed");
+			throw wasm::Exception{ L"Imported offset to write to table [", table.toString(), L"] must be constructed" };
 		if (&offset.global().module() != this)
-			util::fail(u8"Imported offset to write to table [", table.toString(), u8"] must originate from this module");
+			throw wasm::Exception{ L"Imported offset to write to table [", table.toString(), L"] must originate from this module" };
 		if (offset.global().type() != wasm::Type::i32 || !offset.global().imported() || offset.global().mutating())
-			util::fail(u8"Imported offset to write to table [", table.toString(), u8"] must be an immutable imported i32");
+			throw wasm::Exception{ L"Imported offset to write to table [", table.toString(), L"] must be an immutable imported i32" };
 	}
 
 	/* validate the values */
@@ -367,23 +367,23 @@ void wasm::Module::elements(const wasm::Table& table, const wasm::Value& offset,
 		case wasm::ValType::refFunction:
 			_type = wasm::Type::refFunction;
 			if (value.function().valid() && &value.function().module() != this)
-				util::fail(u8"Function value for table [", table.toString(), u8"] must originate from this module");
+				throw wasm::Exception{ L"Function value for table [", table.toString(), L"] must originate from this module" };
 			break;
 		case wasm::ValType::global:
 			if (!value.global().valid())
-				util::fail(u8"Imported value for table [", table.toString(), u8"] must be constructed");
+				throw wasm::Exception{ L"Imported value for table [", table.toString(), L"] must be constructed" };
 			if (&value.global().module() != this)
-				util::fail(u8"Imported value for table [", table.toString(), u8"] must originate from this module");
+				throw wasm::Exception{ L"Imported value for table [", table.toString(), L"] must originate from this module" };
 			if (!value.global().imported() || value.global().mutating())
-				util::fail(u8"Imported value for table [", table.toString(), u8"] must be imported and immutable");
+				throw wasm::Exception{ L"Imported value for table [", table.toString(), L"] must be imported and immutable" };
 			_type = value.global().type();
 			break;
 		case wasm::ValType::invalid:
-			util::fail(u8"Value for table [", table.toString(), u8"] is required to be constructed");
+			throw wasm::Exception{ L"Value for table [", table.toString(), L"] is required to be constructed" };
 			break;
 		}
 		if (_type != (table.functions() ? wasm::Type::refFunction : wasm::Type::refExtern))
-			util::fail(u8"Value for table [", table.toString(), u8"] must match its type");
+			throw wasm::Exception{ L"Value for table [", table.toString(), L"] must match its type" };
 	}
 
 	/* pass the validated data to the interface */
