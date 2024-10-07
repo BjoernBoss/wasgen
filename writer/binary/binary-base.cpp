@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: BSD-3-Clause */
+/* Copyright (c) 2024 Bjoern Boss Henrichsen */
 #include "binary-base.h"
 
 uint32_t writer::binary::CountUInt(uint64_t value) {

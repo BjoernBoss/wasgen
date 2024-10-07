@@ -1,3 +1,5 @@
+/* SPDX-License-Identifier: BSD-3-Clause */
+/* Copyright (c) 2024 Bjoern Boss Henrichsen */
 #include "text-module.h"
 #include "text-sink.h"
 
