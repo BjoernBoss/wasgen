@@ -33,7 +33,8 @@ void writer::text::Sink::pushScope(const wasm::Target& target) {
 
 	/* add the id and the prototype */
 	text.append(text::MakeId(target.id()));
-	text.append(text::MakePrototype(target.prototype()));
+	if (!target.prototype().parameter().empty() || !target.prototype().result().empty())
+		text.append(text::MakePrototype(target.prototype()));
 
 	/* push the actual block out */
 	fPush(text);
@@ -50,7 +51,7 @@ void writer::text::Sink::toggleConditional() {
 	fPush(u8"else");
 }
 void writer::text::Sink::close(const wasm::Sink& sink) {
-	str::BuildTo(pModule->pDefined, pLocals, pBody, u8"\n  )");
+	str::BuildTo(pModule->pDefined, pLocals, pBody, u8'\n', pModule->pIndent, u8')');
 
 	/* delete this sink (no reference will be held anymore) */
 	delete this;
@@ -505,7 +506,7 @@ void writer::text::Sink::addInst(const wasm::InstIndirect& inst) {
 	}
 
 	/* add the table and prototype reference and write the line out */
-	str::BuildTo(line, u8" (table ", inst.table.toString(), u8')');
+	line.append(inst.table.toString());
 	str::BuildTo(line, u8" (type ", inst.prototype.toString(), u8')');
 	fAddLine(line);
 }

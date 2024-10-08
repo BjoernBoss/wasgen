@@ -15,6 +15,8 @@ namespace writer::binary {
 	class Sink;
 
 	uint32_t CountUInt(uint64_t value);
+	void WriteInt32(std::vector<uint8_t>& buffer, uint32_t value);
+	void WriteInt64(std::vector<uint8_t>& buffer, uint64_t value);
 	void WriteUInt(std::vector<uint8_t>& buffer, uint64_t value);
 	void WriteSInt(std::vector<uint8_t>& buffer, int64_t value);
 	void WriteFloat(std::vector<uint8_t>& buffer, float value);

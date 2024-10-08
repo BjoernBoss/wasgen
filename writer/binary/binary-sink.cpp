@@ -138,11 +138,11 @@ void writer::binary::Sink::addInst(const wasm::InstSimple& inst) {
 void writer::binary::Sink::addInst(const wasm::InstConst& inst) {
 	if (std::holds_alternative<uint32_t>(inst.value)) {
 		fPush(0x41);
-		binary::WriteUInt(pCode, std::get<uint32_t>(inst.value));
+		binary::WriteInt32(pCode, std::get<uint32_t>(inst.value));
 	}
 	else if (std::holds_alternative<uint64_t>(inst.value)) {
 		fPush(0x42);
-		binary::WriteUInt(pCode, std::get<uint64_t>(inst.value));
+		binary::WriteInt64(pCode, std::get<uint64_t>(inst.value));
 	}
 	else if (std::holds_alternative<float>(inst.value)) {
 		fPush(0x43);

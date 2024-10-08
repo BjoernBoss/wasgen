@@ -4,31 +4,37 @@
 
 uint32_t writer::binary::CountUInt(uint64_t value) {
 	uint32_t count = 1;
-	while (true) {
-		value >>= 7;
-		if (value == 0)
-			return count;
+	while ((value >>= 7) != 0)
 		++count;
-	}
+	return count;
+}
+void writer::binary::WriteInt32(std::vector<uint8_t>& buffer, uint32_t value) {
+	binary::WriteSInt(buffer, int32_t(value));
+}
+void writer::binary::WriteInt64(std::vector<uint8_t>& buffer, uint64_t value) {
+	binary::WriteSInt(buffer, int64_t(value));
 }
 void writer::binary::WriteUInt(std::vector<uint8_t>& buffer, uint64_t value) {
-	while (true) {
-		bool last = (value < 0x80);
-		buffer.push_back(uint8_t(value & 0x7f) | (last ? 0x00 : 0x80));
-		value >>= 7;
-		if (last)
-			break;
-	}
+	do {
+		uint8_t byte = uint8_t(value & 0x7f);
+		if ((value >>= 7) != 0)
+			byte |= 0x80;
+		buffer.push_back(byte);
+	} while (value != 0);
 }
 void writer::binary::WriteSInt(std::vector<uint8_t>& buffer, int64_t value) {
-	uint64_t walker = (value < 0 ? uint64_t(~value) + 1 : uint64_t(value));
+	bool negative = (value < 0);
+	uint64_t lastValue = (negative ? uint64_t(-1) : 0);
+	uint8_t upperBit = (negative ? 0x40 : 0x00);
 
 	while (true) {
-		bool last = ((walker >>= 7) == 0);
-		buffer.push_back(uint8_t(value & 0x7f) | (last ? 0x00 : 0x80));
-		value >>= 7;
-		if (last)
+		uint8_t byte = (value & 0x7f);
+		if ((value >>= 7) != lastValue || (byte & 0x40) != upperBit)
+			buffer.push_back(byte | 0x80);
+		else {
+			buffer.push_back(byte);
 			break;
+		}
 	}
 }
 void writer::binary::WriteFloat(std::vector<uint8_t>& buffer, float value) {
@@ -79,11 +85,11 @@ void writer::binary::WriteValue(std::vector<uint8_t>& buffer, const wasm::Value&
 	switch (value.type()) {
 	case wasm::ValType::i32:
 		buffer.push_back(0x41);
-		binary::WriteUInt(buffer, value.i32());
+		binary::WriteInt32(buffer, value.i32());
 		break;
 	case wasm::ValType::i64:
 		buffer.push_back(0x42);
-		binary::WriteUInt(buffer, value.i64());
+		binary::WriteInt64(buffer, value.i64());
 		break;
 	case wasm::ValType::f32:
 		buffer.push_back(0x43);
