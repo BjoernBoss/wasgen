@@ -23,7 +23,7 @@ bool wasm::Target::valid() const {
 }
 uint32_t wasm::Target::index() const {
 	pSink->fCheckTarget(pIndex, pStamp, false);
-	return uint32_t(pSink->pTargets.size() - pIndex);
+	return uint32_t(pSink->pTargets.size() - pIndex - 1);
 }
 std::u8string_view wasm::Target::id() const {
 	pSink->fCheckTarget(pIndex, pStamp, false);
@@ -42,7 +42,7 @@ std::u8string wasm::Target::toString() const {
 	std::u8string_view id = fGet()->id;
 	if (!id.empty())
 		return str::Build<std::u8string>(u8"$", id);
-	return str::Build<std::u8string>(uint32_t(pSink->pTargets.size() - pIndex));
+	return str::Build<std::u8string>(uint32_t(pSink->pTargets.size() - pIndex - 1));
 }
 
 
