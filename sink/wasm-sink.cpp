@@ -28,7 +28,7 @@ wasm::Sink::Sink(const wasm::Function& function) {
 	/* setup the sink-interface */
 	pInterface = pModule->pInterface->sink(pFunction);
 }
-wasm::Sink::~Sink() {
+wasm::Sink::~Sink() noexcept(false) {
 	fClose();
 }
 

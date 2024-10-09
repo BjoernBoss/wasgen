@@ -76,7 +76,7 @@ namespace wasm {
 		Sink() = delete;
 		Sink(wasm::Sink&&) = delete;
 		Sink(const wasm::Sink&) = delete;
-		~Sink();
+		~Sink() noexcept(false);
 
 	private:
 		wasm::Type fMapOperand(wasm::OpType operand) const;
