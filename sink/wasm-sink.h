@@ -47,6 +47,14 @@ namespace wasm {
 				return wasm::Variable{ *_this, index + _this->pParameter };
 			}
 		};
+		struct Scope {
+			size_t stack = 0;
+			bool unreachable = false;
+		};
+		struct Scopes {
+			detail::TargetState state;
+			Scope scope;
+		};
 
 	private:
 		wasm::Module* pModule = 0;
@@ -54,7 +62,9 @@ namespace wasm {
 			std::vector<detail::VariableState> list;
 			std::unordered_set<std::u8string> ids;
 		} pVariables;
-		std::vector<detail::TargetState> pTargets;
+		std::vector<Scopes> pTargets;
+		std::vector<wasm::Type> pStack;
+		Scope pRoot;
 		wasm::Function pFunction;
 		wasm::SinkInterface* pInterface = 0;
 		size_t pNextStamp = 0;
@@ -69,9 +79,13 @@ namespace wasm {
 		~Sink();
 
 	private:
+		wasm::Type fMapOperand(wasm::OpType operand) const;
+		std::wstring_view fType(wasm::Type type) const;
 		std::u8string fError() const;
 		void fClose();
 		void fCheckClosed() const;
+
+	private:
 		void fPopUntil(uint32_t size);
 		bool fCheckTarget(uint32_t index, size_t stamp, bool soft) const;
 		void fSetupValidTarget(const wasm::Prototype& prototype, std::u8string_view id, wasm::ScopeType type, wasm::Target& target);
@@ -79,6 +93,15 @@ namespace wasm {
 		void fSetupTarget(std::initializer_list<wasm::Type> params, std::initializer_list<wasm::Type> result, std::u8string_view id, wasm::ScopeType type, wasm::Target& target);
 		void fToggleTarget(uint32_t index, size_t stamp);
 		void fCloseTarget(uint32_t index, size_t stamp);
+
+	private:
+		Scope& fScope();
+		void fPushTypes(std::initializer_list<wasm::Type> types);
+		void fPushTypes(const wasm::Prototype& prototype, bool params);
+		void fPopFailed(size_t count, std::wstring_view expected);
+		void fPopTypes(std::initializer_list<wasm::Type> types);
+		void fPopTypes(const wasm::Prototype& prototype, bool params);
+		void fSwapTypes(std::initializer_list<wasm::Type> pop, std::initializer_list<wasm::Type> push);
 
 	public:
 		wasm::Variable parameter(uint32_t index);
@@ -109,7 +132,7 @@ namespace wasm {
 			if constexpr (std::is_same_v<Type, detail::VariableState>)
 				return &pSink->pVariables.list[pIndex];
 			if constexpr (std::is_same_v<Type, detail::TargetState>)
-				return &pSink->pTargets[pIndex];
+				return &pSink->pTargets[pIndex].state;
 			return nullptr;
 		}
 	}

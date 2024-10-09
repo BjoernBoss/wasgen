@@ -30,7 +30,6 @@ void writer::binary::Sink::fPushSelect(wasm::OpType operand, uint8_t i32, uint8_
 		break;
 	default:
 		throw wasm::Exception{ L"Unknown operand type [", size_t(operand), L"] encountered" };
-		break;
 	}
 }
 
@@ -132,7 +131,6 @@ void writer::binary::Sink::addInst(const wasm::InstSimple& inst) {
 		break;
 	default:
 		throw wasm::Exception{ L"Unknown wasm::InstSimple type [", size_t(inst.type), L"] encountered" };
-		break;
 	}
 }
 void writer::binary::Sink::addInst(const wasm::InstConst& inst) {
@@ -175,7 +173,6 @@ void writer::binary::Sink::addInst(const wasm::InstOperand& inst) {
 		break;
 	default:
 		throw wasm::Exception{ L"Unknown wasm::InstOperand type [", size_t(inst.type), L"] encountered" };
-		break;
 	}
 }
 void writer::binary::Sink::addInst(const wasm::InstWidth& inst) {
@@ -330,7 +327,6 @@ void writer::binary::Sink::addInst(const wasm::InstWidth& inst) {
 		break;
 	default:
 		throw wasm::Exception{ L"Unknown wasm::InstWidth type [", size_t(inst.type), L"] encountered" };
-		break;
 	}
 }
 void writer::binary::Sink::addInst(const wasm::InstMemory& inst) {
@@ -382,12 +378,12 @@ void writer::binary::Sink::addInst(const wasm::InstMemory& inst) {
 		fPush(0x3e);
 		writeMemoryAndOffset = true;
 		break;
-	case wasm::InstMemory::Type::grow:
-		fPush(0x40);
-		binary::WriteUInt(pCode, inst.memory.index());
-		break;
 	case wasm::InstMemory::Type::size:
 		fPush(0x3f);
+		binary::WriteUInt(pCode, inst.memory.index());
+		break;
+	case wasm::InstMemory::Type::grow:
+		fPush(0x40);
 		binary::WriteUInt(pCode, inst.memory.index());
 		break;
 	case wasm::InstMemory::Type::copy:
@@ -401,7 +397,6 @@ void writer::binary::Sink::addInst(const wasm::InstMemory& inst) {
 		break;
 	default:
 		throw wasm::Exception{ L"Unknown wasm::InstMemory type [", size_t(inst.type), L"] encountered" };
-		break;
 	}
 
 	/* check if the alignment and offset needs to be written out (alignment used to encode multi-memory) */
@@ -438,7 +433,6 @@ void writer::binary::Sink::addInst(const wasm::InstTable& inst) {
 		break;
 	default:
 		throw wasm::Exception{ L"Unknown wasm::InstTable type [", size_t(inst.type), L"] encountered" };
-		break;
 	}
 
 	/* write the table index out */
@@ -462,7 +456,6 @@ void writer::binary::Sink::addInst(const wasm::InstLocal& inst) {
 		break;
 	default:
 		throw wasm::Exception{ L"Unknown wasm::InstLocal type [", size_t(inst.type), L"] encountered" };
-		break;
 	}
 
 	/* write the local index out */
@@ -479,7 +472,6 @@ void writer::binary::Sink::addInst(const wasm::InstGlobal& inst) {
 		break;
 	default:
 		throw wasm::Exception{ L"Unknown wasm::InstGlobal type [", size_t(inst.type), L"] encountered" };
-		break;
 	}
 
 	/* write the global index out */
@@ -499,7 +491,6 @@ void writer::binary::Sink::addInst(const wasm::InstFunction& inst) {
 		break;
 	default:
 		throw wasm::Exception{ L"Unknown wasm::InstFunction type [", size_t(inst.type), L"] encountered" };
-		break;
 	}
 
 	/* write the function index out */
@@ -516,7 +507,6 @@ void writer::binary::Sink::addInst(const wasm::InstIndirect& inst) {
 		break;
 	default:
 		throw wasm::Exception{ L"Unknown wasm::InstIndirect type [", size_t(inst.type), L"] encountered" };
-		break;
 	}
 
 	/* write the type and table index out */
@@ -539,7 +529,6 @@ void writer::binary::Sink::addInst(const wasm::InstBranch& inst) {
 		break;
 	default:
 		throw wasm::Exception{ L"Unknown wasm::InstBranch type [", size_t(inst.type), L"] encountered" };
-		break;
 	}
 
 	/* write the target index out */

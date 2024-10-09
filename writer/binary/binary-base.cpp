@@ -66,7 +66,6 @@ uint8_t writer::binary::GetType(wasm::Type type) {
 		return 0x6f;
 	default:
 		throw wasm::Exception{ L"Unknown wasm type [", size_t(type), L"] encountered" };
-		return 0;
 	}
 }
 void writer::binary::WriteString(std::vector<uint8_t>& buffer, std::u8string_view str) {
@@ -116,7 +115,6 @@ void writer::binary::WriteValue(std::vector<uint8_t>& buffer, const wasm::Value&
 		break;
 	default:
 		throw wasm::Exception{ L"Unknown wasm val-type [", size_t(value.type()), L"] encountered" };
-		break;
 	}
 
 	/* write the closing tag */

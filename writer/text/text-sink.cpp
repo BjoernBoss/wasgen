@@ -113,7 +113,6 @@ void writer::text::Sink::addInst(const wasm::InstSimple& inst) {
 		break;
 	default:
 		throw wasm::Exception{ L"Unknown wasm::InstSimple type [", size_t(inst.type), L"] encountered" };
-		break;
 	}
 }
 void writer::text::Sink::addInst(const wasm::InstConst& inst) {
@@ -156,7 +155,6 @@ void writer::text::Sink::addInst(const wasm::InstOperand& inst) {
 		break;
 	default:
 		throw wasm::Exception{ L"Unknown wasm::InstOperand type [", size_t(inst.type), L"] encountered" };
-		break;
 	}
 
 	/* write the line out */
@@ -316,7 +314,6 @@ void writer::text::Sink::addInst(const wasm::InstWidth& inst) {
 		break;
 	default:
 		throw wasm::Exception{ L"Unknown wasm::InstWidth type [", size_t(inst.type), L"] encountered" };
-		break;
 	}
 }
 void writer::text::Sink::addInst(const wasm::InstMemory& inst) {
@@ -358,11 +355,11 @@ void writer::text::Sink::addInst(const wasm::InstMemory& inst) {
 	case wasm::InstMemory::Type::store32:
 		name = u8".store32";
 		break;
-	case wasm::InstMemory::Type::grow:
-		line = u8"memory.grow";
-		break;
 	case wasm::InstMemory::Type::size:
 		line = u8"memory.size";
+		break;
+	case wasm::InstMemory::Type::grow:
+		line = u8"memory.grow";
 		break;
 	case wasm::InstMemory::Type::copy:
 		line = u8"memory.copy";
@@ -372,7 +369,6 @@ void writer::text::Sink::addInst(const wasm::InstMemory& inst) {
 		break;
 	default:
 		throw wasm::Exception{ L"Unknown wasm::InstMemory type [", size_t(inst.type), L"] encountered" };
-		break;
 	}
 
 	/* construct the common load/store instruction */
@@ -414,7 +410,6 @@ void writer::text::Sink::addInst(const wasm::InstTable& inst) {
 		break;
 	default:
 		throw wasm::Exception{ L"Unknown wasm::InstTable type [", size_t(inst.type), L"] encountered" };
-		break;
 	}
 
 	/* add the table references and write the line out */
@@ -439,7 +434,6 @@ void writer::text::Sink::addInst(const wasm::InstLocal& inst) {
 		break;
 	default:
 		throw wasm::Exception{ L"Unknown wasm::InstLocal type [", size_t(inst.type), L"] encountered" };
-		break;
 	}
 
 	/* add the variable reference and write the line out */
@@ -459,7 +453,6 @@ void writer::text::Sink::addInst(const wasm::InstGlobal& inst) {
 		break;
 	default:
 		throw wasm::Exception{ L"Unknown wasm::InstGlobal type [", size_t(inst.type), L"] encountered" };
-		break;
 	}
 
 	/* add the global reference and write the line out */
@@ -482,7 +475,6 @@ void writer::text::Sink::addInst(const wasm::InstFunction& inst) {
 		break;
 	default:
 		throw wasm::Exception{ L"Unknown wasm::InstFunction type [", size_t(inst.type), L"] encountered" };
-		break;
 	}
 
 	/* add the function reference and write the line out */
@@ -502,7 +494,6 @@ void writer::text::Sink::addInst(const wasm::InstIndirect& inst) {
 		break;
 	default:
 		throw wasm::Exception{ L"Unknown wasm::InstIndirect type [", size_t(inst.type), L"] encountered" };
-		break;
 	}
 
 	/* add the table and prototype reference and write the line out */
@@ -528,7 +519,6 @@ void writer::text::Sink::addInst(const wasm::InstBranch& inst) {
 		break;
 	default:
 		throw wasm::Exception{ L"Unknown wasm::InstBranch type [", size_t(inst.type), L"] encountered" };
-		break;
 	}
 
 	/* add the default target and write the line out */

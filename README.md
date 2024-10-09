@@ -6,7 +6,7 @@ Library written in `C++20` to add an interface to generate WAT (WebAssembly Text
 
 Currently there is no support for v128 vector operations. Also, no byte-order checks are performed, as the host byte-order is expected to be little-endian, as expected by the WebAssembly standard. Further, the framework does not check for boundary overuns (i.e. creation of more than 2^32 globals and such).
 
-The library does not perform any type checking at construction. It only checks the validity of references and general types used for instructions. But no stack-type verification is performed.
+The library performs type checking and checks the validity of references and general types used for instructions.
 
 ## Using the library
 This library consists of multiple cpp files. Simply clone the repository, ensure that `./repos` is on the path (or at least that `<ustring/ustring.h>` can be resolved), ensure that all `cpp` files are included in the compilation, and include `<wasgen/wasm.h>`. The only further requirement is, that the library is compiled using `C++20`.

@@ -32,6 +32,38 @@ wasm::Sink::~Sink() {
 	fClose();
 }
 
+wasm::Type wasm::Sink::fMapOperand(wasm::OpType operand) const {
+	switch (operand) {
+	case wasm::OpType::i32:
+		return wasm::Type::i32;
+	case wasm::OpType::i64:
+		return wasm::Type::i64;
+	case wasm::OpType::f32:
+		return wasm::Type::f32;
+	case wasm::OpType::f64:
+		return wasm::Type::f64;
+	default:
+		throw wasm::Exception{ L"Unknown wasm::OpType type [", size_t(operand), L"] encountered" };
+	}
+}
+std::wstring_view wasm::Sink::fType(wasm::Type type) const {
+	switch (type) {
+	case wasm::Type::i32:
+		return L"i32";
+	case wasm::Type::i64:
+		return L"i64";
+	case wasm::Type::f32:
+		return L"f32";
+	case wasm::Type::f64:
+		return L"f64";
+	case wasm::Type::refExtern:
+		return L"externref";
+	case wasm::Type::refFunction:
+		return L"funcref";
+	default:
+		throw wasm::Exception{ L"Unknown wasm type [", size_t(type), L"] encountered" };
+	}
+}
 std::u8string wasm::Sink::fError() const {
 	return str::Build<std::u8string>(u8"Error in sink to function [", pFunction.toString(), u8"]: ");
 }
@@ -44,6 +76,13 @@ void wasm::Sink::fClose() {
 	fPopUntil(0);
 	pModule->pFunction.list[pFunction.index()].sink = 0;
 
+	/* perform the type checking */
+	if (!fScope().unreachable) {
+		fPopTypes(pFunction.prototype(), false);
+		if (!pStack.empty())
+			fPopFailed(pStack.size(), L"");
+	}
+
 	/* mark the sink as closed */
 	pInterface->close(*this);
 }
@@ -51,14 +90,26 @@ void wasm::Sink::fCheckClosed() const {
 	if (pClosed)
 		throw wasm::Exception{ fError(), L"Cannot change the closed" };
 }
+
 void wasm::Sink::fPopUntil(uint32_t size) {
 	while (pTargets.size() > size) {
-		pInterface->popScope(pTargets.back().type);
+		/* perform the type checking */
+		if (!pTargets.back().scope.unreachable) {
+			fPopTypes(pTargets.back().state.prototype, false);
+			if (pStack.size() - pTargets.back().scope.stack > 0)
+				fPopFailed(pStack.size() - pTargets.back().scope.stack, L"");
+		}
+		else
+			pStack.resize(pTargets.back().scope.stack);
+		fPushTypes(pTargets.back().state.prototype, false);
+
+		/* notify the interface about the removed target and remove it */
+		pInterface->popScope(pTargets.back().state.type);
 		pTargets.pop_back();
 	}
 }
 bool wasm::Sink::fCheckTarget(uint32_t index, size_t stamp, bool soft) const {
-	if (index < pTargets.size() && pTargets[index].stamp == stamp)
+	if (index < pTargets.size() && pTargets[index].state.stamp == stamp)
 		return true;
 	if (!soft)
 		throw wasm::Exception{ fError(), L"Target [", index, L"] is out of scope" };
@@ -71,9 +122,16 @@ void wasm::Sink::fSetupValidTarget(const wasm::Prototype& prototype, std::u8stri
 	if (&prototype.module() != pModule)
 		throw wasm::Exception{ fError(), L"Prototype [", prototype.toString(), L"] must originate from same module as function" };
 
+	/* perform the type checking */
+	if (type == wasm::ScopeType::conditional)
+		fPopTypes({ wasm::Type::i32 });
+	fPopTypes(prototype, true);
+	fPushTypes(prototype, true);
+
 	/* no need to validate the uniqueness of the id, as the name can be duplicated */
 	detail::TargetState state = { prototype, std::u8string{ id }, ++pNextStamp, type, false };
-	pTargets.push_back(std::move(state));
+	Scope scope = { pStack.size() - prototype.parameter().size(), fScope().unreachable };
+	pTargets.push_back({ std::move(state), scope });
 	uint32_t index = uint32_t(pTargets.size() - 1);
 
 	/* configure the target */
@@ -93,22 +151,121 @@ void wasm::Sink::fSetupTarget(std::initializer_list<wasm::Type> params, std::ini
 }
 void wasm::Sink::fToggleTarget(uint32_t index, size_t stamp) {
 	/* ignore the target if its already out of scope or already toggled */
-	if (index >= pTargets.size() || pTargets[index].stamp != stamp)
+	if (index >= pTargets.size() || pTargets[index].state.stamp != stamp)
 		return;
-	if (pTargets[index].type != wasm::ScopeType::conditional || pTargets[index].otherwise)
+	if (pTargets[index].state.type != wasm::ScopeType::conditional || pTargets[index].state.otherwise)
 		return;
 
 	/* pop all intermediate objects and toggle the target */
 	fPopUntil(index + 1);
-	pTargets[index].otherwise = true;
+	pTargets[index].state.otherwise = true;
 
 	/* notify the interface about the changed scope */
 	pInterface->toggleConditional();
 }
 void wasm::Sink::fCloseTarget(uint32_t index, size_t stamp) {
 	/* ignore the target if its already out of scope */
-	if (index < pTargets.size() && pTargets[index].stamp == stamp)
+	if (index < pTargets.size() && pTargets[index].state.stamp == stamp)
 		fPopUntil(index);
+}
+
+wasm::Sink::Scope& wasm::Sink::fScope() {
+	if (pTargets.empty())
+		return pRoot;
+	return pTargets.back().scope;
+}
+void wasm::Sink::fPushTypes(std::initializer_list<wasm::Type> types) {
+	pStack.insert(pStack.end(), types.begin(), types.end());
+}
+void wasm::Sink::fPushTypes(const wasm::Prototype& prototype, bool params) {
+	if (params) for (size_t i = 0; i < prototype.parameter().size(); ++i)
+		pStack.push_back(prototype.parameter()[i].type);
+	else
+		pStack.insert(pStack.end(), prototype.result().begin(), prototype.result().end());
+}
+void wasm::Sink::fPopFailed(size_t count, std::wstring_view expected) {
+	Scope& scope = fScope();
+	if (scope.unreachable)
+		return;
+	std::wstring found;
+
+	/* setup the description of the found types */
+	size_t available = pStack.size() - scope.stack;
+	for (size_t i = scope.stack + (count > available ? (available - count) : 0); i < pStack.size(); ++i) {
+		if (!found.empty())
+			found.append(L", ");
+		found.append(fType(pStack[i]));
+	}
+	throw wasm::Exception{ fError(), L"Expected [", expected, L"] but found [", found, L"]" };
+}
+void wasm::Sink::fPopTypes(std::initializer_list<wasm::Type> types) {
+	Scope& scope = fScope();
+	if (scope.unreachable)
+		return;
+
+	/* validate that the given types exist and pop them */
+	if (pStack.size() - scope.stack >= types.size() && std::equal(pStack.end() - types.size(), pStack.end(), types.begin())) {
+		pStack.resize(pStack.size() - types.size());
+		return;
+	}
+
+	/* setup the description of the expected types */
+	std::wstring expected;
+	for (wasm::Type type : types) {
+		if (!expected.empty())
+			expected.append(L", ");
+		expected.append(fType(type));
+	}
+	fPopFailed(types.size(), expected);
+}
+void wasm::Sink::fPopTypes(const wasm::Prototype& prototype, bool params) {
+	Scope& scope = fScope();
+	if (scope.unreachable)
+		return;
+
+	/* validate that the given types exist and pop them */
+	std::wstring expected;
+	size_t count = 0;
+	if (params) {
+		const auto& list = prototype.parameter();
+
+		/* check for a match */
+		if (pStack.size() - scope.stack >= list.size() && std::equal(pStack.end() - list.size(), pStack.end(), list.begin(),
+			[](wasm::Type l, const wasm::Param& r) { return (l == r.type); })) {
+			pStack.resize(pStack.size() - list.size());
+			return;
+		}
+
+		/* setup the description of the expected types */
+		for (const wasm::Param& param : list) {
+			if (!expected.empty())
+				expected.append(L", ");
+			expected.append(fType(param.type));
+		}
+		count = list.size();
+	}
+	else {
+		const auto& list = prototype.result();
+
+		/* check for a match */
+		if (pStack.size() - scope.stack >= list.size() && std::equal(pStack.end() - list.size(), pStack.end(), list.begin())) {
+			pStack.resize(pStack.size() - list.size());
+			return;
+		}
+
+		/* setup the description of the expected types */
+		for (wasm::Type type : list) {
+			if (!expected.empty())
+				expected.append(L", ");
+			expected.append(fType(type));
+		}
+		count = list.size();
+	}
+	fPopFailed(count, expected);
+}
+void wasm::Sink::fSwapTypes(std::initializer_list<wasm::Type> pop, std::initializer_list<wasm::Type> push) {
+	fPopTypes(pop);
+	fPushTypes(push);
 }
 
 wasm::Variable wasm::Sink::parameter(uint32_t index) {
@@ -151,18 +308,186 @@ wasm::List<wasm::Variable, wasm::Sink::LocalList> wasm::Sink::locals() const {
 
 void wasm::Sink::operator[](const wasm::InstSimple& inst) {
 	fCheckClosed();
+
+	/* perform the type checking */
+	switch (inst.type) {
+	case wasm::InstSimple::Type::drop:
+		if (pStack.size() < 1)
+			fPopFailed(1, L"any");
+		else
+			fPopTypes({ pStack.back() });
+		break;
+	case wasm::InstSimple::Type::ret:
+		fPopTypes(pFunction.prototype(), false);
+		fScope().unreachable = true;
+		break;
+	case wasm::InstSimple::Type::select:
+		if (pStack.size() < 3)
+			fPopFailed(3, L"opt1, opt2, i32");
+		else {
+			wasm::Type type = pStack.end()[-2];
+			fSwapTypes({ type, type, wasm::Type::i32 }, { type });
+		}
+		break;
+	case wasm::InstSimple::Type::selectRefFunction:
+		fSwapTypes({ wasm::Type::refFunction, wasm::Type::refFunction, wasm::Type::i32 }, { wasm::Type::refFunction });
+		break;
+	case wasm::InstSimple::Type::selectRefExtern:
+		fSwapTypes({ wasm::Type::refExtern, wasm::Type::refExtern, wasm::Type::i32 }, { wasm::Type::refExtern });
+		break;
+	case wasm::InstSimple::Type::refTestNull:
+		if (pStack.size() < 1 || (pStack.back() != wasm::Type::refExtern && pStack.back() != wasm::Type::refFunction))
+			fPopFailed(1, L"ref");
+		else {
+			fSwapTypes({ pStack.back() }, { wasm::Type::i32 });
+		}
+		break;
+	case wasm::InstSimple::Type::refNullFunction:
+		fPushTypes({ wasm::Type::refFunction });
+		break;
+	case wasm::InstSimple::Type::refNullExtern:
+		fPushTypes({ wasm::Type::refExtern });
+		break;
+	case wasm::InstSimple::Type::expandIntSigned:
+	case wasm::InstSimple::Type::expandIntUnsigned:
+		fSwapTypes({ wasm::Type::i32 }, { wasm::Type::i64 });
+		break;
+	case wasm::InstSimple::Type::shrinkInt:
+		fSwapTypes({ wasm::Type::i64 }, { wasm::Type::i32 });
+		break;
+	case wasm::InstSimple::Type::expandFloat:
+		fSwapTypes({ wasm::Type::f32 }, { wasm::Type::f64 });
+		break;
+	case wasm::InstSimple::Type::shrinkFloat:
+		fSwapTypes({ wasm::Type::f64 }, { wasm::Type::f32 });
+		break;
+	case wasm::InstSimple::Type::unreachable:
+		fScope().unreachable = true;
+		break;
+	case wasm::InstSimple::Type::nop:
+		break;
+	default:
+		throw wasm::Exception{ L"Unknown wasm::InstSimple type [", size_t(inst.type), L"] encountered" };
+	}
+
+	/* add the instruction to the interface */
 	pInterface->addInst(inst);
 }
 void wasm::Sink::operator[](const wasm::InstConst& inst) {
 	fCheckClosed();
+
+	/* perform the type checking */
+	if (std::holds_alternative<uint32_t>(inst.value))
+		fPushTypes({ wasm::Type::i32 });
+	else if (std::holds_alternative<uint64_t>(inst.value))
+		fPushTypes({ wasm::Type::i64 });
+	else if (std::holds_alternative<float>(inst.value))
+		fPushTypes({ wasm::Type::f32 });
+	else if (std::holds_alternative<double>(inst.value))
+		fPushTypes({ wasm::Type::f64 });
+	else
+		throw wasm::Exception{ L"Unknown wasm::InstConst type encountered" };
+
+	/* add the instruction to the interface */
 	pInterface->addInst(inst);
 }
 void wasm::Sink::operator[](const wasm::InstOperand& inst) {
 	fCheckClosed();
+
+	/* perform the type checking */
+	wasm::Type type = fMapOperand(inst.operand);
+	if (inst.type == wasm::InstOperand::Type::equal || inst.type == wasm::InstOperand::Type::notEqual)
+		fSwapTypes({ type, type }, { wasm::Type::i32 });
+	else
+		fSwapTypes({ type, type }, { type });
+
+	/* add the instruction to the interface */
 	pInterface->addInst(inst);
 }
 void wasm::Sink::operator[](const wasm::InstWidth& inst) {
 	fCheckClosed();
+
+	/* perform the type checking */
+	wasm::Type itype = (inst.width32 ? wasm::Type::i32 : wasm::Type::i64), ftype = (inst.width32 ? wasm::Type::f32 : wasm::Type::f64);
+	switch (inst.type) {
+	case wasm::InstWidth::Type::equalZero:
+		fSwapTypes({ itype }, { wasm::Type::i32 });
+		break;
+	case wasm::InstWidth::Type::greater:
+	case wasm::InstWidth::Type::less:
+	case wasm::InstWidth::Type::greaterEqual:
+	case wasm::InstWidth::Type::lessEqual:
+		fSwapTypes({ ftype, ftype }, { wasm::Type::i32 });
+		break;
+	case wasm::InstWidth::Type::greaterSigned:
+	case wasm::InstWidth::Type::greaterUnsigned:
+	case wasm::InstWidth::Type::lessSigned:
+	case wasm::InstWidth::Type::lessUnsigned:
+	case wasm::InstWidth::Type::greaterEqualSigned:
+	case wasm::InstWidth::Type::greaterEqualUnsigned:
+	case wasm::InstWidth::Type::lessEqualSigned:
+	case wasm::InstWidth::Type::lessEqualUnsigned:
+		fSwapTypes({ itype, itype }, { wasm::Type::i32 });
+		break;
+	case wasm::InstWidth::Type::divSigned:
+	case wasm::InstWidth::Type::divUnsigned:
+	case wasm::InstWidth::Type::modSigned:
+	case wasm::InstWidth::Type::modUnsigned:
+	case wasm::InstWidth::Type::bitAnd:
+	case wasm::InstWidth::Type::bitOr:
+	case wasm::InstWidth::Type::bitXOr:
+	case wasm::InstWidth::Type::bitShiftLeft:
+	case wasm::InstWidth::Type::bitShiftRightSigned:
+	case wasm::InstWidth::Type::bitShiftRightUnsigned:
+	case wasm::InstWidth::Type::bitRotateLeft:
+	case wasm::InstWidth::Type::bitRotateRight:
+	case wasm::InstWidth::Type::bitLeadingNulls:
+	case wasm::InstWidth::Type::bitTrailingNulls:
+	case wasm::InstWidth::Type::bitSetCount:
+		fSwapTypes({ itype, itype }, { itype });
+		break;
+	case wasm::InstWidth::Type::convertToF32Signed:
+	case wasm::InstWidth::Type::convertToF32Unsigned:
+		fSwapTypes({ itype }, { wasm::Type::f32 });
+		break;
+	case wasm::InstWidth::Type::convertToF64Signed:
+	case wasm::InstWidth::Type::convertToF64Unsigned:
+		fSwapTypes({ itype }, { wasm::Type::f64 });
+		break;
+	case wasm::InstWidth::Type::convertFromF32Signed:
+	case wasm::InstWidth::Type::convertFromF32Unsigned:
+		fSwapTypes({ wasm::Type::f32 }, { itype });
+		break;
+	case wasm::InstWidth::Type::convertFromF64Signed:
+	case wasm::InstWidth::Type::convertFromF64Unsigned:
+		fSwapTypes({ wasm::Type::f64 }, { itype });
+		break;
+	case wasm::InstWidth::Type::reinterpretAsFloat:
+		fSwapTypes({ itype }, { ftype });
+		break;
+	case wasm::InstWidth::Type::reinterpretAsInt:
+		fSwapTypes({ ftype }, { itype });
+		break;
+	case wasm::InstWidth::Type::floatDiv:
+	case wasm::InstWidth::Type::floatMin:
+	case wasm::InstWidth::Type::floatMax:
+	case wasm::InstWidth::Type::floatCopySign:
+		fSwapTypes({ ftype, ftype }, { ftype });
+		break;
+	case wasm::InstWidth::Type::floatFloor:
+	case wasm::InstWidth::Type::floatRound:
+	case wasm::InstWidth::Type::floatCeil:
+	case wasm::InstWidth::Type::floatTruncate:
+	case wasm::InstWidth::Type::floatAbsolute:
+	case wasm::InstWidth::Type::floatNegate:
+	case wasm::InstWidth::Type::floatSquareRoot:
+		fSwapTypes({ ftype }, { ftype });
+		break;
+	default:
+		throw wasm::Exception{ L"Unknown wasm::InstWidth type [", size_t(inst.type), L"] encountered" };
+	}
+
+	/* add the instruction to the interface */
 	pInterface->addInst(inst);
 }
 void wasm::Sink::operator[](const wasm::InstMemory& inst) {
@@ -178,6 +503,58 @@ void wasm::Sink::operator[](const wasm::InstMemory& inst) {
 			throw wasm::Exception{ fError(), L"Memories must be constructed" };
 		if (&inst.destination.module() != pModule)
 			throw wasm::Exception{ fError(), L"Memory [", inst.destination.toString(), L"] must originate from same module as function" };
+	}
+
+	/* perform the type checking */
+	wasm::Type type = fMapOperand(inst.operand);
+	switch (inst.type) {
+	case wasm::InstMemory::Type::load:
+		fSwapTypes({ wasm::Type::i32 }, { type });
+		break;
+	case wasm::InstMemory::Type::load8Unsigned:
+		fSwapTypes({ wasm::Type::i32 }, { type });
+		break;
+	case wasm::InstMemory::Type::load8Signed:
+		fSwapTypes({ wasm::Type::i32 }, { type });
+		break;
+	case wasm::InstMemory::Type::load16Unsigned:
+		fSwapTypes({ wasm::Type::i32 }, { type });
+		break;
+	case wasm::InstMemory::Type::load16Signed:
+		fSwapTypes({ wasm::Type::i32 }, { type });
+		break;
+	case wasm::InstMemory::Type::load32Unsigned:
+		fSwapTypes({ wasm::Type::i32 }, { type });
+		break;
+	case wasm::InstMemory::Type::load32Signed:
+		fSwapTypes({ wasm::Type::i32 }, { type });
+		break;
+	case wasm::InstMemory::Type::store:
+		fPopTypes({ wasm::Type::i32, type });
+		break;
+	case wasm::InstMemory::Type::store8:
+		fPopTypes({ wasm::Type::i32, type });
+		break;
+	case wasm::InstMemory::Type::store16:
+		fPopTypes({ wasm::Type::i32, type });
+		break;
+	case wasm::InstMemory::Type::store32:
+		fPopTypes({ wasm::Type::i32, type });
+		break;
+	case wasm::InstMemory::Type::size:
+		fPushTypes({ wasm::Type::i32 });
+		break;
+	case wasm::InstMemory::Type::grow:
+		fSwapTypes({ wasm::Type::i32 }, { wasm::Type::i32 });
+		break;
+	case wasm::InstMemory::Type::copy:
+		fPopTypes({ wasm::Type::i32, wasm::Type::i32, wasm::Type::i32 });
+		break;
+	case wasm::InstMemory::Type::fill:
+		fPopTypes({ wasm::Type::i32, wasm::Type::i32, wasm::Type::i32 });
+		break;
+	default:
+		throw wasm::Exception{ L"Unknown wasm::InstMemory type [", size_t(inst.type), L"] encountered" };
 	}
 
 	/* add the instruction to the interface */
@@ -198,6 +575,30 @@ void wasm::Sink::operator[](const wasm::InstTable& inst) {
 			throw wasm::Exception{ fError(), L"Table [", inst.destination.toString(), L"] must originate from same module as function" };
 	}
 
+	/* perform the type checking */
+	switch (inst.type) {
+	case wasm::InstTable::Type::get:
+		fSwapTypes({ wasm::Type::i32 }, { (inst.table.functions() ? wasm::Type::refFunction : wasm::Type::refExtern) });
+		break;
+	case wasm::InstTable::Type::set:
+		fPopTypes({ wasm::Type::i32, (inst.table.functions() ? wasm::Type::refFunction : wasm::Type::refExtern) });
+		break;
+	case wasm::InstTable::Type::size:
+		fPushTypes({ wasm::Type::i32 });
+		break;
+	case wasm::InstTable::Type::grow:
+		fSwapTypes({ (inst.table.functions() ? wasm::Type::refFunction : wasm::Type::refExtern), wasm::Type::i32 }, { wasm::Type::i32 });
+		break;
+	case wasm::InstTable::Type::copy:
+		fPopTypes({ wasm::Type::i32, wasm::Type::i32, wasm::Type::i32 });
+		break;
+	case wasm::InstTable::Type::fill:
+		fPopTypes({ wasm::Type::i32, (inst.table.functions() ? wasm::Type::refFunction : wasm::Type::refExtern), wasm::Type::i32 });
+		break;
+	default:
+		throw wasm::Exception{ L"Unknown wasm::InstTable type [", size_t(inst.type), L"] encountered" };
+	}
+
 	/* add the instruction to the interface */
 	pInterface->addInst(inst);
 }
@@ -209,6 +610,21 @@ void wasm::Sink::operator[](const wasm::InstLocal& inst) {
 		throw wasm::Exception{ fError(), L"Locals must be constructed" };
 	if (&inst.variable.sink() != this)
 		throw wasm::Exception{ fError(), L"Local [", inst.variable.toString(), L"] must originate from sink" };
+
+	/* perform the type checking */
+	switch (inst.type) {
+	case wasm::InstLocal::Type::get:
+		fPushTypes({ inst.variable.type() });
+		break;
+	case wasm::InstLocal::Type::set:
+		fPopTypes({ inst.variable.type() });
+		break;
+	case wasm::InstLocal::Type::tee:
+		fSwapTypes({ inst.variable.type() }, { inst.variable.type() });
+		break;
+	default:
+		throw wasm::Exception{ L"Unknown wasm::InstLocal type [", size_t(inst.type), L"] encountered" };
+	}
 
 	/* add the instruction to the interface */
 	pInterface->addInst(inst);
@@ -222,6 +638,18 @@ void wasm::Sink::operator[](const wasm::InstGlobal& inst) {
 	if (&inst.global.module() != pModule)
 		throw wasm::Exception{ fError(), L"Global [", inst.global.toString(), L"] must originate from same module as function" };
 
+	/* perform the type checking */
+	switch (inst.type) {
+	case wasm::InstGlobal::Type::get:
+		fPushTypes({ inst.global.type() });
+		break;
+	case wasm::InstGlobal::Type::set:
+		fPopTypes({ inst.global.type() });
+		break;
+	default:
+		throw wasm::Exception{ L"Unknown wasm::InstGlobal type [", size_t(inst.type), L"] encountered" };
+	}
+
 	/* add the instruction to the interface */
 	pInterface->addInst(inst);
 }
@@ -233,6 +661,20 @@ void wasm::Sink::operator[](const wasm::InstFunction& inst) {
 		throw wasm::Exception{ fError(), L"Functions must be constructed" };
 	if (&inst.function.module() != pModule)
 		throw wasm::Exception{ fError(), L"Function [", inst.function.toString(), L"] must originate from same module as function" };
+
+	/* perform the type checking */
+	switch (inst.type) {
+	case wasm::InstFunction::Type::refFunction:
+		fPushTypes({ wasm::Type::refFunction });
+		break;
+	case wasm::InstFunction::Type::callNormal:
+	case wasm::InstFunction::Type::callTail:
+		fPopTypes(inst.function.prototype(), true);
+		fPushTypes(inst.function.prototype(), false);
+		break;
+	default:
+		throw wasm::Exception{ L"Unknown wasm::InstFunction type [", size_t(inst.type), L"] encountered" };
+	}
 
 	/* add the instruction to the interface */
 	pInterface->addInst(inst);
@@ -249,6 +691,18 @@ void wasm::Sink::operator[](const wasm::InstIndirect& inst) {
 		throw wasm::Exception{ fError(), L"Prototype must be constructed" };
 	if (&inst.prototype.module() != pModule)
 		throw wasm::Exception{ fError(), L"Prototype [", inst.prototype.toString(), L"] must originate from same module as function" };
+
+	/* perform the type checking */
+	switch (inst.type) {
+	case wasm::InstIndirect::Type::callNormal:
+	case wasm::InstIndirect::Type::callTail:
+		fPopTypes({ wasm::Type::i32 });
+		fPopTypes(inst.prototype, true);
+		fPushTypes(inst.prototype, false);
+		break;
+	default:
+		throw wasm::Exception{ L"Unknown wasm::InstIndirect type [", size_t(inst.type), L"] encountered" };
+	}
 
 	/* add the instruction to the interface */
 	pInterface->addInst(inst);
@@ -270,6 +724,34 @@ void wasm::Sink::operator[](const wasm::InstBranch& inst) {
 			if (&target.sink() != this)
 				throw wasm::Exception{ fError(), L"Target [", target.toString(), L"] must originate from sink" };
 		}
+	}
+
+	/* extract the state of the target */
+	const detail::TargetState& state = pTargets[inst.target.pIndex].state;
+
+	/* perform the type checking (only parameter needs to be checked) */
+	switch (inst.type) {
+	case wasm::InstBranch::Type::direct:
+		fPopTypes(state.prototype, state.type == wasm::ScopeType::loop);
+		fScope().unreachable = true;
+		break;
+	case wasm::InstBranch::Type::conditional:
+		fPopTypes({ wasm::Type::i32 });
+		fPopTypes(state.prototype, state.type == wasm::ScopeType::loop);
+		fPushTypes(state.prototype, state.type == wasm::ScopeType::loop);
+		break;
+	case wasm::InstBranch::Type::table:
+		fPopTypes({ wasm::Type::i32 });
+		for (size_t i = 0; i <= inst.list.size(); ++i) {
+			const detail::TargetState& temp = (i == inst.list.size() ? state : pTargets[inst.list.begin()[i].get().pIndex].state);
+			fPopTypes(temp.prototype, temp.type == wasm::ScopeType::loop);
+			fPushTypes(temp.prototype, temp.type == wasm::ScopeType::loop);
+
+		}
+		fScope().unreachable = true;
+		break;
+	default:
+		throw wasm::Exception{ L"Unknown wasm::InstBranch type [", size_t(inst.type), L"] encountered" };
 	}
 
 	/* add the instruction to the interface */

@@ -18,7 +18,6 @@ std::u8string_view writer::text::MakeType(wasm::Type type) {
 		return u8" funcref";
 	default:
 		throw wasm::Exception{ L"Unknown wasm type [", size_t(type), L"] encountered" };
-		return u8"";
 	}
 }
 std::u8string writer::text::MakeId(std::u8string_view id) {
@@ -57,7 +56,6 @@ std::u8string_view writer::text::MakeOperand(wasm::OpType operand) {
 		return u8"f64";
 	default:
 		throw wasm::Exception{ L"Unknown operand type [", size_t(operand), L"] encountered" };
-		return u8"";
 	}
 }
 std::u8string writer::text::MakeValue(const wasm::Value& value) {
@@ -81,6 +79,5 @@ std::u8string writer::text::MakeValue(const wasm::Value& value) {
 	case wasm::ValType::invalid:
 	default:
 		throw wasm::Exception{ L"Unknown value type [", size_t(value.type()), L"] encountered" };
-		return u8"";
 	}
 }

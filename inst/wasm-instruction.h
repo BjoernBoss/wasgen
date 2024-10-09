@@ -156,8 +156,8 @@ namespace wasm {
 			store8,
 			store16,
 			store32,
-			grow,
 			size,
+			grow,
 			copy,
 			fill
 		};

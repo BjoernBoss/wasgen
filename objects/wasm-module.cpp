@@ -190,7 +190,6 @@ void wasm::Module::fElements(const wasm::Table& table, const wasm::Value& offset
 			break;
 		case wasm::ValType::invalid:
 			throw wasm::Exception{ L"Value for table [", table.toString(), L"] is required to be constructed" };
-			break;
 		}
 		if (_type != (table.functions() ? wasm::Type::refFunction : wasm::Type::refExtern))
 			throw wasm::Exception{ L"Value for table [", table.toString(), L"] must match its type" };
@@ -382,7 +381,6 @@ void wasm::Module::value(const wasm::Global& global, const wasm::Value& value) {
 		break;
 	case wasm::ValType::invalid:
 		throw wasm::Exception{ L"Value for global [", global.toString(), L"] is required to be constructed" };
-		break;
 	}
 	if (_type != global.type())
 		throw wasm::Exception{ L"Value for global [", global.toString(), L"] must match its type" };
