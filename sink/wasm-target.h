@@ -32,6 +32,7 @@ namespace wasm {
 		Target() = delete;
 		Target(wasm::Target&&) = delete;
 		Target(const wasm::Target&) = delete;
+		~Target() noexcept(false) = default;
 
 	protected:
 		Target(wasm::Sink& sink);
@@ -55,7 +56,7 @@ namespace wasm {
 	struct IfThen : public wasm::Target {
 		IfThen(wasm::Sink& sink, std::u8string_view label, const wasm::Prototype& prototype);
 		IfThen(wasm::Sink& sink, std::u8string_view label = {}, std::initializer_list<wasm::Type> params = {}, std::initializer_list<wasm::Type> result = {});
-		~IfThen();
+		~IfThen() noexcept(false);
 		void close();
 		void otherwise();
 	};
@@ -64,7 +65,7 @@ namespace wasm {
 	struct Loop : public wasm::Target {
 		Loop(wasm::Sink& sink, std::u8string_view label, const wasm::Prototype& prototype);
 		Loop(wasm::Sink& sink, std::u8string_view label = {}, std::initializer_list<wasm::Type> params = {}, std::initializer_list<wasm::Type> result = {});
-		~Loop();
+		~Loop() noexcept(false);
 		void close();
 	};
 
@@ -72,7 +73,7 @@ namespace wasm {
 	struct Block : public wasm::Target {
 		Block(wasm::Sink& sink, std::u8string_view label, const wasm::Prototype& prototype);
 		Block(wasm::Sink& sink, std::u8string_view label = {}, std::initializer_list<wasm::Type> params = {}, std::initializer_list<wasm::Type> result = {});
-		~Block();
+		~Block() noexcept(false);
 		void close();
 	};
 }

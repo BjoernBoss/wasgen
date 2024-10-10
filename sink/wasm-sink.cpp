@@ -79,8 +79,7 @@ void wasm::Sink::fClose() {
 	/* perform the type checking */
 	if (!fScope().unreachable) {
 		fPopTypes(pFunction.prototype(), false);
-		if (!pStack.empty())
-			fPopFailed(pStack.size(), L"");
+		fCheckEmpty();
 	}
 
 	/* mark the sink as closed */
@@ -96,8 +95,7 @@ void wasm::Sink::fPopUntil(uint32_t size) {
 		/* perform the type checking */
 		if (!pTargets.back().scope.unreachable) {
 			fPopTypes(pTargets.back().state.prototype, false);
-			if (pStack.size() - pTargets.back().scope.stack > 0)
-				fPopFailed(pStack.size() - pTargets.back().scope.stack, L"");
+			fCheckEmpty();
 		}
 		else
 			pStack.resize(pTargets.back().scope.stack);
@@ -158,7 +156,16 @@ void wasm::Sink::fToggleTarget(uint32_t index, size_t stamp) {
 
 	/* pop all intermediate objects and toggle the target */
 	fPopUntil(index + 1);
-	pTargets[index].state.otherwise = true;
+	pTargets.back().state.otherwise = true;
+
+	/* perform the type checking (i.e. the closed block returned all expected parameter) and restore the state */
+	if (!pTargets.back().scope.unreachable) {
+		fPopTypes(pTargets.back().state.prototype, false);
+		fCheckEmpty();
+	}
+	pTargets.back().scope.unreachable = false;
+	pStack.resize(pTargets.back().scope.stack);
+	fPushTypes(pTargets.back().state.prototype, true);
 
 	/* notify the interface about the changed scope */
 	pInterface->toggleConditional();
@@ -197,6 +204,11 @@ void wasm::Sink::fPopFailed(size_t count, std::wstring_view expected) {
 		found.append(fType(pStack[i]));
 	}
 	throw wasm::Exception{ fError(), L"Expected [", expected, L"] but found [", found, L"]" };
+}
+void wasm::Sink::fCheckEmpty() {
+	Scope& scope = fScope();
+	if (pStack.size() > scope.stack)
+		fPopFailed(pStack.size() - scope.stack, L"");
 }
 void wasm::Sink::fPopTypes(std::initializer_list<wasm::Type> types) {
 	Scope& scope = fScope();

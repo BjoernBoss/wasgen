@@ -99,6 +99,7 @@ namespace wasm {
 		void fPushTypes(std::initializer_list<wasm::Type> types);
 		void fPushTypes(const wasm::Prototype& prototype, bool params);
 		void fPopFailed(size_t count, std::wstring_view expected);
+		void fCheckEmpty();
 		void fPopTypes(std::initializer_list<wasm::Type> types);
 		void fPopTypes(const wasm::Prototype& prototype, bool params);
 		void fSwapTypes(std::initializer_list<wasm::Type> pop, std::initializer_list<wasm::Type> push);

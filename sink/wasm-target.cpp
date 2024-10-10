@@ -52,7 +52,7 @@ wasm::IfThen::IfThen(wasm::Sink& sink, std::u8string_view label, const wasm::Pro
 wasm::IfThen::IfThen(wasm::Sink& sink, std::u8string_view label, std::initializer_list<wasm::Type> params, std::initializer_list<wasm::Type> result) : Target{ sink } {
 	fSetup(label, params, result, wasm::ScopeType::conditional);
 }
-wasm::IfThen::~IfThen() {
+wasm::IfThen::~IfThen() noexcept(false) {
 	fClose();
 }
 void wasm::IfThen::close() {
@@ -69,7 +69,7 @@ wasm::Loop::Loop(wasm::Sink& sink, std::u8string_view label, const wasm::Prototy
 wasm::Loop::Loop(wasm::Sink& sink, std::u8string_view label, std::initializer_list<wasm::Type> params, std::initializer_list<wasm::Type> result) : Target{ sink } {
 	fSetup(label, params, result, wasm::ScopeType::loop);
 }
-wasm::Loop::~Loop() {
+wasm::Loop::~Loop() noexcept(false) {
 	fClose();
 }
 void wasm::Loop::close() {
@@ -83,7 +83,7 @@ wasm::Block::Block(wasm::Sink& sink, std::u8string_view label, const wasm::Proto
 wasm::Block::Block(wasm::Sink& sink, std::u8string_view label, std::initializer_list<wasm::Type> params, std::initializer_list<wasm::Type> result) : Target{ sink } {
 	fSetup(label, params, result, wasm::ScopeType::block);
 }
-wasm::Block::~Block() {
+wasm::Block::~Block() noexcept(false) {
 	fClose();
 }
 void wasm::Block::close() {

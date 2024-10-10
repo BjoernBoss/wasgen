@@ -4,7 +4,7 @@
 #include "../sink/wasm-sink.h"
 
 wasm::Module::Module(wasm::ModuleInterface* interface) : pInterface{ interface } {}
-wasm::Module::~Module() {
+wasm::Module::~Module() noexcept(false) {
 	fClose();
 }
 
