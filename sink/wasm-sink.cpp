@@ -65,6 +65,7 @@ std::wstring_view wasm::Sink::fType(wasm::Type type) const {
 	}
 }
 std::u8string wasm::Sink::fError() const {
+	pFailed = true;
 	return str::Build<std::u8string>(u8"Error in sink to function [", pFunction.toString(), u8"]: ");
 }
 void wasm::Sink::fClose() {
@@ -77,7 +78,7 @@ void wasm::Sink::fClose() {
 	pModule->pFunction.list[pFunction.index()].sink = 0;
 
 	/* perform the type checking */
-	if (!fScope().unreachable) {
+	if (!fScope().unreachable && !pFailed) {
 		fPopTypes(pFunction.prototype(), false);
 		fCheckEmpty();
 	}
@@ -92,8 +93,8 @@ void wasm::Sink::fCheckClosed() const {
 
 void wasm::Sink::fPopUntil(uint32_t size) {
 	while (pTargets.size() > size) {
-		/* perform the type checking */
-		if (!pTargets.back().scope.unreachable) {
+		/* perform the type checking (only if this is not a cleanup after a potential exception) */
+		if (!pFailed && !pTargets.back().scope.unreachable) {
 			fPopTypes(pTargets.back().state.prototype, false);
 			fCheckEmpty();
 		}
@@ -680,9 +681,14 @@ void wasm::Sink::operator[](const wasm::InstFunction& inst) {
 		fPushTypes({ wasm::Type::refFunction });
 		break;
 	case wasm::InstFunction::Type::callNormal:
+		fPopTypes(inst.function.prototype(), true);
+		fPushTypes(inst.function.prototype(), false);
+		break;
 	case wasm::InstFunction::Type::callTail:
 		fPopTypes(inst.function.prototype(), true);
 		fPushTypes(inst.function.prototype(), false);
+		fPopTypes(pFunction.prototype(), false);
+		fScope().unreachable = true;
 		break;
 	default:
 		throw wasm::Exception{ L"Unknown wasm::InstFunction type [", size_t(inst.type), L"] encountered" };
@@ -707,10 +713,16 @@ void wasm::Sink::operator[](const wasm::InstIndirect& inst) {
 	/* perform the type checking */
 	switch (inst.type) {
 	case wasm::InstIndirect::Type::callNormal:
+		fPopTypes({ wasm::Type::i32 });
+		fPopTypes(inst.prototype, true);
+		fPushTypes(inst.prototype, false);
+		break;
 	case wasm::InstIndirect::Type::callTail:
 		fPopTypes({ wasm::Type::i32 });
 		fPopTypes(inst.prototype, true);
 		fPushTypes(inst.prototype, false);
+		fPopTypes(pFunction.prototype(), false);
+		fScope().unreachable = true;
 		break;
 	default:
 		throw wasm::Exception{ L"Unknown wasm::InstIndirect type [", size_t(inst.type), L"] encountered" };
