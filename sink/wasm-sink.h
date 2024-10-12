@@ -81,7 +81,6 @@ namespace wasm {
 
 	private:
 		wasm::Type fMapOperand(wasm::OpType operand) const;
-		std::wstring_view fType(wasm::Type type) const;
 		std::u8string fError() const;
 		void fClose();
 		void fCheckClosed() const;
@@ -96,11 +95,52 @@ namespace wasm {
 		void fCloseTarget(uint32_t index, size_t stamp);
 
 	private:
+		template <class ItType, class MkType>
+		std::wstring fMakeTypeList(ItType begin, ItType end, MkType make) const {
+			std::wstring expected;
+
+			/* create the comma-separated list of types */
+			while (begin != end) {
+				if (!expected.empty())
+					expected.append(L", ");
+
+				/* append the type */
+				wasm::Type type = make(*begin);
+				switch (type) {
+				case wasm::Type::i32:
+					expected.append(L"i32");
+					break;
+				case wasm::Type::i64:
+					expected.append(L"i64");
+					break;
+				case wasm::Type::f32:
+					expected.append(L"f32");
+					break;
+				case wasm::Type::f64:
+					expected.append(L"f64");
+					break;
+				case wasm::Type::refExtern:
+					expected.append(L"externref");
+					break;
+				case wasm::Type::refFunction:
+					expected.append(L"funcref");
+					break;
+				default:
+					throw wasm::Exception{ L"Unknown wasm type [", size_t(type), L"] encountered" };
+				}
+				++begin;
+			}
+			return expected;
+		}
+
+	private:
+		void fTypesFailed(std::wstring_view expected, std::wstring_view found) const;
+		void fPopFailed(size_t count, std::wstring_view expected) const;
+		void fCheckEmpty() const;
+		const Scope& fScope() const;
 		Scope& fScope();
 		void fPushTypes(std::initializer_list<wasm::Type> types);
 		void fPushTypes(const wasm::Prototype& prototype, bool params);
-		void fPopFailed(size_t count, std::wstring_view expected);
-		void fCheckEmpty();
 		void fPopTypes(std::initializer_list<wasm::Type> types);
 		void fPopTypes(const wasm::Prototype& prototype, bool params);
 		void fSwapTypes(std::initializer_list<wasm::Type> pop, std::initializer_list<wasm::Type> push);

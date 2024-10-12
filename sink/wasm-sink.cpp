@@ -46,24 +46,6 @@ wasm::Type wasm::Sink::fMapOperand(wasm::OpType operand) const {
 		throw wasm::Exception{ L"Unknown wasm::OpType type [", size_t(operand), L"] encountered" };
 	}
 }
-std::wstring_view wasm::Sink::fType(wasm::Type type) const {
-	switch (type) {
-	case wasm::Type::i32:
-		return L"i32";
-	case wasm::Type::i64:
-		return L"i64";
-	case wasm::Type::f32:
-		return L"f32";
-	case wasm::Type::f64:
-		return L"f64";
-	case wasm::Type::refExtern:
-		return L"externref";
-	case wasm::Type::refFunction:
-		return L"funcref";
-	default:
-		throw wasm::Exception{ L"Unknown wasm type [", size_t(type), L"] encountered" };
-	}
-}
 std::u8string wasm::Sink::fError() const {
 	pFailed = true;
 	return str::Build<std::u8string>(u8"Error in sink to function [", pFunction.toString(), u8"]: ");
@@ -177,6 +159,29 @@ void wasm::Sink::fCloseTarget(uint32_t index, size_t stamp) {
 		fPopUntil(index);
 }
 
+void wasm::Sink::fTypesFailed(std::wstring_view expected, std::wstring_view found) const {
+	if (!fScope().unreachable)
+		throw wasm::Exception{ fError(), L"Expected [", expected, L"] but found [", found, L"]" };
+}
+void wasm::Sink::fPopFailed(size_t count, std::wstring_view expected) const {
+	const Scope& scope = fScope();
+
+	/* setup the description of the found types */
+	size_t available = pStack.size() - scope.stack;
+	size_t start = scope.stack + (count > available ? (available - count) : 0);
+	std::wstring found = fMakeTypeList(pStack.begin() + start, pStack.end(), [](auto& t) { return t; });
+	fTypesFailed(expected, found);
+}
+void wasm::Sink::fCheckEmpty() const {
+	const Scope& scope = fScope();
+	if (pStack.size() > scope.stack)
+		fPopFailed(pStack.size() - scope.stack, L"");
+}
+const wasm::Sink::Scope& wasm::Sink::fScope() const {
+	if (pTargets.empty())
+		return pRoot;
+	return pTargets.back().scope;
+}
 wasm::Sink::Scope& wasm::Sink::fScope() {
 	if (pTargets.empty())
 		return pRoot;
@@ -191,26 +196,6 @@ void wasm::Sink::fPushTypes(const wasm::Prototype& prototype, bool params) {
 	else
 		pStack.insert(pStack.end(), prototype.result().begin(), prototype.result().end());
 }
-void wasm::Sink::fPopFailed(size_t count, std::wstring_view expected) {
-	Scope& scope = fScope();
-	if (scope.unreachable)
-		return;
-	std::wstring found;
-
-	/* setup the description of the found types */
-	size_t available = pStack.size() - scope.stack;
-	for (size_t i = scope.stack + (count > available ? (available - count) : 0); i < pStack.size(); ++i) {
-		if (!found.empty())
-			found.append(L", ");
-		found.append(fType(pStack[i]));
-	}
-	throw wasm::Exception{ fError(), L"Expected [", expected, L"] but found [", found, L"]" };
-}
-void wasm::Sink::fCheckEmpty() {
-	Scope& scope = fScope();
-	if (pStack.size() > scope.stack)
-		fPopFailed(pStack.size() - scope.stack, L"");
-}
 void wasm::Sink::fPopTypes(std::initializer_list<wasm::Type> types) {
 	Scope& scope = fScope();
 	if (scope.unreachable)
@@ -223,12 +208,7 @@ void wasm::Sink::fPopTypes(std::initializer_list<wasm::Type> types) {
 	}
 
 	/* setup the description of the expected types */
-	std::wstring expected;
-	for (wasm::Type type : types) {
-		if (!expected.empty())
-			expected.append(L", ");
-		expected.append(fType(type));
-	}
+	std::wstring expected = fMakeTypeList(types.begin(), types.end(), [](auto& t) { return t; });
 	fPopFailed(types.size(), expected);
 }
 void wasm::Sink::fPopTypes(const wasm::Prototype& prototype, bool params) {
@@ -250,11 +230,7 @@ void wasm::Sink::fPopTypes(const wasm::Prototype& prototype, bool params) {
 		}
 
 		/* setup the description of the expected types */
-		for (const wasm::Param& param : list) {
-			if (!expected.empty())
-				expected.append(L", ");
-			expected.append(fType(param.type));
-		}
+		expected = fMakeTypeList(list.begin(), list.end(), [](auto& p) { return p.type; });
 		count = list.size();
 	}
 	else {
@@ -267,11 +243,7 @@ void wasm::Sink::fPopTypes(const wasm::Prototype& prototype, bool params) {
 		}
 
 		/* setup the description of the expected types */
-		for (wasm::Type type : list) {
-			if (!expected.empty())
-				expected.append(L", ");
-			expected.append(fType(type));
-		}
+		expected = fMakeTypeList(list.begin(), list.end(), [](auto& t) { return t; });
 		count = list.size();
 	}
 	fPopFailed(count, expected);
@@ -686,8 +658,12 @@ void wasm::Sink::operator[](const wasm::InstFunction& inst) {
 		break;
 	case wasm::InstFunction::Type::callTail:
 		fPopTypes(inst.function.prototype(), true);
-		fPushTypes(inst.function.prototype(), false);
-		fPopTypes(pFunction.prototype(), false);
+		if (inst.function.prototype().result() != pFunction.prototype().result()) {
+			const auto& expected = pFunction.prototype().result();
+			const auto& found = inst.function.prototype().result();
+			fTypesFailed(fMakeTypeList(expected.begin(), expected.end(), [](auto& t) { return t; }),
+				fMakeTypeList(found.begin(), found.end(), [](auto& t) { return t; }));
+		}
 		fScope().unreachable = true;
 		break;
 	default:
@@ -720,8 +696,12 @@ void wasm::Sink::operator[](const wasm::InstIndirect& inst) {
 	case wasm::InstIndirect::Type::callTail:
 		fPopTypes({ wasm::Type::i32 });
 		fPopTypes(inst.prototype, true);
-		fPushTypes(inst.prototype, false);
-		fPopTypes(pFunction.prototype(), false);
+		if (inst.prototype.result() != pFunction.prototype().result()) {
+			const auto& expected = pFunction.prototype().result();
+			const auto& found = inst.prototype.result();
+			fTypesFailed(fMakeTypeList(expected.begin(), expected.end(), [](auto& t) { return t; }),
+				fMakeTypeList(found.begin(), found.end(), [](auto& t) { return t; }));
+		}
 		fScope().unreachable = true;
 		break;
 	default:
