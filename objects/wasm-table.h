@@ -25,20 +25,10 @@ namespace wasm {
 		constexpr Table(wasm::Module& module, uint32_t index) : ModuleMember{ module, index } {}
 
 	public:
-		constexpr bool imported() const {
-			return !fGet()->importModule.empty();
-		}
-		constexpr bool exported() const {
-			return fGet()->exported;
-		}
-		constexpr const std::u8string& importModule() const {
-			return fGet()->importModule;
-		}
-		constexpr const wasm::Limit& limit() const {
-			return fGet()->limit;
-		}
-		constexpr bool functions() const {
-			return fGet()->functions;
-		}
+		constexpr bool imported() const;
+		constexpr bool exported() const;
+		constexpr const std::u8string& importModule() const;
+		constexpr const wasm::Limit& limit() const;
+		constexpr bool functions() const;
 	};
 }

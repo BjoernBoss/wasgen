@@ -64,8 +64,8 @@ namespace wasm {
 	struct Param {
 		std::u8string id;
 		wasm::Type type;
-		constexpr Param(wasm::Type type) : id{}, type{ type } {}
-		constexpr Param(std::u8string id, wasm::Type type) : id{ id }, type{ type } {}
+		Param(wasm::Type type) : id{}, type{ type } {}
+		Param(std::u8string id, wasm::Type type) : id{ id }, type{ type } {}
 	};
 
 	/* limit used by memories and tables */
@@ -105,7 +105,7 @@ namespace wasm {
 			constexpr uint32_t index() const {
 				return pIndex;
 			}
-			constexpr std::u8string toString() const {
+			std::u8string toString() const {
 				std::u8string_view id = fGet()->id;
 				if (!id.empty())
 					return str::Build<std::u8string>(u8"$", id);

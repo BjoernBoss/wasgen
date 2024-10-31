@@ -27,17 +27,9 @@ namespace wasm {
 		constexpr Function(wasm::Module& module, uint32_t index) : ModuleMember{ module, index } {}
 
 	public:
-		constexpr bool imported() const {
-			return !fGet()->importModule.empty();
-		}
-		constexpr bool exported() const {
-			return fGet()->exported;
-		}
-		constexpr const std::u8string& importModule() const {
-			return fGet()->importModule;
-		}
-		constexpr wasm::Prototype prototype() const {
-			return fGet()->prototype;
-		}
+		constexpr bool imported() const;
+		constexpr bool exported() const;
+		constexpr const std::u8string& importModule() const;
+		constexpr wasm::Prototype prototype() const;
 	};
 }

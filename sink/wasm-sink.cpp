@@ -761,3 +761,11 @@ void wasm::Sink::operator[](const wasm::InstBranch& inst) {
 	/* add the instruction to the interface */
 	pInterface->addInst(inst);
 }
+
+
+std::u8string wasm::Variable::toString() const {
+	std::u8string_view id = fGet()->id;
+	if (!id.empty())
+		return str::Build<std::u8string>(u8"$", id);
+	return str::Build<std::u8string>(pIndex);
+}

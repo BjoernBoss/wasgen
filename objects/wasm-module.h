@@ -168,4 +168,65 @@ namespace wasm {
 			return nullptr;
 		}
 	}
+
+	constexpr const std::vector<wasm::Param>& wasm::Prototype::parameter() const {
+		return fGet()->parameter;
+	}
+	constexpr const std::vector<wasm::Type>& wasm::Prototype::result() const {
+		return fGet()->result;
+	}
+	constexpr bool wasm::Memory::imported() const {
+		return !fGet()->importModule.empty();
+	}
+	constexpr bool wasm::Memory::exported() const {
+		return fGet()->exported;
+	}
+	constexpr const std::u8string& wasm::Memory::importModule() const {
+		return fGet()->importModule;
+	}
+	constexpr const wasm::Limit& wasm::Memory::limit() const {
+		return fGet()->limit;
+	}
+	constexpr bool wasm::Table::imported() const {
+		return !fGet()->importModule.empty();
+	}
+	constexpr bool wasm::Table::exported() const {
+		return fGet()->exported;
+	}
+	constexpr const std::u8string& wasm::Table::importModule() const {
+		return fGet()->importModule;
+	}
+	constexpr const wasm::Limit& wasm::Table::limit() const {
+		return fGet()->limit;
+	}
+	constexpr bool wasm::Table::functions() const {
+		return fGet()->functions;
+	}
+	constexpr bool wasm::Global::imported() const {
+		return !fGet()->importModule.empty();
+	}
+	constexpr bool wasm::Global::exported() const {
+		return fGet()->exported;
+	}
+	constexpr const std::u8string& wasm::Global::importModule() const {
+		return fGet()->importModule;
+	}
+	constexpr wasm::Type wasm::Global::type() const {
+		return fGet()->type;
+	}
+	constexpr bool wasm::Global::mutating() const {
+		return fGet()->mutating;
+	}
+	constexpr bool wasm::Function::imported() const {
+		return !fGet()->importModule.empty();
+	}
+	constexpr bool wasm::Function::exported() const {
+		return fGet()->exported;
+	}
+	constexpr const std::u8string& wasm::Function::importModule() const {
+		return fGet()->importModule;
+	}
+	constexpr wasm::Prototype wasm::Function::prototype() const {
+		return fGet()->prototype;
+	}
 }

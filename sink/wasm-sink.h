@@ -178,4 +178,11 @@ namespace wasm {
 			return nullptr;
 		}
 	}
+
+	constexpr std::u8string_view wasm::Variable::id() const {
+		return fGet()->id;
+	}
+	constexpr wasm::Type wasm::Variable::type() const {
+		return fGet()->type;
+	}
 }

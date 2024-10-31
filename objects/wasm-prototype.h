@@ -23,11 +23,7 @@ namespace wasm {
 		constexpr Prototype(wasm::Module& module, uint32_t index) : ModuleMember{ module, index } {}
 
 	public:
-		constexpr const std::vector<wasm::Param>& parameter() const {
-			return fGet()->parameter;
-		}
-		constexpr const std::vector<wasm::Type>& result() const {
-			return fGet()->result;
-		}
+		constexpr const std::vector<wasm::Param>& parameter() const;
+		constexpr const std::vector<wasm::Type>& result() const;
 	};
 }

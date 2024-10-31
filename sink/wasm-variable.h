@@ -28,17 +28,8 @@ namespace wasm {
 		constexpr uint32_t index() const {
 			return pIndex;
 		}
-		constexpr std::u8string_view id() const {
-			return fGet()->id;
-		}
-		constexpr wasm::Type type() const {
-			return fGet()->type;
-		}
-		constexpr std::u8string toString() const {
-			std::u8string_view id = fGet()->id;
-			if (!id.empty())
-				return str::Build<std::u8string>(u8"$", id);
-			return str::Build<std::u8string>(pIndex);
-		}
+		constexpr std::u8string_view id() const;
+		constexpr wasm::Type type() const;
+		std::u8string toString() const;
 	};
 }
