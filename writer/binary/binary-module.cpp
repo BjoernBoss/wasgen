@@ -95,6 +95,10 @@ void writer::binary::Module::addPrototype(const wasm::Prototype& prototype) {
 		pPrototype.buffer.push_back(binary::GetType(results[i]));
 }
 void writer::binary::Module::addMemory(const wasm::Memory& memory) {
+	/* check if the limit is not yet valid, in which case the memory-writing needs to be deferred */
+	if (!memory.limit().valid())
+		return;
+
 	/* check if an export can be written out */
 	if (memory.exported()) {
 		fWriteExport(memory.id(), 0x02);
@@ -112,6 +116,10 @@ void writer::binary::Module::addMemory(const wasm::Memory& memory) {
 	binary::WriteLimit(buffer, memory.limit());
 }
 void writer::binary::Module::addTable(const wasm::Table& table) {
+	/* check if the limit is not yet valid, in which case the table-writing needs to be deferred */
+	if (!table.limit().valid())
+		return;
+
 	/* check if an export can be written out */
 	if (table.exported()) {
 		fWriteExport(table.id(), 0x01);
@@ -169,6 +177,12 @@ void writer::binary::Module::addFunction(const wasm::Function& function) {
 
 	/* write the function type out */
 	binary::WriteUInt(buffer, function.prototype().index());
+}
+void writer::binary::Module::setMemoryLimit(const wasm::Memory& memory) {
+	addMemory(memory);
+}
+void writer::binary::Module::setTableLimit(const wasm::Table& table) {
+	addTable(table);
 }
 void writer::binary::Module::setValue(const wasm::Global& global, const wasm::Value& value) {
 	writer::binary::WriteValue(pGlobal[size_t(global.index() - pGlobOffset)], value);

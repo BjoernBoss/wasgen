@@ -31,5 +31,6 @@ namespace wasm {
 		constexpr const std::u8string& importModule() const;
 		constexpr wasm::Type type() const;
 		constexpr bool mutating() const;
+		constexpr bool assigned() const;
 	};
 }

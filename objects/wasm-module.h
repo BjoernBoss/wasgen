@@ -21,6 +21,8 @@ namespace wasm {
 		virtual void addTable(const wasm::Table& table) = 0;
 		virtual void addGlobal(const wasm::Global& global) = 0;
 		virtual void addFunction(const wasm::Function& function) = 0;
+		virtual void setMemoryLimit(const wasm::Memory& memory) = 0;
+		virtual void setTableLimit(const wasm::Table& table) = 0;
 		virtual void setValue(const wasm::Global& global, const wasm::Value& value) = 0;
 		virtual void writeData(const wasm::Memory& memory, const wasm::Value& offset, const uint8_t* data, uint32_t count) = 0;
 		virtual void writeElements(const wasm::Table& table, const wasm::Value& offset, const wasm::Value* values, uint32_t count) = 0;
@@ -132,11 +134,13 @@ namespace wasm {
 	public:
 		wasm::Prototype prototype(std::initializer_list<wasm::Type> params, std::initializer_list<wasm::Type> result);
 		wasm::Prototype prototype(std::u8string_view id, std::initializer_list<wasm::Param> params, std::initializer_list<wasm::Type> result);
-		wasm::Memory memory(std::u8string_view id, const wasm::Limit& limit, const wasm::Exchange& exchange = {});
-		wasm::Table table(std::u8string_view id, bool functions, const wasm::Limit& limit, const wasm::Exchange& exchange = {});
+		wasm::Memory memory(std::u8string_view id, const wasm::Limit& limit = {}, const wasm::Exchange& exchange = {});
+		wasm::Table table(std::u8string_view id, bool functions, const wasm::Limit& limit = {}, const wasm::Exchange& exchange = {});
 		wasm::Global global(std::u8string_view id, wasm::Type type, bool mutating, const wasm::Exchange& exchange = {});
 		wasm::Function function(std::u8string_view id, const wasm::Prototype& prototype, const wasm::Exchange& exchange = {});
 		wasm::Function function(std::u8string_view id, std::initializer_list<wasm::Type> params, std::initializer_list<wasm::Type> result, const wasm::Exchange& exchange = {});
+		void limit(const wasm::Memory& memory, const wasm::Limit& limit);
+		void limit(const wasm::Table& table, const wasm::Limit& limit);
 		void value(const wasm::Global& global, const wasm::Value& value);
 		void data(const wasm::Memory& memory, const wasm::Value& offset, const std::vector<uint8_t>& data);
 		void data(const wasm::Memory& memory, const wasm::Value& offset, const uint8_t* data, size_t count);
@@ -216,6 +220,9 @@ namespace wasm {
 	}
 	constexpr bool wasm::Global::mutating() const {
 		return fGet()->mutating;
+	}
+	constexpr bool wasm::Global::assigned() const {
+		return fGet()->assigned;
 	}
 	constexpr bool wasm::Function::imported() const {
 		return !fGet()->importModule.empty();

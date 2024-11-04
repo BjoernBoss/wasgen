@@ -43,6 +43,11 @@ void writer::text::Module::addPrototype(const wasm::Prototype& prototype) {
 	pDefined.append(u8"))");
 }
 void writer::text::Module::addMemory(const wasm::Memory& memory) {
+	/* check if the limit is not yet valid, in which case the memory-writing needs to be deferred */
+	if (!memory.limit().valid())
+		return;
+
+	/* write out the memory-definition */
 	str::BuildTo((memory.imported() ? pImports : pDefined),
 		u8'\n', pIndent, u8"(memory",
 		text::MakeId(memory.id()),
@@ -52,6 +57,11 @@ void writer::text::Module::addMemory(const wasm::Memory& memory) {
 		u8')');
 }
 void writer::text::Module::addTable(const wasm::Table& table) {
+	/* check if the limit is not yet valid, in which case the table-writing needs to be deferred */
+	if (!table.limit().valid())
+		return;
+
+	/* write out the table-definition */
 	str::BuildTo((table.imported() ? pImports : pDefined),
 		u8'\n', pIndent, u8"(table",
 		text::MakeId(table.id()),
@@ -102,6 +112,12 @@ void writer::text::Module::addFunction(const wasm::Function& function) {
 	}
 	else
 		pFunctions.push_back(std::move(funcText));
+}
+void writer::text::Module::setMemoryLimit(const wasm::Memory& memory) {
+	addMemory(memory);
+}
+void writer::text::Module::setTableLimit(const wasm::Table& table) {
+	addTable(table);
 }
 void writer::text::Module::setValue(const wasm::Global& global, const wasm::Value& value) {
 	/* write the value to the global and flush it out */

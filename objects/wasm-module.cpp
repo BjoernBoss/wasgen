@@ -207,6 +207,22 @@ void wasm::Module::fClose() {
 		return;
 	pClosed = true;
 
+	/* check that all memory-limits have been set */
+	for (size_t i = 0; i < pMemory.list.size(); ++i) {
+		if (!pMemory.list[i].importModule.empty())
+			continue;
+		if (!pMemory.list[i].limit.valid())
+			throw wasm::Exception{ L"Memory [", wasm::Memory{ *this, uint32_t(i) }.toString(), L"] requires a limit to be set" };
+	}
+
+	/* check that all table-limits have been set */
+	for (size_t i = 0; i < pTable.list.size(); ++i) {
+		if (!pTable.list[i].importModule.empty())
+			continue;
+		if (!pTable.list[i].limit.valid())
+			throw wasm::Exception{ L"Table [", wasm::Table{ *this, uint32_t(i) }.toString(), L"] requires a limit to be set" };
+	}
+
 	/* check that all globals have been assigned */
 	for (size_t i = 0; i < pGlobal.list.size(); ++i) {
 		if (!pGlobal.list[i].importModule.empty())
@@ -248,6 +264,10 @@ wasm::Memory wasm::Module::memory(std::u8string_view id, const wasm::Limit& limi
 	else if (pImportsClosed)
 		throw wasm::Exception{ L"Cannot import memory [", id, L"] after the first non-import object has been added" };
 
+	/* validate the limit */
+	if (!exchange.importModule.empty() && !limit.valid())
+		throw wasm::Exception{ L"Imported memory [", id, L"] immediately requires a valid limit" };
+
 	/* validate the id */
 	std::u8string _id{ id };
 	if (!_id.empty() && pMemory.ids.contains(_id))
@@ -278,6 +298,10 @@ wasm::Table wasm::Module::table(std::u8string_view id, bool functions, const was
 		pImportsClosed = true;
 	else if (pImportsClosed)
 		throw wasm::Exception{ L"Cannot import table [", id, L"] after the first non-import object has been added" };
+
+	/* validate the limit */
+	if (!exchange.importModule.empty() && !limit.valid())
+		throw wasm::Exception{ L"Imported table [", id, L"] immediately requires a valid limit" };
 
 	/* validate the id */
 	std::u8string _id{ id };
@@ -335,6 +359,48 @@ wasm::Function wasm::Module::function(std::u8string_view id, const wasm::Prototy
 wasm::Function wasm::Module::function(std::u8string_view id, std::initializer_list<wasm::Type> params, std::initializer_list<wasm::Type> result, const wasm::Exchange& exchange) {
 	fCheckClosed();
 	return fFunction(id, fPrototype(params, result), exchange);
+}
+void wasm::Module::limit(const wasm::Memory& memory, const wasm::Limit& limit) {
+	fCheckClosed();
+
+	/* validate the memory */
+	if (!memory.valid())
+		throw wasm::Exception{ L"Memory is required to be constructed to set its limit" };
+	if (&memory.module() != this)
+		throw wasm::Exception{ L"Memory [", memory.toString(), L"] must originate from this module" };
+
+	/* validate the limit */
+	if (!limit.valid())
+		throw wasm::Exception{ L"Memory [", memory.toString(), L"] can only be assigned valid limits" };
+
+	/* check if a limit has already been assigned to the memory */
+	if (pMemory.list[memory.index()].limit.valid())
+		throw wasm::Exception{ L"Limit for memory [", memory.toString(), L"] can only be assigned once" };
+
+	/* mark the limit as written and notify the interface */
+	pMemory.list[memory.index()].limit = limit;
+	pInterface->setMemoryLimit(memory);
+}
+void wasm::Module::limit(const wasm::Table& table, const wasm::Limit& limit) {
+	fCheckClosed();
+
+	/* validate the table */
+	if (!table.valid())
+		throw wasm::Exception{ L"Table is required to be constructed to set its limit" };
+	if (&table.module() != this)
+		throw wasm::Exception{ L"Table [", table.toString(), L"] must originate from this module" };
+
+	/* validate the limit */
+	if (!limit.valid())
+		throw wasm::Exception{ L"Table [", table.toString(), L"] can only be assigned valid limits" };
+
+	/* check if a limit has already been assigned to the table */
+	if (pTable.list[table.index()].limit.valid())
+		throw wasm::Exception{ L"Limit for table [", table.toString(), L"] can only be assigned once" };
+
+	/* mark the limit as written and notify the interface */
+	pTable.list[table.index()].limit = limit;
+	pInterface->setTableLimit(table);
 }
 void wasm::Module::value(const wasm::Global& global, const wasm::Value& value) {
 	fCheckClosed();

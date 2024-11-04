@@ -70,9 +70,13 @@ namespace wasm {
 
 	/* limit used by memories and tables */
 	struct Limit {
-		uint32_t min = 0;
-		uint32_t max = 0;
-		constexpr Limit(uint32_t min = 0, uint32_t max = std::numeric_limits<uint32_t>::max()) : min{ min }, max{ std::max<uint32_t>(min, max) } {}
+		uint32_t min = std::numeric_limits<uint32_t>::max();
+		uint32_t max = std::numeric_limits<uint32_t>::max();
+		constexpr Limit() = default;
+		constexpr Limit(uint32_t min, uint32_t max = std::numeric_limits<uint32_t>::max()) : min{ min }, max{ std::max<uint32_t>(min, max) } {}
+		constexpr bool valid() const {
+			return (min != std::numeric_limits<uint32_t>::max());
+		}
 		constexpr bool maxValid() const {
 			return (max >= min && max != std::numeric_limits<uint32_t>::max());
 		}
