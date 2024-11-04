@@ -3,7 +3,19 @@
 #include "wasm-sink.h"
 #include "../objects/wasm-module.h"
 
+wasm::Target::Target() {
+	pSink = 0;
+}
+wasm::Target::Target(wasm::Target&& target) noexcept {
+	pIndex = target.pIndex;
+	pStamp = target.pStamp;
+	pSink = target.pSink;
+	target.pSink = 0;
+}
 wasm::Target::Target(wasm::Sink& sink) : SinkMember{ sink, 0 } {}
+wasm::Target::~Target() noexcept(false) {
+	fClose();
+}
 
 void wasm::Target::fSetup(std::u8string_view label, const wasm::Prototype& prototype, wasm::ScopeType type) {
 	pSink->fSetupTarget(prototype, label, type, *this);
@@ -15,11 +27,18 @@ void wasm::Target::fToggle() {
 	pSink->fToggleTarget(pIndex, pStamp);
 }
 void wasm::Target::fClose() {
-	pSink->fCloseTarget(pIndex, pStamp);
+	if (pSink != 0)
+		pSink->fCloseTarget(pIndex, pStamp);
+	pSink = 0;
 }
 
+void wasm::Target::close() {
+	fClose();
+}
 bool wasm::Target::valid() const {
-	return (pSink != 0 && pSink->fCheckTarget(pIndex, pStamp, true));
+	if (pSink == 0)
+		return false;
+	return pSink->fCheckTarget(pIndex, pStamp, true);
 }
 uint32_t wasm::Target::index() const {
 	pSink->fCheckTarget(pIndex, pStamp, false);
@@ -52,12 +71,6 @@ wasm::IfThen::IfThen(wasm::Sink& sink, std::u8string_view label, const wasm::Pro
 wasm::IfThen::IfThen(wasm::Sink& sink, std::u8string_view label, std::initializer_list<wasm::Type> params, std::initializer_list<wasm::Type> result) : Target{ sink } {
 	fSetup(label, params, result, wasm::ScopeType::conditional);
 }
-wasm::IfThen::~IfThen() noexcept(false) {
-	fClose();
-}
-void wasm::IfThen::close() {
-	fClose();
-}
 void wasm::IfThen::otherwise() {
 	fToggle();
 }
@@ -69,12 +82,6 @@ wasm::Loop::Loop(wasm::Sink& sink, std::u8string_view label, const wasm::Prototy
 wasm::Loop::Loop(wasm::Sink& sink, std::u8string_view label, std::initializer_list<wasm::Type> params, std::initializer_list<wasm::Type> result) : Target{ sink } {
 	fSetup(label, params, result, wasm::ScopeType::loop);
 }
-wasm::Loop::~Loop() noexcept(false) {
-	fClose();
-}
-void wasm::Loop::close() {
-	fClose();
-}
 
 
 wasm::Block::Block(wasm::Sink& sink, std::u8string_view label, const wasm::Prototype& prototype) : Target{ sink } {
@@ -82,10 +89,4 @@ wasm::Block::Block(wasm::Sink& sink, std::u8string_view label, const wasm::Proto
 }
 wasm::Block::Block(wasm::Sink& sink, std::u8string_view label, std::initializer_list<wasm::Type> params, std::initializer_list<wasm::Type> result) : Target{ sink } {
 	fSetup(label, params, result, wasm::ScopeType::block);
-}
-wasm::Block::~Block() noexcept(false) {
-	fClose();
-}
-void wasm::Block::close() {
-	fClose();
 }

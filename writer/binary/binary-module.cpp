@@ -61,6 +61,7 @@ void writer::binary::Module::close(const wasm::Module& module) {
 
 	/* write the intermediate sections out */
 	fWriteSection(pExport, uint32_t(pExport.buffer.size()), 0x07);
+	fWriteSection(pStart, uint32_t(pStart.buffer.size()), 0x08);
 	fWriteSection(pElement, uint32_t(pElement.buffer.size()), 0x09);
 
 	/* write the code-section out */
@@ -183,6 +184,10 @@ void writer::binary::Module::setMemoryLimit(const wasm::Memory& memory) {
 }
 void writer::binary::Module::setTableLimit(const wasm::Table& table) {
 	addTable(table);
+}
+void writer::binary::Module::setStartup(const wasm::Function& function) {
+	++pStart.count;
+	binary::WriteUInt(pStart.buffer, function.index());
 }
 void writer::binary::Module::setValue(const wasm::Global& global, const wasm::Value& value) {
 	writer::binary::WriteValue(pGlobal[size_t(global.index() - pGlobOffset)], value);

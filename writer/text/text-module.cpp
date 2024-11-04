@@ -119,6 +119,11 @@ void writer::text::Module::setMemoryLimit(const wasm::Memory& memory) {
 void writer::text::Module::setTableLimit(const wasm::Table& table) {
 	addTable(table);
 }
+void writer::text::Module::setStartup(const wasm::Function& function) {
+	str::BuildTo(pDefined, u8'\n', pIndent, u8"(start",
+		text::MakeId(function.id()),
+		u8')');
+}
 void writer::text::Module::setValue(const wasm::Global& global, const wasm::Value& value) {
 	/* write the value to the global and flush it out */
 	str::BuildTo(pDefined,

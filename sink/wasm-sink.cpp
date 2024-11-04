@@ -168,7 +168,7 @@ void wasm::Sink::fPopFailed(size_t count, std::wstring_view expected) const {
 
 	/* setup the description of the found types */
 	size_t available = pStack.size() - scope.stack;
-	size_t start = scope.stack + (count > available ? (available - count) : 0);
+	size_t start = scope.stack + (count > available ? 0 : (available - count));
 	std::wstring found = fMakeTypeList(pStack.begin() + start, pStack.end(), [](auto& t) { return t; });
 	fTypesFailed(expected, found);
 }

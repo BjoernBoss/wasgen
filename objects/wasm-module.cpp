@@ -360,6 +360,23 @@ wasm::Function wasm::Module::function(std::u8string_view id, std::initializer_li
 	fCheckClosed();
 	return fFunction(id, fPrototype(params, result), exchange);
 }
+void wasm::Module::startup(const wasm::Function& function) {
+	fCheckClosed();
+
+	/* validate the function */
+	if (!function.valid())
+		throw wasm::Exception{ L"Function is required to be constructed to use it as startup" };
+	if (&function.module() != this)
+		throw wasm::Exception{ L"Function [", function.toString(), L"] must originate from this module" };
+
+	/* check if a startup has already been set */
+	if (pHasStartup)
+		throw wasm::Exception{ L"Function [", function.toString(), L"] cannot be set as startup as only one startup is allowed per module" };
+
+	/* mark the startup as set and notify the interface */
+	pHasStartup = true;
+	pInterface->setStartup(function);
+}
 void wasm::Module::limit(const wasm::Memory& memory, const wasm::Limit& limit) {
 	fCheckClosed();
 

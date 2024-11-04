@@ -22,17 +22,17 @@ namespace wasm {
 		};
 	}
 
-	/* describe a wasm-target to be jumped to for a sink */
+	/* describe a wasm-target to be jumped to for a sink (will implicitly be closed at destruction) */
 	class Target : public detail::SinkMember<detail::TargetState> {
 		friend class wasm::Sink;
 	private:
 		size_t pStamp = 0;
 
 	public:
-		Target() = delete;
-		Target(wasm::Target&&) = delete;
+		Target();
+		Target(wasm::Target&&) noexcept;
 		Target(const wasm::Target&) = delete;
-		~Target() noexcept(false) = default;
+		~Target() noexcept(false);
 
 	protected:
 		Target(wasm::Sink& sink);
@@ -44,6 +44,7 @@ namespace wasm {
 		void fClose();
 
 	public:
+		void close();
 		bool valid() const;
 		uint32_t index() const;
 		std::u8string_view id() const;
@@ -56,8 +57,6 @@ namespace wasm {
 	struct IfThen : public wasm::Target {
 		IfThen(wasm::Sink& sink, std::u8string_view label, const wasm::Prototype& prototype);
 		IfThen(wasm::Sink& sink, std::u8string_view label = {}, std::initializer_list<wasm::Type> params = {}, std::initializer_list<wasm::Type> result = {});
-		~IfThen() noexcept(false);
-		void close();
 		void otherwise();
 	};
 
@@ -65,15 +64,11 @@ namespace wasm {
 	struct Loop : public wasm::Target {
 		Loop(wasm::Sink& sink, std::u8string_view label, const wasm::Prototype& prototype);
 		Loop(wasm::Sink& sink, std::u8string_view label = {}, std::initializer_list<wasm::Type> params = {}, std::initializer_list<wasm::Type> result = {});
-		~Loop() noexcept(false);
-		void close();
 	};
 
 	/* create a jump block, which can be jumped to for a sink */
 	struct Block : public wasm::Target {
 		Block(wasm::Sink& sink, std::u8string_view label, const wasm::Prototype& prototype);
 		Block(wasm::Sink& sink, std::u8string_view label = {}, std::initializer_list<wasm::Type> params = {}, std::initializer_list<wasm::Type> result = {});
-		~Block() noexcept(false);
-		void close();
 	};
 }

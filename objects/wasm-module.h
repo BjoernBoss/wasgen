@@ -23,6 +23,7 @@ namespace wasm {
 		virtual void addFunction(const wasm::Function& function) = 0;
 		virtual void setMemoryLimit(const wasm::Memory& memory) = 0;
 		virtual void setTableLimit(const wasm::Table& table) = 0;
+		virtual void setStartup(const wasm::Function& function) = 0;
 		virtual void setValue(const wasm::Global& global, const wasm::Value& value) = 0;
 		virtual void writeData(const wasm::Memory& memory, const wasm::Value& offset, const uint8_t* data, uint32_t count) = 0;
 		virtual void writeElements(const wasm::Table& table, const wasm::Value& offset, const wasm::Value* values, uint32_t count) = 0;
@@ -114,6 +115,7 @@ namespace wasm {
 		wasm::Prototype pNullPrototype;
 		bool pImportsClosed = false;
 		bool pClosed = false;
+		bool pHasStartup = false;
 
 	public:
 		Module(wasm::ModuleInterface* interface);
@@ -139,6 +141,7 @@ namespace wasm {
 		wasm::Global global(std::u8string_view id, wasm::Type type, bool mutating, const wasm::Exchange& exchange = {});
 		wasm::Function function(std::u8string_view id, const wasm::Prototype& prototype, const wasm::Exchange& exchange = {});
 		wasm::Function function(std::u8string_view id, std::initializer_list<wasm::Type> params, std::initializer_list<wasm::Type> result, const wasm::Exchange& exchange = {});
+		void startup(const wasm::Function& function);
 		void limit(const wasm::Memory& memory, const wasm::Limit& limit);
 		void limit(const wasm::Table& table, const wasm::Limit& limit);
 		void value(const wasm::Global& global, const wasm::Value& value);
