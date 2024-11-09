@@ -84,6 +84,7 @@ namespace wasm {
 		std::u8string fError() const;
 		void fClose();
 		void fCheckClosed() const;
+		wasm::Variable fParam(uint32_t index);
 
 	private:
 		void fPopUntil(uint32_t size);
@@ -146,7 +147,7 @@ namespace wasm {
 		void fSwapTypes(std::initializer_list<wasm::Type> pop, std::initializer_list<wasm::Type> push);
 
 	public:
-		wasm::Variable parameter(uint32_t index);
+		wasm::Variable param(uint32_t index);
 		wasm::Variable local(wasm::Type type, std::u8string_view id = {});
 		wasm::Function function() const;
 		void close();
@@ -162,6 +163,7 @@ namespace wasm {
 		void operator[](const wasm::InstMemory& inst);
 		void operator[](const wasm::InstTable& inst);
 		void operator[](const wasm::InstLocal& inst);
+		void operator[](const wasm::InstParam& inst);
 		void operator[](const wasm::InstGlobal& inst);
 		void operator[](const wasm::InstFunction& inst);
 		void operator[](const wasm::InstIndirect& inst);

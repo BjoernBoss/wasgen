@@ -50,7 +50,7 @@ wasm::Function fn = mod.function(u8"test_function", { wasm::Type::i32 }, { wasm:
     wasm::Sink sink{ fn };
 
     sink[I::U32::Const(50)];
-    sink[I::Local::Get(sink.parameter(0))];
+    sink[I::Param::Get(0)];
     sink[I::U32::LessEqual()];
     {
         wasm::IfThen _if{ sink, u8"label", {}, { wasm::Type::i64 } };
@@ -58,7 +58,7 @@ wasm::Function fn = mod.function(u8"test_function", { wasm::Type::i32 }, { wasm:
 
         _if.otherwise();
 
-        sink[I::Local::Get(sink.parameter(0))];
+        sink[I::Param::Get(0)];
         sink[I::U32::Const(20)];
         sink[I::U32::Add()];
         sink[I::U32::Expand()];

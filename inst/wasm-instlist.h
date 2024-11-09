@@ -56,6 +56,18 @@ namespace wasm::inst {
 		}
 	};
 
+	struct Param {
+		static constexpr wasm::InstParam Get(uint32_t index) {
+			return wasm::InstParam{ wasm::InstParam::Type::get, index };
+		}
+		static constexpr wasm::InstParam Set(uint32_t index) {
+			return wasm::InstParam{ wasm::InstParam::Type::set, index };
+		}
+		static constexpr wasm::InstParam Tee(uint32_t index) {
+			return wasm::InstParam{ wasm::InstParam::Type::tee, index };
+		}
+	};
+
 	struct Global {
 		static constexpr wasm::InstGlobal Get(const wasm::Global& global) {
 			return wasm::InstGlobal{ wasm::InstGlobal::Type::get, global };

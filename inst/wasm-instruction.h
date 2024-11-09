@@ -211,6 +211,23 @@ namespace wasm {
 		constexpr InstLocal(Type type, const wasm::Variable& variable) : variable{ variable }, type{ type } {}
 	};
 
+	/* description of any parameter-interacting instructions (shortcut for wasm::InstLocal of a given parameter) */
+	struct InstParam {
+	public:
+		enum class Type : uint8_t {
+			set,
+			get,
+			tee
+		};
+
+	public:
+		uint32_t index = 0;
+		Type type = Type::set;
+
+	public:
+		constexpr InstParam(Type type, uint32_t index) : index{ index }, type{ type } {}
+	};
+
 	/* description of any global variable-interacting instructions */
 	struct InstGlobal {
 	public:

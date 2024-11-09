@@ -72,6 +72,12 @@ void wasm::Sink::fCheckClosed() const {
 	if (pClosed)
 		throw wasm::Exception{ fError(), L"Cannot change the closed" };
 }
+wasm::Variable wasm::Sink::fParam(uint32_t index) {
+	/* validate the parameter-index */
+	if (index >= pParameter)
+		throw wasm::Exception{ fError(), L"Parameter index [", index, L"] out of bounds" };
+	return wasm::Variable{ *this, index };
+}
 
 void wasm::Sink::fPopUntil(uint32_t size) {
 	while (pTargets.size() > size) {
@@ -253,11 +259,8 @@ void wasm::Sink::fSwapTypes(std::initializer_list<wasm::Type> pop, std::initiali
 	fPushTypes(push);
 }
 
-wasm::Variable wasm::Sink::parameter(uint32_t index) {
-	/* validate the parameter-index */
-	if (index >= pParameter)
-		throw wasm::Exception{ fError(), L"Parameter index [", index, L"] out of bounds" };
-	return wasm::Variable{ *this, index };
+wasm::Variable wasm::Sink::param(uint32_t index) {
+	return fParam(index);
 }
 wasm::Variable wasm::Sink::local(wasm::Type type, std::u8string_view id) {
 	fCheckClosed();
@@ -426,10 +429,12 @@ void wasm::Sink::operator[](const wasm::InstWidth& inst) {
 	case wasm::InstWidth::Type::bitShiftRightUnsigned:
 	case wasm::InstWidth::Type::bitRotateLeft:
 	case wasm::InstWidth::Type::bitRotateRight:
+		fSwapTypes({ itype, itype }, { itype });
+		break;
 	case wasm::InstWidth::Type::bitLeadingNulls:
 	case wasm::InstWidth::Type::bitTrailingNulls:
 	case wasm::InstWidth::Type::bitSetCount:
-		fSwapTypes({ itype, itype }, { itype });
+		fSwapTypes({ itype }, { itype });
 		break;
 	case wasm::InstWidth::Type::convertToF32Signed:
 	case wasm::InstWidth::Type::convertToF32Unsigned:
@@ -614,6 +619,21 @@ void wasm::Sink::operator[](const wasm::InstLocal& inst) {
 	/* add the instruction to the interface */
 	pInterface->addInst(inst);
 }
+void wasm::Sink::operator[](const wasm::InstParam& inst) {
+	switch (inst.type) {
+	case wasm::InstParam::Type::get:
+		wasm::Sink::operator[](wasm::InstLocal{ wasm::InstLocal::Type::get, fParam(inst.index) });
+		break;
+	case wasm::InstParam::Type::set:
+		wasm::Sink::operator[](wasm::InstLocal{ wasm::InstLocal::Type::set, fParam(inst.index) });
+		break;
+	case wasm::InstParam::Type::tee:
+		wasm::Sink::operator[](wasm::InstLocal{ wasm::InstLocal::Type::tee, fParam(inst.index) });
+		break;
+	default:
+		throw wasm::Exception{ L"Unknown wasm::InstParam type [", size_t(inst.type), L"] encountered" };
+	}
+}
 void wasm::Sink::operator[](const wasm::InstGlobal& inst) {
 	fCheckClosed();
 
@@ -750,7 +770,6 @@ void wasm::Sink::operator[](const wasm::InstBranch& inst) {
 			const detail::TargetState& temp = (i == inst.list.size() ? state : pTargets[inst.list.begin()[i].get().pIndex].state);
 			fPopTypes(temp.prototype, temp.type == wasm::ScopeType::loop);
 			fPushTypes(temp.prototype, temp.type == wasm::ScopeType::loop);
-
 		}
 		fScope().unreachable = true;
 		break;

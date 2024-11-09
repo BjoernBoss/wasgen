@@ -524,6 +524,7 @@ void writer::binary::Sink::addInst(const wasm::InstBranch& inst) {
 		break;
 	case wasm::InstBranch::Type::table:
 		fPush(0x0e);
+		binary::WriteUInt(pCode, inst.list.size());
 		for (size_t i = 0; i < inst.list.size(); ++i)
 			binary::WriteUInt(pCode, inst.list.begin()[i].get().index());
 		break;
