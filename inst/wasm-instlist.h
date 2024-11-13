@@ -24,18 +24,26 @@ namespace wasm::inst {
 		static constexpr wasm::InstFunction Tail(const wasm::Function& fn) {
 			return wasm::InstFunction{ wasm::InstFunction::Type::callTail, fn };
 		}
+
+		/* expected on stack: [parameter] [table-index] */
 		static constexpr wasm::InstIndirect Indirect(const wasm::Table& table, const wasm::Prototype& type) {
 			return wasm::InstIndirect{ wasm::InstIndirect::Type::callNormal, table, type };
 		}
+
+		/* expected on stack: [parameter] [table-index] */
 		static constexpr wasm::InstIndirect IndirectTail(const wasm::Table& table, const wasm::Prototype& type) {
 			return wasm::InstIndirect{ wasm::InstIndirect::Type::callTail, table, type };
 		}
+
+		/* expected on stack: [parameter] [table-index] */
 		static constexpr wasm::InstIndirect Indirect(const wasm::Table& table, std::initializer_list<wasm::Type> params = {}, std::initializer_list<wasm::Type> result = {}) {
 			wasm::Prototype type{};
 			if (table.valid())
 				type = table.module().prototype(params, result);
 			return wasm::InstIndirect{ wasm::InstIndirect::Type::callNormal, table, type };
 		}
+
+		/* expected on stack: [parameter] [table-index] */
 		static constexpr wasm::InstIndirect IndirectTail(const wasm::Table& table, std::initializer_list<wasm::Type> params = {}, std::initializer_list<wasm::Type> result = {}) {
 			wasm::Prototype type{};
 			if (table.valid())
@@ -78,18 +86,26 @@ namespace wasm::inst {
 	};
 
 	struct Memory {
-		static constexpr wasm::InstMemory Grow(const wasm::Memory& memory) {
-			return wasm::InstMemory{ wasm::InstMemory::Type::grow, memory, {}, 0, wasm::OpType::i32 };
-		}
 		static constexpr wasm::InstMemory Size(const wasm::Memory& memory) {
 			return wasm::InstMemory{ wasm::InstMemory::Type::size, memory, {}, 0, wasm::OpType::i32 };
 		}
+
+		/* expected on stack: [pages-to-grow-by] */
+		static constexpr wasm::InstMemory Grow(const wasm::Memory& memory) {
+			return wasm::InstMemory{ wasm::InstMemory::Type::grow, memory, {}, 0, wasm::OpType::i32 };
+		}
+
+		/* expected on stack: [dest-address] [value] [size] */
 		static constexpr wasm::InstMemory Fill(const wasm::Memory& memory) {
 			return wasm::InstMemory{ wasm::InstMemory::Type::fill, memory, {}, 0, wasm::OpType::i32 };
 		}
+
+		/* expected on stack: [dest-address] [source-address] [size] */
 		static constexpr wasm::InstMemory Copy(const wasm::Memory& memory) {
 			return wasm::InstMemory{ wasm::InstMemory::Type::copy, memory, memory, 0, wasm::OpType::i32 };
 		}
+
+		/* expected on stack: [dest-address] [source-address] [size] */
 		static constexpr wasm::InstMemory Copy(const wasm::Memory& dest, const wasm::Memory& source) {
 			return wasm::InstMemory{ wasm::InstMemory::Type::copy, source, dest, 0, wasm::OpType::i32 };
 		}
@@ -105,15 +121,23 @@ namespace wasm::inst {
 		static constexpr wasm::InstTable Size(const wasm::Table& table) {
 			return wasm::InstTable{ wasm::InstTable::Type::size, table, {} };
 		}
+
+		/* expected on stack: [slots-to-grow-by] */
 		static constexpr wasm::InstTable Grow(const wasm::Table& table) {
 			return wasm::InstTable{ wasm::InstTable::Type::grow, table, {} };
 		}
+
+		/* expected on stack: [dest-offset] [value] [size] */
 		static constexpr wasm::InstTable Fill(const wasm::Table& table) {
 			return wasm::InstTable{ wasm::InstTable::Type::fill, table, {} };
 		}
+
+		/* expected on stack: [dest-offset] [source-offset] [size] */
 		static constexpr wasm::InstTable Copy(const wasm::Table& table) {
 			return wasm::InstTable{ wasm::InstTable::Type::copy, table, table };
 		}
+
+		/* expected on stack: [dest-offset] [source-offset] [size] */
 		static constexpr wasm::InstTable Copy(const wasm::Table& dest, const wasm::Table& source) {
 			return wasm::InstTable{ wasm::InstTable::Type::copy, source, dest };
 		}
@@ -194,9 +218,13 @@ namespace wasm::inst {
 	static constexpr wasm::InstSimple Unreachable() {
 		return wasm::InstSimple{ wasm::InstSimple::Type::unreachable };
 	}
+
+	/* expected on stack: [true-value] [false-value] [condition] */
 	static constexpr wasm::InstSimple Select() {
 		return wasm::InstSimple{ wasm::InstSimple::Type::select };
 	}
+
+	/* expected on stack: [true-value] [false-value] [condition] */
 	static constexpr wasm::InstSimple Select(wasm::Type type) {
 		if (type == wasm::Type::refExtern)
 			return wasm::InstSimple{ wasm::InstSimple::Type::selectRefExtern };
