@@ -57,7 +57,7 @@ void writer::binary::Sink::toggleConditional() {
 	fPush(0x05);
 }
 void writer::binary::Sink::close(const wasm::Sink& sink) {
-	std::vector<uint8_t>& buffer = pModule->pCode[pIndex];
+	std::vector<uint8_t>& buffer = pModule->pCode.data[pIndex];
 
 	/* write the local data to the buffer */
 	binary::WriteUInt(buffer, pLocals.size());

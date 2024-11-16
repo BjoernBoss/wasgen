@@ -13,12 +13,21 @@ const std::u8string& writer::text::Module::output() const {
 
 wasm::SinkInterface* writer::text::Module::sink(const wasm::Function& function) {
 	std::u8string header;
-	std::swap(header, pFunctions[function.index()]);
+	std::swap(header, pFunctions.data[size_t(function.index() - pFunctions.indexOffset)]);
 
 	/* allocate the new sink for the function */
 	return new text::Sink{ this, std::move(header) };
 }
 void writer::text::Module::close(const wasm::Module& module) {
+	/* flush all globals/memory/tables to the defined-section (no need
+	*	to flush the functions, as the sink will do this implicitly) */
+	for (const auto& glob : pGlobals.data)
+		pDefined.append(glob);
+	for (const auto& mem : pMemory.data)
+		pDefined.append(mem);
+	for (const auto& tab : pTables.data)
+		pDefined.append(tab);
+
 	/* merge the remaining content together to construct the complete module-text (all globals will
 	*	have been set and all functions will have been sunken and flushed by the wasm-framework) */
 	if (pImports.empty() && pDefined.empty())
@@ -43,35 +52,47 @@ void writer::text::Module::addPrototype(const wasm::Prototype& prototype) {
 	pDefined.append(u8"))");
 }
 void writer::text::Module::addMemory(const wasm::Memory& memory) {
-	/* check if the limit is not yet valid, in which case the memory-writing needs to be deferred */
-	if (!memory.limit().valid())
-		return;
+	if (!memory.imported() && pMemory.data.empty())
+		pMemory.indexOffset = memory.index();
+	std::u8string& target = (memory.imported() ? pImports : pMemory.data.emplace_back());
 
 	/* write out the memory-definition */
-	str::BuildTo((memory.imported() ? pImports : pDefined),
+	str::BuildTo(target,
 		u8'\n', pIndent, u8"(memory",
 		text::MakeId(memory.id()),
 		text::MakeExport(memory.exported(), memory.id()),
-		text::MakeImport(memory.importModule(), memory.id()),
-		text::MakeLimit(memory.limit()),
-		u8')');
+		text::MakeImport(memory.importModule(), memory.id()));
+
+	/* check if the limit can already be written out (imports will immediately have a valid limit) */
+	if (memory.limit().valid()) {
+		str::BuildTo(target,
+			text::MakeLimit(memory.limit()),
+			u8')');
+	}
 }
 void writer::text::Module::addTable(const wasm::Table& table) {
-	/* check if the limit is not yet valid, in which case the table-writing needs to be deferred */
-	if (!table.limit().valid())
-		return;
+	if (!table.imported() && pTables.data.empty())
+		pTables.indexOffset = table.index();
+	std::u8string& target = (table.imported() ? pImports : pTables.data.emplace_back());
 
 	/* write out the table-definition */
-	str::BuildTo((table.imported() ? pImports : pDefined),
+	str::BuildTo(target,
 		u8'\n', pIndent, u8"(table",
 		text::MakeId(table.id()),
 		text::MakeExport(table.exported(), table.id()),
-		text::MakeImport(table.importModule(), table.id()),
-		text::MakeLimit(table.limit()),
-		table.functions() ? u8" funcref)" : u8" externref)");
+		text::MakeImport(table.importModule(), table.id()));
+
+	/* check if the limit can already be written out (imports will immediately have a valid limit) */
+	if (table.limit().valid()) {
+		str::BuildTo(target,
+			text::MakeLimit(table.limit()),
+			table.functions() ? u8" funcref)" : u8" externref)");
+	}
 }
 void writer::text::Module::addGlobal(const wasm::Global& global) {
-	std::u8string globText;
+	if (!global.imported() && pGlobals.data.empty())
+		pGlobals.indexOffset = global.index();
+	std::u8string& target = (global.imported() ? pImports : pGlobals.data.emplace_back());
 
 	/* construct the type-description */
 	std::u8string typeString = (global.mutating() ?
@@ -79,7 +100,7 @@ void writer::text::Module::addGlobal(const wasm::Global& global) {
 		std::u8string(text::MakeType(global.type())));
 
 	/* construct the global text */
-	str::BuildTo(globText,
+	str::BuildTo(target,
 		u8'\n', pIndent, u8"(global",
 		text::MakeId(global.id()),
 		text::MakeExport(global.exported(), global.id()),
@@ -87,18 +108,16 @@ void writer::text::Module::addGlobal(const wasm::Global& global) {
 		typeString);
 
 	/* check if this is an import, in which case it can be produced immediately, otherwise a value will be written later */
-	if (global.imported()) {
-		pGlobals.emplace_back();
-		pImports.append(globText).append(1, u8')');
-	}
-	else
-		pGlobals.push_back(std::move(globText));
+	if (global.imported())
+		target.append(1, u8')');
 }
 void writer::text::Module::addFunction(const wasm::Function& function) {
-	std::u8string funcText;
+	if (!function.imported() && pFunctions.data.empty())
+		pFunctions.indexOffset = function.index();
+	std::u8string& target = (function.imported() ? pImports : pFunctions.data.emplace_back());
 
 	/* construct the function-header text */
-	str::BuildTo(funcText, u8'\n', pIndent, u8"(func",
+	str::BuildTo(target, u8'\n', pIndent, u8"(func",
 		text::MakeId(function.id()),
 		text::MakeExport(function.exported(), function.id()),
 		text::MakeImport(function.importModule(), function.id()),
@@ -106,18 +125,18 @@ void writer::text::Module::addFunction(const wasm::Function& function) {
 	);
 
 	/* check if this is an import, in which case it can be produced immediately, otherwise a proper sink needs to be set-up */
-	if (function.imported()) {
-		pFunctions.emplace_back();
-		pImports.append(funcText).append(1, u8')');
-	}
-	else
-		pFunctions.push_back(std::move(funcText));
+	if (function.imported())
+		target.append(1, u8')');
 }
 void writer::text::Module::setMemoryLimit(const wasm::Memory& memory) {
-	addMemory(memory);
+	str::BuildTo(pMemory.data[size_t(memory.index() - pMemory.indexOffset)],
+		text::MakeLimit(memory.limit()),
+		u8')');
 }
 void writer::text::Module::setTableLimit(const wasm::Table& table) {
-	addTable(table);
+	str::BuildTo(pTables.data[size_t(table.index() - pTables.indexOffset)],
+		text::MakeLimit(table.limit()),
+		table.functions() ? u8" funcref)" : u8" externref)");
 }
 void writer::text::Module::setStartup(const wasm::Function& function) {
 	str::BuildTo(pDefined, u8'\n', pIndent, u8"(start",
@@ -125,12 +144,9 @@ void writer::text::Module::setStartup(const wasm::Function& function) {
 		u8')');
 }
 void writer::text::Module::setValue(const wasm::Global& global, const wasm::Value& value) {
-	/* write the value to the global and flush it out */
-	str::BuildTo(pDefined,
-		pGlobals[global.index()],
+	str::BuildTo(pGlobals.data[size_t(global.index() - pGlobals.indexOffset)],
 		u8' ',
 		text::MakeValue(value), u8')');
-	pGlobals[global.index()].clear();
 }
 void writer::text::Module::writeData(const wasm::Memory& memory, const wasm::Value& offset, const uint8_t* data, uint32_t count) {
 	std::u8string dataText;

@@ -8,8 +8,16 @@ namespace writer::text {
 	class Module final : public wasm::ModuleInterface {
 		friend class text::Sink;
 	private:
-		std::vector<std::u8string> pFunctions;
-		std::vector<std::u8string> pGlobals;
+		struct Deferred {
+			std::vector<std::u8string> data;
+			uint32_t indexOffset = 0;
+		};
+
+	private:
+		Deferred pFunctions;
+		Deferred pGlobals;
+		Deferred pMemory;
+		Deferred pTables;
 		std::u8string pImports;
 		std::u8string pDefined;
 		std::u8string pOutput;

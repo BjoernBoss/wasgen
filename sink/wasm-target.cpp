@@ -14,7 +14,8 @@ wasm::Target::Target(wasm::Target&& target) noexcept {
 }
 wasm::Target::Target(wasm::Sink& sink) : SinkMember{ sink, 0 } {}
 wasm::Target::~Target() noexcept(false) {
-	fClose();
+	if (std::uncaught_exceptions() == 0)
+		fClose();
 }
 
 void wasm::Target::fSetup(std::u8string_view label, const wasm::Prototype& prototype, wasm::ScopeType type) {

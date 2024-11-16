@@ -5,7 +5,8 @@
 
 wasm::Module::Module(wasm::ModuleInterface* interface) : pInterface{ interface } {}
 wasm::Module::~Module() noexcept(false) {
-	fClose();
+	if (std::uncaught_exceptions() == 0)
+		fClose();
 }
 
 wasm::Prototype wasm::Module::fPrototype(std::u8string_view id, std::initializer_list<wasm::Param> params, std::initializer_list<wasm::Type> result) {
@@ -207,7 +208,7 @@ void wasm::Module::fClose() {
 		return;
 	pClosed = true;
 
-	/* check that all memory-limits have been set */
+	/* check that all memory-limits have been set and otherwise default them */
 	for (size_t i = 0; i < pMemory.list.size(); ++i) {
 		if (!pMemory.list[i].importModule.empty())
 			continue;

@@ -12,27 +12,30 @@ namespace writer::binary {
 			std::vector<uint8_t> buffer;
 			uint32_t count = 0;
 		};
+		struct Deferred {
+			std::vector<std::vector<uint8_t>> data;
+			uint32_t indexOffset = 0;
+		};
 
 	private:
 		Section pPrototype;
 		Section pFunction;
 		Section pImport;
 		Section pExport;
-		Section pTable;
-		Section pMemory;
+		Deferred pTable;
+		Deferred pMemory;
 		Section pElement;
 		Section pData;
 		Section pStart;
-		std::vector<std::vector<uint8_t>> pCode;
-		std::vector<std::vector<uint8_t>> pGlobal;
+		Deferred pCode;
+		Deferred pGlobal;
 		std::vector<uint8_t> pOutput;
-		uint32_t pCodeOffset = 0;
-		uint32_t pGlobOffset = 0;
 
 	private:
 		void fWriteImport(const std::u8string& importModule, std::u8string_view id, uint8_t type);
 		void fWriteExport(std::u8string_view id, uint8_t type);
-		void fWriteSection(const Section& section, uint32_t size, uint8_t id);
+		void fWriteSection(const Section& section, uint8_t id);
+		void fWriteSection(const Deferred& section, bool placeSlotSize, uint8_t id);
 
 	public:
 		const std::vector<uint8_t>& output() const;

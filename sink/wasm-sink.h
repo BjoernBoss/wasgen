@@ -69,7 +69,6 @@ namespace wasm {
 		wasm::SinkInterface* pInterface = 0;
 		size_t pNextStamp = 0;
 		uint32_t pParameter = 0;
-		mutable bool pFailed = false;
 		bool pClosed = false;
 
 	public:

@@ -29,7 +29,8 @@ wasm::Sink::Sink(const wasm::Function& function) {
 	pInterface = pModule->pInterface->sink(pFunction);
 }
 wasm::Sink::~Sink() noexcept(false) {
-	fClose();
+	if (std::uncaught_exceptions() == 0)
+		fClose();
 }
 
 wasm::Type wasm::Sink::fMapOperand(wasm::OpType operand) const {
@@ -47,7 +48,6 @@ wasm::Type wasm::Sink::fMapOperand(wasm::OpType operand) const {
 	}
 }
 std::u8string wasm::Sink::fError() const {
-	pFailed = true;
 	return str::Build<std::u8string>(u8"Error in sink to function [", pFunction.toString(), u8"]: ");
 }
 void wasm::Sink::fClose() {
@@ -60,7 +60,7 @@ void wasm::Sink::fClose() {
 	pModule->pFunction.list[pFunction.index()].sink = 0;
 
 	/* perform the type checking */
-	if (!fScope().unreachable && !pFailed) {
+	if (!fScope().unreachable) {
 		fPopTypes(pFunction.prototype(), false);
 		fCheckEmpty();
 	}
@@ -82,7 +82,7 @@ wasm::Variable wasm::Sink::fParam(uint32_t index) {
 void wasm::Sink::fPopUntil(uint32_t size) {
 	while (pTargets.size() > size) {
 		/* perform the type checking (only if this is not a cleanup after a potential exception) */
-		if (!pFailed && !pTargets.back().scope.unreachable) {
+		if (!pTargets.back().scope.unreachable) {
 			fPopTypes(pTargets.back().state.prototype, false);
 			fCheckEmpty();
 		}

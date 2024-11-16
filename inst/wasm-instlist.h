@@ -9,18 +9,25 @@ namespace wasm::inst {
 		static constexpr wasm::InstBranch Direct(const wasm::Target& target) {
 			return wasm::InstBranch{ wasm::InstBranch::Type::direct, {}, target };
 		}
+
+		/* expected on stack: [condition] */
 		static constexpr wasm::InstBranch If(const wasm::Target& target) {
 			return wasm::InstBranch{ wasm::InstBranch::Type::conditional, {}, target };
 		}
+
+		/* expected on stack: [index] */
 		static constexpr wasm::InstBranch Table(std::initializer_list<wasm::WTarget> optTarget, const wasm::Target& defTarget) {
 			return wasm::InstBranch{ wasm::InstBranch::Type::table, optTarget, defTarget };
 		}
 	};
 
 	struct Call {
+		/* expected on stack: [parameter] */
 		static constexpr wasm::InstFunction Direct(const wasm::Function& fn) {
 			return wasm::InstFunction{ wasm::InstFunction::Type::callNormal, fn };
 		}
+
+		/* expected on stack: [parameter] */
 		static constexpr wasm::InstFunction Tail(const wasm::Function& fn) {
 			return wasm::InstFunction{ wasm::InstFunction::Type::callTail, fn };
 		}
@@ -56,9 +63,13 @@ namespace wasm::inst {
 		static constexpr wasm::InstLocal Get(const wasm::Variable& local) {
 			return wasm::InstLocal{ wasm::InstLocal::Type::get, local };
 		}
+
+		/* expected on stack: [value] */
 		static constexpr wasm::InstLocal Set(const wasm::Variable& local) {
 			return wasm::InstLocal{ wasm::InstLocal::Type::set, local };
 		}
+
+		/* expected on stack: [value] */
 		static constexpr wasm::InstLocal Tee(const wasm::Variable& local) {
 			return wasm::InstLocal{ wasm::InstLocal::Type::tee, local };
 		}
@@ -68,9 +79,13 @@ namespace wasm::inst {
 		static constexpr wasm::InstParam Get(uint32_t index) {
 			return wasm::InstParam{ wasm::InstParam::Type::get, index };
 		}
+
+		/* expected on stack: [value] */
 		static constexpr wasm::InstParam Set(uint32_t index) {
 			return wasm::InstParam{ wasm::InstParam::Type::set, index };
 		}
+
+		/* expected on stack: [value] */
 		static constexpr wasm::InstParam Tee(uint32_t index) {
 			return wasm::InstParam{ wasm::InstParam::Type::tee, index };
 		}
@@ -80,6 +95,8 @@ namespace wasm::inst {
 		static constexpr wasm::InstGlobal Get(const wasm::Global& global) {
 			return wasm::InstGlobal{ wasm::InstGlobal::Type::get, global };
 		}
+
+		/* expected on stack: [value] */
 		static constexpr wasm::InstGlobal Set(const wasm::Global& global) {
 			return wasm::InstGlobal{ wasm::InstGlobal::Type::set, global };
 		}
@@ -112,14 +129,18 @@ namespace wasm::inst {
 	};
 
 	struct Table {
+		static constexpr wasm::InstTable Size(const wasm::Table& table) {
+			return wasm::InstTable{ wasm::InstTable::Type::size, table, {} };
+		}
+
+		/* expected on stack: [index] */
 		static constexpr wasm::InstTable Get(const wasm::Table& table) {
 			return wasm::InstTable{ wasm::InstTable::Type::get, table, {} };
 		}
+
+		/* expected on stack: [index] [value] */
 		static constexpr wasm::InstTable Set(const wasm::Table& table) {
 			return wasm::InstTable{ wasm::InstTable::Type::set, table, {} };
-		}
-		static constexpr wasm::InstTable Size(const wasm::Table& table) {
-			return wasm::InstTable{ wasm::InstTable::Type::size, table, {} };
 		}
 
 		/* expected on stack: [slots-to-grow-by] */
@@ -144,9 +165,6 @@ namespace wasm::inst {
 	};
 
 	struct Ref {
-		static constexpr wasm::InstSimple IsNull() {
-			return wasm::InstSimple{ wasm::InstSimple::Type::refTestNull };
-		}
 		static constexpr wasm::InstSimple NullFunction() {
 			return wasm::InstSimple{ wasm::InstSimple::Type::refNullFunction };
 		}
@@ -155,6 +173,11 @@ namespace wasm::inst {
 		}
 		static constexpr wasm::InstFunction Function(const wasm::Function& fn) {
 			return wasm::InstFunction{ wasm::InstFunction::Type::refFunction, fn };
+		}
+
+		/* expected on stack: [ref-object] */
+		static constexpr wasm::InstSimple IsNull() {
+			return wasm::InstSimple{ wasm::InstSimple::Type::refTestNull };
 		}
 	};
 
