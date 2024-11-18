@@ -388,8 +388,8 @@ void writer::binary::Sink::addInst(const wasm::InstMemory& inst) {
 		break;
 	case wasm::InstMemory::Type::copy:
 		fPush({ 0xfc, 0x0a });
-		binary::WriteUInt(pCode, inst.memory.index());
 		binary::WriteUInt(pCode, inst.destination.index());
+		binary::WriteUInt(pCode, inst.memory.index());
 		break;
 	case wasm::InstMemory::Type::fill:
 		fPush({ 0xfc, 0x0b });
@@ -435,12 +435,10 @@ void writer::binary::Sink::addInst(const wasm::InstTable& inst) {
 		throw wasm::Exception{ L"Unknown wasm::InstTable type [", size_t(inst.type), L"] encountered" };
 	}
 
-	/* write the table index out */
-	binary::WriteUInt(pCode, inst.table.index());
-
-	/* check if the destination needs to be written out as well */
+	/* write the table indices out (first index indicates destination) */
 	if (inst.type == wasm::InstTable::Type::copy)
 		binary::WriteUInt(pCode, inst.destination.index());
+	binary::WriteUInt(pCode, inst.table.index());
 }
 void writer::binary::Sink::addInst(const wasm::InstLocal& inst) {
 	/* write the general instruction opcode out */

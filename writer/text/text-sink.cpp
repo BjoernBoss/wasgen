@@ -375,10 +375,10 @@ void writer::text::Sink::addInst(const wasm::InstMemory& inst) {
 	if (!name.empty())
 		str::BuildTo(line, text::MakeOperand(inst.operand), name);
 
-	/* add the memory references */
-	str::BuildTo(line, u8" ", inst.memory.toString());
+	/* add the memory references (first index indicates destination) */
 	if (inst.type == wasm::InstMemory::Type::copy)
 		str::BuildTo(line, u8" ", inst.destination.toString());
+	str::BuildTo(line, u8" ", inst.memory.toString());
 
 	/* add the offset and write the line out */
 	if (!name.empty() && inst.offset > 0)
@@ -412,10 +412,10 @@ void writer::text::Sink::addInst(const wasm::InstTable& inst) {
 		throw wasm::Exception{ L"Unknown wasm::InstTable type [", size_t(inst.type), L"] encountered" };
 	}
 
-	/* add the table references and write the line out */
-	str::BuildTo(line, u8" ", inst.table.toString());
+	/* add the table references and write the line out (first memory indicates destination) */
 	if (inst.type == wasm::InstTable::Type::copy)
 		str::BuildTo(line, u8" ", inst.destination.toString());
+	str::BuildTo(line, u8" ", inst.table.toString());
 	fAddLine(line);
 }
 void writer::text::Sink::addInst(const wasm::InstLocal& inst) {
