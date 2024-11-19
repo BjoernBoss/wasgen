@@ -61,8 +61,8 @@ std::u8string wasm::Target::toString() const {
 	pSink->fCheckTarget(pIndex, pStamp, false);
 	std::u8string_view id = fGet()->id;
 	if (!id.empty())
-		return str::Build<std::u8string>(u8"$", id);
-	return str::Build<std::u8string>(uint32_t(pSink->pTargets.size() - pIndex - 1));
+		return str::u8::Build(u8"$", id);
+	return str::u8::Build(uint32_t(pSink->pTargets.size() - pIndex - 1));
 }
 
 

@@ -113,8 +113,8 @@ namespace wasm {
 			std::u8string toString() const {
 				std::u8string_view id = fGet()->id;
 				if (!id.empty())
-					return str::Build<std::u8string>(u8"$", id);
-				return str::Build<std::u8string>(pIndex);
+					return str::u8::Build(u8"$", id);
+				return str::u8::Build(pIndex);
 			}
 		};
 

@@ -48,7 +48,7 @@ wasm::Type wasm::Sink::fMapOperand(wasm::OpType operand) const {
 	}
 }
 std::u8string wasm::Sink::fError() const {
-	return str::Build<std::u8string>(u8"Error in sink to function [", pFunction.toString(), u8"]: ");
+	return str::u8::Build(u8"Error in sink to function [", pFunction.toString(), u8"]: ");
 }
 void wasm::Sink::fClose() {
 	if (pClosed)
@@ -785,6 +785,6 @@ void wasm::Sink::operator[](const wasm::InstBranch& inst) {
 std::u8string wasm::Variable::toString() const {
 	std::u8string_view id = fGet()->id;
 	if (!id.empty())
-		return str::Build<std::u8string>(u8"$", id);
-	return str::Build<std::u8string>(pIndex);
+		return str::u8::Build(u8"$", id);
+	return str::u8::Build(pIndex);
 }

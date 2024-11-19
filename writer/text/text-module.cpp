@@ -96,7 +96,7 @@ void writer::text::Module::addGlobal(const wasm::Global& global) {
 
 	/* construct the type-description */
 	std::u8string typeString = (global.mutating() ?
-		str::Build<std::u8string>(u8" (mut", text::MakeType(global.type()), u8')') :
+		str::u8::Build(u8" (mut", text::MakeType(global.type()), u8')') :
 		std::u8string(text::MakeType(global.type())));
 
 	/* construct the global text */
