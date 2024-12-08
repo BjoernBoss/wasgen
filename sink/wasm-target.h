@@ -30,8 +30,9 @@ namespace wasm {
 
 	public:
 		Target();
-		Target(wasm::Target&&) noexcept;
+		Target(wasm::Target&& target) noexcept;
 		Target(const wasm::Target&) = delete;
+		wasm::Target& operator=(wasm::Target&& target) noexcept;
 		~Target();
 
 	protected:
@@ -55,6 +56,7 @@ namespace wasm {
 
 	/* create a conditional if/then/else block, which can be jumped to for a sink */
 	struct IfThen : public wasm::Target {
+		IfThen() = default;
 		IfThen(wasm::Sink& sink, std::u8string_view label, const wasm::Prototype& prototype);
 		IfThen(wasm::Sink& sink, std::u8string_view label = {}, std::initializer_list<wasm::Type> params = {}, std::initializer_list<wasm::Type> result = {});
 		void otherwise();
@@ -62,12 +64,14 @@ namespace wasm {
 
 	/* create a loop block, which can be jumped to for a sink */
 	struct Loop : public wasm::Target {
+		Loop() = default;
 		Loop(wasm::Sink& sink, std::u8string_view label, const wasm::Prototype& prototype);
 		Loop(wasm::Sink& sink, std::u8string_view label = {}, std::initializer_list<wasm::Type> params = {}, std::initializer_list<wasm::Type> result = {});
 	};
 
 	/* create a jump block, which can be jumped to for a sink */
 	struct Block : public wasm::Target {
+		Block() = default;
 		Block(wasm::Sink& sink, std::u8string_view label, const wasm::Prototype& prototype);
 		Block(wasm::Sink& sink, std::u8string_view label = {}, std::initializer_list<wasm::Type> params = {}, std::initializer_list<wasm::Type> result = {});
 	};

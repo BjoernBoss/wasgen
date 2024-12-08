@@ -12,6 +12,13 @@ wasm::Target::Target(wasm::Target&& target) noexcept {
 	pSink = target.pSink;
 	target.pSink = 0;
 }
+wasm::Target& wasm::Target::operator=(wasm::Target&& target) noexcept {
+	pIndex = target.pIndex;
+	pStamp = target.pStamp;
+	pSink = target.pSink;
+	target.pSink = 0;
+	return *this;
+}
 wasm::Target::Target(wasm::Sink& sink) : SinkMember{ sink, 0 } {}
 wasm::Target::~Target() {
 	try {
