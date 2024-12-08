@@ -321,7 +321,7 @@ void wasm::Sink::operator[](const wasm::InstSimple& inst) {
 	/* perform the type checking */
 	switch (inst.type) {
 	case wasm::InstSimple::Type::drop:
-		if (pStack.size() < 1)
+		if (pStack.size() - fScope().stack < 1)
 			fPopFailed(1, L"any");
 		else
 			fPopTypes({ pStack.back() });
@@ -331,7 +331,7 @@ void wasm::Sink::operator[](const wasm::InstSimple& inst) {
 		fScope().unreachable = true;
 		break;
 	case wasm::InstSimple::Type::select:
-		if (pStack.size() < 3)
+		if (pStack.size() - fScope().stack < 3)
 			fPopFailed(3, L"opt1, opt2, i32");
 		else {
 			wasm::Type type = pStack.end()[-2];
@@ -345,7 +345,7 @@ void wasm::Sink::operator[](const wasm::InstSimple& inst) {
 		fSwapTypes({ wasm::Type::refExtern, wasm::Type::refExtern, wasm::Type::i32 }, { wasm::Type::refExtern });
 		break;
 	case wasm::InstSimple::Type::refTestNull:
-		if (pStack.size() < 1 || (pStack.back() != wasm::Type::refExtern && pStack.back() != wasm::Type::refFunction))
+		if (pStack.size() - fScope().stack < 1 || (pStack.back() != wasm::Type::refExtern && pStack.back() != wasm::Type::refFunction))
 			fPopFailed(1, L"ref");
 		else {
 			fSwapTypes({ pStack.back() }, { wasm::Type::i32 });
