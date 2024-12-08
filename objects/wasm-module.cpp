@@ -199,13 +199,25 @@ void wasm::Module::fElements(const wasm::Table& table, const wasm::Value& offset
 	/* pass the validated data to the interface */
 	pInterface->writeElements(table, offset, values, count);
 }
-void wasm::Module::fCheckClosed() const {
+void wasm::Module::fCheck() const {
+	/* check if any queued exceptions need to be thrown */
+	if (!pException.empty()) {
+		std::wstring err;
+		std::swap(err, pException);
+		throw wasm::Exception{ err };
+	}
+
+	/* check if the sink has already been closed */
 	if (pClosed)
 		throw wasm::Exception{ L"Cannot change the closed module" };
 }
 void wasm::Module::fClose() {
 	if (pClosed)
 		return;
+
+	/* process any queued exceptions and afterwards mark the module
+	*	as closed (otherwise checking will throw an exception) */
+	fCheck();
 	pClosed = true;
 
 	/* check that all memory-limits have been set and otherwise default them */
@@ -243,17 +255,21 @@ void wasm::Module::fClose() {
 	/* mark the module as closed */
 	pInterface->close(*this);
 }
+void wasm::Module::fDeferredException(const wasm::Exception& error) {
+	if (pException.empty())
+		pException = error.what();
+}
 
 wasm::Prototype wasm::Module::prototype(std::initializer_list<wasm::Type> params, std::initializer_list<wasm::Type> result) {
-	fCheckClosed();
+	fCheck();
 	return fPrototype(params, result);
 }
 wasm::Prototype wasm::Module::prototype(std::u8string_view id, std::initializer_list<wasm::Param> params, std::initializer_list<wasm::Type> result) {
-	fCheckClosed();
+	fCheck();
 	return fPrototype(id, params, result);
 }
 wasm::Memory wasm::Module::memory(std::u8string_view id, const wasm::Limit& limit, const wasm::Exchange& exchange) {
-	fCheckClosed();
+	fCheck();
 
 	/* validate the import/export parameter */
 	if ((!exchange.importModule.empty() || exchange.exported) && id.empty())
@@ -288,7 +304,7 @@ wasm::Memory wasm::Module::memory(std::u8string_view id, const wasm::Limit& limi
 	return memory;
 }
 wasm::Table wasm::Module::table(std::u8string_view id, bool functions, const wasm::Limit& limit, const wasm::Exchange& exchange) {
-	fCheckClosed();
+	fCheck();
 
 	/* validate the import/export parameter */
 	if ((!exchange.importModule.empty() || exchange.exported) && id.empty())
@@ -323,7 +339,7 @@ wasm::Table wasm::Module::table(std::u8string_view id, bool functions, const was
 	return table;
 }
 wasm::Global wasm::Module::global(std::u8string_view id, wasm::Type type, bool mutating, const wasm::Exchange& exchange) {
-	fCheckClosed();
+	fCheck();
 
 	/* validate the import/export parameter */
 	if ((!exchange.importModule.empty() || exchange.exported) && id.empty())
@@ -354,15 +370,15 @@ wasm::Global wasm::Module::global(std::u8string_view id, wasm::Type type, bool m
 	return global;
 }
 wasm::Function wasm::Module::function(std::u8string_view id, const wasm::Prototype& prototype, const wasm::Exchange& exchange) {
-	fCheckClosed();
+	fCheck();
 	return fFunction(id, prototype, exchange);
 }
 wasm::Function wasm::Module::function(std::u8string_view id, std::initializer_list<wasm::Type> params, std::initializer_list<wasm::Type> result, const wasm::Exchange& exchange) {
-	fCheckClosed();
+	fCheck();
 	return fFunction(id, fPrototype(params, result), exchange);
 }
 void wasm::Module::startup(const wasm::Function& function) {
-	fCheckClosed();
+	fCheck();
 
 	/* validate the function */
 	if (!function.valid())
@@ -379,7 +395,7 @@ void wasm::Module::startup(const wasm::Function& function) {
 	pInterface->setStartup(function);
 }
 void wasm::Module::limit(const wasm::Memory& memory, const wasm::Limit& limit) {
-	fCheckClosed();
+	fCheck();
 
 	/* validate the memory */
 	if (!memory.valid())
@@ -400,7 +416,7 @@ void wasm::Module::limit(const wasm::Memory& memory, const wasm::Limit& limit) {
 	pInterface->setMemoryLimit(memory);
 }
 void wasm::Module::limit(const wasm::Table& table, const wasm::Limit& limit) {
-	fCheckClosed();
+	fCheck();
 
 	/* validate the table */
 	if (!table.valid())
@@ -421,7 +437,7 @@ void wasm::Module::limit(const wasm::Table& table, const wasm::Limit& limit) {
 	pInterface->setTableLimit(table);
 }
 void wasm::Module::value(const wasm::Global& global, const wasm::Value& value) {
-	fCheckClosed();
+	fCheck();
 
 	/* validate the global */
 	if (!global.valid())
@@ -478,19 +494,19 @@ void wasm::Module::value(const wasm::Global& global, const wasm::Value& value) {
 	pInterface->setValue(global, value);
 }
 void wasm::Module::data(const wasm::Memory& memory, const wasm::Value& offset, const std::vector<uint8_t>& data) {
-	fCheckClosed();
+	fCheck();
 	fData(memory, offset, data.data(), uint32_t(data.size()));
 }
 void wasm::Module::data(const wasm::Memory& memory, const wasm::Value& offset, const uint8_t* data, size_t count) {
-	fCheckClosed();
+	fCheck();
 	fData(memory, offset, data, uint32_t(count));
 }
 void wasm::Module::elements(const wasm::Table& table, const wasm::Value& offset, const std::vector<wasm::Value>& values) {
-	fCheckClosed();
+	fCheck();
 	fElements(table, offset, values.data(), uint32_t(values.size()));
 }
 void wasm::Module::elements(const wasm::Table& table, const wasm::Value& offset, const wasm::Value* values, size_t count) {
-	fCheckClosed();
+	fCheck();
 	fElements(table, offset, values, uint32_t(count));
 }
 void wasm::Module::close() {

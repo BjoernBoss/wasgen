@@ -112,6 +112,7 @@ namespace wasm {
 		Types<detail::GlobalState> pGlobal;
 		Types<detail::FunctionState> pFunction;
 		wasm::ModuleInterface* pInterface = 0;
+		mutable std::wstring pException;
 		wasm::Prototype pNullPrototype;
 		bool pImportsClosed = false;
 		bool pClosed = false;
@@ -130,8 +131,9 @@ namespace wasm {
 		wasm::Function fFunction(std::u8string_view id, const wasm::Prototype& prototype, const wasm::Exchange& exchange);
 		void fData(const wasm::Memory& memory, const wasm::Value& offset, const uint8_t* data, uint32_t count);
 		void fElements(const wasm::Table& table, const wasm::Value& offset, const wasm::Value* values, uint32_t count);
-		void fCheckClosed() const;
+		void fCheck() const;
 		void fClose();
+		void fDeferredException(const wasm::Exception& error);
 
 	public:
 		wasm::Prototype prototype(std::initializer_list<wasm::Type> params, std::initializer_list<wasm::Type> result);

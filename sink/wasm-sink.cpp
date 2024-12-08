@@ -12,7 +12,7 @@ wasm::Sink::Sink(const wasm::Function& function) {
 	pModule = &function.module();
 
 	/* check if the module is closed or the function has already been bound */
-	pModule->fCheckClosed();
+	pModule->fCheck();
 	if (pModule->pFunction.list[function.index()].bound)
 		throw wasm::Exception{ L"Sink cannot be created for function [", function.toString(), L"] for which a sink has already been created before" };
 	pModule->pFunction.list[function.index()].bound = true;
@@ -28,9 +28,14 @@ wasm::Sink::Sink(const wasm::Function& function) {
 	/* setup the sink-interface */
 	pInterface = pModule->pInterface->sink(pFunction);
 }
-wasm::Sink::~Sink() noexcept(false) {
-	if (std::uncaught_exceptions() == 0)
+wasm::Sink::~Sink() {
+	try {
 		fClose();
+	}
+	catch (const wasm::Exception& e) {
+		/* defer the exception to the module */
+		pModule->fDeferredException(e);
+	}
 }
 
 wasm::Type wasm::Sink::fMapOperand(wasm::OpType operand) const {
@@ -50,9 +55,25 @@ wasm::Type wasm::Sink::fMapOperand(wasm::OpType operand) const {
 std::u8string wasm::Sink::fError() const {
 	return str::u8::Build(u8"Error in sink to function [", pFunction.toString(), u8"]: ");
 }
+void wasm::Sink::fCheck() const {
+	/* check if any queued exceptions need to be thrown */
+	if (!pException.empty()) {
+		std::wstring err;
+		std::swap(err, pException);
+		throw wasm::Exception{ err };
+	}
+
+	/* check if the sink has already been closed */
+	if (pClosed)
+		throw wasm::Exception{ fError(), L"Cannot change the closed" };
+}
 void wasm::Sink::fClose() {
 	if (pClosed)
 		return;
+
+	/* process any queued exceptions and afterwards mark the sink
+	*	as closed (otherwise checking will throw an exception) */
+	fCheck();
 	pClosed = true;
 
 	/* close all remaining scopes and unregister the sink from the function */
@@ -68,9 +89,9 @@ void wasm::Sink::fClose() {
 	/* mark the sink as closed */
 	pInterface->close(*this);
 }
-void wasm::Sink::fCheckClosed() const {
-	if (pClosed)
-		throw wasm::Exception{ fError(), L"Cannot change the closed" };
+void wasm::Sink::fDeferredException(const wasm::Exception& error) {
+	if (pException.empty())
+		pException = error.what();
 }
 wasm::Variable wasm::Sink::fParam(uint32_t index) {
 	/* validate the parameter-index */
@@ -129,11 +150,11 @@ void wasm::Sink::fSetupValidTarget(const wasm::Prototype& prototype, std::u8stri
 	pInterface->pushScope(target);
 }
 void wasm::Sink::fSetupTarget(const wasm::Prototype& prototype, std::u8string_view id, wasm::ScopeType type, wasm::Target& target) {
-	fCheckClosed();
+	fCheck();
 	fSetupValidTarget(prototype, id, type, target);
 }
 void wasm::Sink::fSetupTarget(std::initializer_list<wasm::Type> params, std::initializer_list<wasm::Type> result, std::u8string_view id, wasm::ScopeType type, wasm::Target& target) {
-	fCheckClosed();
+	fCheck();
 	fSetupValidTarget(pModule->prototype(params, result), id, type, target);
 }
 void wasm::Sink::fToggleTarget(uint32_t index, size_t stamp) {
@@ -193,15 +214,6 @@ wasm::Sink::Scope& wasm::Sink::fScope() {
 		return pRoot;
 	return pTargets.back().scope;
 }
-void wasm::Sink::fPushTypes(std::initializer_list<wasm::Type> types) {
-	pStack.insert(pStack.end(), types.begin(), types.end());
-}
-void wasm::Sink::fPushTypes(const wasm::Prototype& prototype, bool params) {
-	if (params) for (size_t i = 0; i < prototype.parameter().size(); ++i)
-		pStack.push_back(prototype.parameter()[i].type);
-	else
-		pStack.insert(pStack.end(), prototype.result().begin(), prototype.result().end());
-}
 void wasm::Sink::fPopTypes(std::initializer_list<wasm::Type> types) {
 	Scope& scope = fScope();
 	if (scope.unreachable)
@@ -258,12 +270,21 @@ void wasm::Sink::fSwapTypes(std::initializer_list<wasm::Type> pop, std::initiali
 	fPopTypes(pop);
 	fPushTypes(push);
 }
+void wasm::Sink::fPushTypes(std::initializer_list<wasm::Type> types) {
+	pStack.insert(pStack.end(), types.begin(), types.end());
+}
+void wasm::Sink::fPushTypes(const wasm::Prototype& prototype, bool params) {
+	if (params) for (size_t i = 0; i < prototype.parameter().size(); ++i)
+		pStack.push_back(prototype.parameter()[i].type);
+	else
+		pStack.insert(pStack.end(), prototype.result().begin(), prototype.result().end());
+}
 
 wasm::Variable wasm::Sink::param(uint32_t index) {
 	return fParam(index);
 }
 wasm::Variable wasm::Sink::local(wasm::Type type, std::u8string_view id) {
-	fCheckClosed();
+	fCheck();
 
 	/* validate the id */
 	std::u8string _id{ id };
@@ -295,7 +316,7 @@ wasm::List<wasm::Variable, wasm::Sink::LocalList> wasm::Sink::locals() const {
 }
 
 void wasm::Sink::operator[](const wasm::InstSimple& inst) {
-	fCheckClosed();
+	fCheck();
 
 	/* perform the type checking */
 	switch (inst.type) {
@@ -362,7 +383,7 @@ void wasm::Sink::operator[](const wasm::InstSimple& inst) {
 	pInterface->addInst(inst);
 }
 void wasm::Sink::operator[](const wasm::InstConst& inst) {
-	fCheckClosed();
+	fCheck();
 
 	/* perform the type checking */
 	if (std::holds_alternative<uint32_t>(inst.value))
@@ -380,7 +401,7 @@ void wasm::Sink::operator[](const wasm::InstConst& inst) {
 	pInterface->addInst(inst);
 }
 void wasm::Sink::operator[](const wasm::InstOperand& inst) {
-	fCheckClosed();
+	fCheck();
 
 	/* perform the type checking */
 	wasm::Type type = fMapOperand(inst.operand);
@@ -393,7 +414,7 @@ void wasm::Sink::operator[](const wasm::InstOperand& inst) {
 	pInterface->addInst(inst);
 }
 void wasm::Sink::operator[](const wasm::InstWidth& inst) {
-	fCheckClosed();
+	fCheck();
 
 	/* perform the type checking */
 	wasm::Type itype = (inst.width32 ? wasm::Type::i32 : wasm::Type::i64), ftype = (inst.width32 ? wasm::Type::f32 : wasm::Type::f64);
@@ -481,7 +502,7 @@ void wasm::Sink::operator[](const wasm::InstWidth& inst) {
 	pInterface->addInst(inst);
 }
 void wasm::Sink::operator[](const wasm::InstMemory& inst) {
-	fCheckClosed();
+	fCheck();
 
 	/* validate the instruction-operands */
 	if (!inst.memory.valid())
@@ -551,7 +572,7 @@ void wasm::Sink::operator[](const wasm::InstMemory& inst) {
 	pInterface->addInst(inst);
 }
 void wasm::Sink::operator[](const wasm::InstTable& inst) {
-	fCheckClosed();
+	fCheck();
 
 	/* validate the instruction-operands */
 	if (!inst.table.valid())
@@ -593,7 +614,7 @@ void wasm::Sink::operator[](const wasm::InstTable& inst) {
 	pInterface->addInst(inst);
 }
 void wasm::Sink::operator[](const wasm::InstLocal& inst) {
-	fCheckClosed();
+	fCheck();
 
 	/* validate the instruction-operands */
 	if (!inst.variable.valid())
@@ -635,7 +656,7 @@ void wasm::Sink::operator[](const wasm::InstParam& inst) {
 	}
 }
 void wasm::Sink::operator[](const wasm::InstGlobal& inst) {
-	fCheckClosed();
+	fCheck();
 
 	/* validate the instruction-operands */
 	if (!inst.global.valid())
@@ -659,7 +680,7 @@ void wasm::Sink::operator[](const wasm::InstGlobal& inst) {
 	pInterface->addInst(inst);
 }
 void wasm::Sink::operator[](const wasm::InstFunction& inst) {
-	fCheckClosed();
+	fCheck();
 
 	/* validate the instruction-operands */
 	if (!inst.function.valid())
@@ -694,7 +715,7 @@ void wasm::Sink::operator[](const wasm::InstFunction& inst) {
 	pInterface->addInst(inst);
 }
 void wasm::Sink::operator[](const wasm::InstIndirect& inst) {
-	fCheckClosed();
+	fCheck();
 
 	/* validate the instruction-operands */
 	if (!inst.table.valid())
@@ -732,7 +753,7 @@ void wasm::Sink::operator[](const wasm::InstIndirect& inst) {
 	pInterface->addInst(inst);
 }
 void wasm::Sink::operator[](const wasm::InstBranch& inst) {
-	fCheckClosed();
+	fCheck();
 
 	/* validate the instruction-operands */
 	if (!inst.target.valid())

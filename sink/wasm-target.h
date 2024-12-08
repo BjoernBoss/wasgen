@@ -32,7 +32,7 @@ namespace wasm {
 		Target();
 		Target(wasm::Target&&) noexcept;
 		Target(const wasm::Target&) = delete;
-		~Target() noexcept(false);
+		~Target();
 
 	protected:
 		Target(wasm::Sink& sink);

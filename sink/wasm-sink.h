@@ -67,6 +67,7 @@ namespace wasm {
 		Scope pRoot;
 		wasm::Function pFunction;
 		wasm::SinkInterface* pInterface = 0;
+		mutable std::wstring pException;
 		size_t pNextStamp = 0;
 		uint32_t pParameter = 0;
 		bool pClosed = false;
@@ -76,13 +77,14 @@ namespace wasm {
 		Sink() = delete;
 		Sink(wasm::Sink&&) = delete;
 		Sink(const wasm::Sink&) = delete;
-		~Sink() noexcept(false);
+		~Sink();
 
 	private:
 		wasm::Type fMapOperand(wasm::OpType operand) const;
 		std::u8string fError() const;
+		void fCheck() const;
 		void fClose();
-		void fCheckClosed() const;
+		void fDeferredException(const wasm::Exception& error);
 		wasm::Variable fParam(uint32_t index);
 
 	private:
@@ -139,11 +141,11 @@ namespace wasm {
 		void fCheckEmpty() const;
 		const Scope& fScope() const;
 		Scope& fScope();
+		void fPopTypes(const wasm::Prototype& prototype, bool params);
+		void fPopTypes(std::initializer_list<wasm::Type> types);
+		void fSwapTypes(std::initializer_list<wasm::Type> pop, std::initializer_list<wasm::Type> push);
 		void fPushTypes(std::initializer_list<wasm::Type> types);
 		void fPushTypes(const wasm::Prototype& prototype, bool params);
-		void fPopTypes(std::initializer_list<wasm::Type> types);
-		void fPopTypes(const wasm::Prototype& prototype, bool params);
-		void fSwapTypes(std::initializer_list<wasm::Type> pop, std::initializer_list<wasm::Type> push);
 
 	public:
 		wasm::Variable param(uint32_t index);
