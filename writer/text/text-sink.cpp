@@ -8,10 +8,10 @@ writer::text::Sink::Sink(text::Module* module, std::u8string header) : pModule{ 
 	str::BuildTo(pDepth, u8'\n', pModule->pIndent, pModule->pIndent);
 }
 
-void writer::text::Sink::fAddLine(const std::u8string_view& str) {
+void writer::text::Sink::fAddLine(std::u8string_view str) {
 	str::BuildTo(pBody, pDepth, str);
 }
-void writer::text::Sink::fPush(const std::u8string_view& name) {
+void writer::text::Sink::fPush(std::u8string_view name) {
 	str::BuildTo(pBody, pDepth, u8'(', name);
 	pDepth.append(pModule->pIndent);
 }

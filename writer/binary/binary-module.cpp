@@ -14,7 +14,7 @@ void writer::binary::Module::fWriteExport(std::u8string_view id, uint8_t type) {
 	pExport.buffer.push_back(type);
 	++pExport.count;
 }
-void writer::binary::Module::fWriteSection(const Section& section, uint8_t id) {
+void writer::binary::Module::fWriteSection(const Section& section, bool placeCount, uint8_t id) {
 	if (section.count == 0)
 		return;
 
@@ -22,8 +22,9 @@ void writer::binary::Module::fWriteSection(const Section& section, uint8_t id) {
 	pOutput.push_back(id);
 
 	/* write the byte-size and count out */
-	binary::WriteUInt(pOutput, uint64_t(section.buffer.size() + binary::CountUInt(section.count)));
-	binary::WriteUInt(pOutput, section.count);
+	binary::WriteUInt(pOutput, uint64_t(section.buffer.size() + (placeCount ? binary::CountUInt(section.count) : 0)));
+	if (placeCount)
+		binary::WriteUInt(pOutput, section.count);
 
 	/* write the actual data out */
 	pOutput.insert(pOutput.end(), section.buffer.begin(), section.buffer.end());
@@ -68,17 +69,17 @@ void writer::binary::Module::close(const wasm::Module& module) {
 	binary::WriteBytes(pOutput, { 0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00 });
 
 	/* write all sections out in order */
-	fWriteSection(pPrototype, 0x01);
-	fWriteSection(pImport, 0x02);
-	fWriteSection(pFunction, 0x03);
+	fWriteSection(pPrototype, true, 0x01);
+	fWriteSection(pImport, true, 0x02);
+	fWriteSection(pFunction, true, 0x03);
 	fWriteSection(pTable, false, 0x04);
 	fWriteSection(pMemory, false, 0x05);
 	fWriteSection(pGlobal, false, 0x06);
-	fWriteSection(pExport, 0x07);
-	fWriteSection(pStart, 0x08);
-	fWriteSection(pElement, 0x09);
+	fWriteSection(pExport, true, 0x07);
+	fWriteSection(pStart, false, 0x08);
+	fWriteSection(pElement, true, 0x09);
 	fWriteSection(pCode, true, 0x0a);
-	fWriteSection(pData, 0x0b);
+	fWriteSection(pData, true, 0x0b);
 }
 void writer::binary::Module::addPrototype(const wasm::Prototype& prototype) {
 	const std::vector<wasm::Param>& params = prototype.parameter();

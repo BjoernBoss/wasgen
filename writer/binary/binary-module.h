@@ -34,7 +34,7 @@ namespace writer::binary {
 	private:
 		void fWriteImport(const std::u8string& importModule, std::u8string_view id, uint8_t type);
 		void fWriteExport(std::u8string_view id, uint8_t type);
-		void fWriteSection(const Section& section, uint8_t id);
+		void fWriteSection(const Section& section, bool placeCount, uint8_t id);
 		void fWriteSection(const Deferred& section, bool placeSlotSize, uint8_t id);
 
 	public:

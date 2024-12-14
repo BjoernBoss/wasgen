@@ -17,8 +17,8 @@ namespace writer::text {
 		Sink(text::Module* module, std::u8string header);
 
 	private:
-		void fAddLine(const std::u8string_view& str);
-		void fPush(const std::u8string_view& name);
+		void fAddLine(std::u8string_view str);
+		void fPush(std::u8string_view name);
 		void fPop();
 
 	public:
