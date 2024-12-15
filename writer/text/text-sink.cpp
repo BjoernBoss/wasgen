@@ -3,24 +3,24 @@
 #include "text-module.h"
 #include "text-sink.h"
 
-writer::text::Sink::Sink(text::Module* module, std::u8string header) : pModule{ module } {
+wasm::text::Sink::Sink(text::Module* module, std::u8string header) : pModule{ module } {
 	pLocals = std::move(header);
 	str::BuildTo(pDepth, u8'\n', pModule->pIndent, pModule->pIndent);
 }
 
-void writer::text::Sink::fAddLine(std::u8string_view str) {
+void wasm::text::Sink::fAddLine(std::u8string_view str) {
 	str::BuildTo(pBody, pDepth, str);
 }
-void writer::text::Sink::fPush(std::u8string_view name) {
+void wasm::text::Sink::fPush(std::u8string_view name) {
 	str::BuildTo(pBody, pDepth, u8'(', name);
 	pDepth.append(pModule->pIndent);
 }
-void writer::text::Sink::fPop() {
+void wasm::text::Sink::fPop() {
 	pDepth.resize(pDepth.size() - pModule->pIndent.size());
 	str::BuildTo(pBody, pDepth, u8')');
 }
 
-void writer::text::Sink::pushScope(const wasm::Target& target) {
+void wasm::text::Sink::pushScope(const wasm::Target& target) {
 	std::u8string text;
 
 	/* fetch the block-type */
@@ -41,29 +41,29 @@ void writer::text::Sink::pushScope(const wasm::Target& target) {
 	if (target.type() == wasm::ScopeType::conditional)
 		fPush(u8"then");
 }
-void writer::text::Sink::popScope(wasm::ScopeType type) {
+void wasm::text::Sink::popScope(wasm::ScopeType type) {
 	fPop();
 	if (type == wasm::ScopeType::conditional)
 		fPop();
 }
-void writer::text::Sink::toggleConditional() {
+void wasm::text::Sink::toggleConditional() {
 	fPop();
 	fPush(u8"else");
 }
-void writer::text::Sink::close(const wasm::Sink& sink) {
+void wasm::text::Sink::close(const wasm::Sink& sink) {
 	str::BuildTo(pModule->pDefined, pLocals, pBody, u8'\n', pModule->pIndent, u8')');
 
 	/* delete this sink (no reference will be held anymore) */
 	delete this;
 }
-void writer::text::Sink::addLocal(const wasm::Variable& local) {
+void wasm::text::Sink::addLocal(const wasm::Variable& local) {
 	str::BuildTo(pLocals,
 		u8'\n', pModule->pIndent, pModule->pIndent, u8"(local",
 		text::MakeId(local.id()),
 		text::MakeType(local.type()),
 		u8')');
 }
-void writer::text::Sink::addInst(const wasm::InstSimple& inst) {
+void wasm::text::Sink::addInst(const wasm::InstSimple& inst) {
 	/* write the general instruction-type out */
 	switch (inst.type) {
 	case wasm::InstSimple::Type::drop:
@@ -115,14 +115,32 @@ void writer::text::Sink::addInst(const wasm::InstSimple& inst) {
 		throw wasm::Exception{ L"Unknown wasm::InstSimple type [", size_t(inst.type), L"] encountered" };
 	}
 }
-void writer::text::Sink::addInst(const wasm::InstConst& inst) {
+void wasm::text::Sink::addInst(const wasm::InstConst& inst) {
 	std::u8string line;
 
-	/* construct the constant-line */
-	if (std::holds_alternative<uint32_t>(inst.value))
-		str::BuildTo(line, u8"i32.const ", std::get<uint32_t>(inst.value));
-	else if (std::holds_alternative<uint64_t>(inst.value))
-		str::BuildTo(line, u8"i64.const ", std::get<uint64_t>(inst.value));
+	/* write the i32 out (as signed/unsigned or hex) */
+	if (std::holds_alternative<uint32_t>(inst.value)) {
+		uint32_t value = std::get<uint32_t>(inst.value);
+		if ((value >> 16) == 0xffff)
+			str::BuildTo(line, u8"i32.const ", int32_t(value));
+		else if ((value >> 16) != 0)
+			str::BuildTo(line, u8"i32.const ", str::As{ U"x", value });
+		else
+			str::BuildTo(line, u8"i32.const ", value);
+	}
+
+	/* write the i64 out (as signed/unsigned or hex) */
+	else if (std::holds_alternative<uint64_t>(inst.value)) {
+		uint64_t value = std::get<uint64_t>(inst.value);
+		if ((value >> 32) == 0xffff'ffff)
+			str::BuildTo(line, u8"i64.const ", int64_t(value));
+		else if ((value >> 32) != 0)
+			str::BuildTo(line, u8"i64.const ", str::As{ U"x", value });
+		else
+			str::BuildTo(line, u8"i64.const ", value);
+	}
+
+	/* write the float type directly out */
 	else if (std::holds_alternative<float>(inst.value))
 		str::BuildTo(line, u8"f32.const ", std::get<float>(inst.value));
 	else if (std::holds_alternative<double>(inst.value))
@@ -133,7 +151,7 @@ void writer::text::Sink::addInst(const wasm::InstConst& inst) {
 	/* write the line out */
 	fAddLine(line);
 }
-void writer::text::Sink::addInst(const wasm::InstOperand& inst) {
+void wasm::text::Sink::addInst(const wasm::InstOperand& inst) {
 	std::u8string line{ text::MakeOperand(inst.operand) };
 
 	/* add the general instruction-type */
@@ -160,7 +178,7 @@ void writer::text::Sink::addInst(const wasm::InstOperand& inst) {
 	/* write the line out */
 	fAddLine(line);
 }
-void writer::text::Sink::addInst(const wasm::InstWidth& inst) {
+void wasm::text::Sink::addInst(const wasm::InstWidth& inst) {
 	std::u8string_view width{ inst.width32 ? u8"32" : u8"64" };
 
 	/* write the general instruction-type out */
@@ -316,7 +334,7 @@ void writer::text::Sink::addInst(const wasm::InstWidth& inst) {
 		throw wasm::Exception{ L"Unknown wasm::InstWidth type [", size_t(inst.type), L"] encountered" };
 	}
 }
-void writer::text::Sink::addInst(const wasm::InstMemory& inst) {
+void wasm::text::Sink::addInst(const wasm::InstMemory& inst) {
 	std::u8string_view name;
 	std::u8string line;
 
@@ -385,7 +403,7 @@ void writer::text::Sink::addInst(const wasm::InstMemory& inst) {
 		str::BuildTo(line, u8" offset=", inst.offset);
 	fAddLine(line);
 }
-void writer::text::Sink::addInst(const wasm::InstTable& inst) {
+void wasm::text::Sink::addInst(const wasm::InstTable& inst) {
 	std::u8string line;
 
 	/* fetch the general instruction-type */
@@ -418,7 +436,7 @@ void writer::text::Sink::addInst(const wasm::InstTable& inst) {
 	str::BuildTo(line, u8" ", inst.table.toString());
 	fAddLine(line);
 }
-void writer::text::Sink::addInst(const wasm::InstLocal& inst) {
+void wasm::text::Sink::addInst(const wasm::InstLocal& inst) {
 	std::u8string line;
 
 	/* fetch the general instruction-type */
@@ -440,7 +458,7 @@ void writer::text::Sink::addInst(const wasm::InstLocal& inst) {
 	line.append(inst.variable.toString());
 	fAddLine(line);
 }
-void writer::text::Sink::addInst(const wasm::InstGlobal& inst) {
+void wasm::text::Sink::addInst(const wasm::InstGlobal& inst) {
 	std::u8string line;
 
 	/* fetch the general instruction-type */
@@ -459,7 +477,7 @@ void writer::text::Sink::addInst(const wasm::InstGlobal& inst) {
 	line.append(inst.global.toString());
 	fAddLine(line);
 }
-void writer::text::Sink::addInst(const wasm::InstFunction& inst) {
+void wasm::text::Sink::addInst(const wasm::InstFunction& inst) {
 	std::u8string line;
 
 	/* fetch the general instruction-type */
@@ -481,7 +499,7 @@ void writer::text::Sink::addInst(const wasm::InstFunction& inst) {
 	line.append(inst.function.toString());
 	fAddLine(line);
 }
-void writer::text::Sink::addInst(const wasm::InstIndirect& inst) {
+void wasm::text::Sink::addInst(const wasm::InstIndirect& inst) {
 	std::u8string line;
 
 	/* fetch the general instruction-type */
@@ -501,7 +519,7 @@ void writer::text::Sink::addInst(const wasm::InstIndirect& inst) {
 	str::BuildTo(line, u8" (type ", inst.prototype.toString(), u8')');
 	fAddLine(line);
 }
-void writer::text::Sink::addInst(const wasm::InstBranch& inst) {
+void wasm::text::Sink::addInst(const wasm::InstBranch& inst) {
 	std::u8string line;
 
 	/* add the general instruction-type */

@@ -2,7 +2,7 @@
 /* Copyright (c) 2024 Bjoern Boss Henrichsen */
 #include "text-base.h"
 
-std::u8string_view writer::text::MakeType(wasm::Type type) {
+std::u8string_view wasm::text::MakeType(wasm::Type type) {
 	switch (type) {
 	case wasm::Type::i32:
 		return u8" i32";
@@ -20,31 +20,31 @@ std::u8string_view writer::text::MakeType(wasm::Type type) {
 		throw wasm::Exception{ L"Unknown wasm type [", size_t(type), L"] encountered" };
 	}
 }
-std::u8string writer::text::MakeId(std::u8string_view id) {
+std::u8string wasm::text::MakeId(std::u8string_view id) {
 	if (id.empty())
 		return {};
 	return str::u8::Build(u8" $", id);
 }
-std::u8string writer::text::MakeExport(bool exported, std::u8string_view id) {
+std::u8string wasm::text::MakeExport(bool exported, std::u8string_view id) {
 	if (!exported)
 		return {};
 	return str::u8::Build(u8" (export \"", id, u8"\")");
 }
-std::u8string writer::text::MakeImport(const std::u8string& importModule, std::u8string_view id) {
+std::u8string wasm::text::MakeImport(const std::u8string& importModule, std::u8string_view id) {
 	if (importModule.empty())
 		return {};
 	return str::u8::Build(u8" (import \"", importModule, u8"\" \"", id, u8"\")");
 }
-std::u8string writer::text::MakeLimit(const wasm::Limit& limit) {
+std::u8string wasm::text::MakeLimit(const wasm::Limit& limit) {
 	if (limit.maxValid())
 		return str::u8::Build(u8' ', limit.min, u8' ', limit.max);
 	return str::u8::Build(u8' ', limit.min);
 }
-std::u8string writer::text::MakePrototype(const wasm::Prototype& prototype) {
+std::u8string wasm::text::MakePrototype(const wasm::Prototype& prototype) {
 	return str::u8::Build(u8" (type ", prototype.toString(), u8')');
 }
 
-std::u8string_view writer::text::MakeOperand(wasm::OpType operand) {
+std::u8string_view wasm::text::MakeOperand(wasm::OpType operand) {
 	switch (operand) {
 	case wasm::OpType::i32:
 		return u8"i32";
@@ -58,7 +58,7 @@ std::u8string_view writer::text::MakeOperand(wasm::OpType operand) {
 		throw wasm::Exception{ L"Unknown operand type [", size_t(operand), L"] encountered" };
 	}
 }
-std::u8string writer::text::MakeValue(const wasm::Value& value) {
+std::u8string wasm::text::MakeValue(const wasm::Value& value) {
 	switch (value.type()) {
 	case wasm::ValType::i32:
 		return str::u8::Build(u8"i32.const ", value.i32());

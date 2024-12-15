@@ -2,43 +2,16 @@
 /* Copyright (c) 2024 Bjoern Boss Henrichsen */
 #pragma once
 
-#include "binary-base.h"
+#include "split-base.h"
 
-namespace wasm::binary {
+namespace wasm::split {
 	class Module final : public wasm::ModuleInterface {
-		friend class binary::Sink;
+		friend class split::Sink;
 	private:
-		struct Section {
-			std::vector<uint8_t> buffer;
-			uint32_t count = 0;
-		};
-		struct Deferred {
-			std::vector<std::vector<uint8_t>> data;
-			uint32_t indexOffset = 0;
-		};
-
-	private:
-		Section pPrototype;
-		Section pFunction;
-		Section pImport;
-		Section pExport;
-		Deferred pTable;
-		Deferred pMemory;
-		Section pElement;
-		Section pData;
-		Section pStart;
-		Deferred pCode;
-		Deferred pGlobal;
-		std::vector<uint8_t> pOutput;
-
-	private:
-		void fWriteImport(const std::u8string& importModule, std::u8string_view id, uint8_t type);
-		void fWriteExport(std::u8string_view id, uint8_t type);
-		void fWriteSection(const Section& section, bool placeCount, uint8_t id);
-		void fWriteSection(const Deferred& section, bool placeSlotSize, uint8_t id);
+		std::vector<wasm::ModuleInterface*> pModules;
 
 	public:
-		const std::vector<uint8_t>& output() const;
+		Module(std::initializer_list<wasm::ModuleInterface*> modules);
 
 	public:
 		wasm::SinkInterface* sink(const wasm::Function& function) override;

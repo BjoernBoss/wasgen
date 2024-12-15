@@ -7,4 +7,5 @@
 #include "inst/wasm-instlist.h"
 
 #include "writer/binary-writer.h"
+#include "writer/split-writer.h"
 #include "writer/text-writer.h"

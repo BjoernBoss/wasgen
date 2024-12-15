@@ -2,24 +2,16 @@
 /* Copyright (c) 2024 Bjoern Boss Henrichsen */
 #pragma once
 
-#include "text-base.h"
+#include "split-base.h"
 
-namespace wasm::text {
+namespace wasm::split {
 	class Sink final : public wasm::SinkInterface {
-		friend class text::Module;
+		friend class split::Module;
 	private:
-		text::Module* pModule = 0;
-		std::u8string pLocals;
-		std::u8string pBody;
-		std::u8string pDepth;
+		std::vector<wasm::SinkInterface*> pSinks;
 
 	private:
-		Sink(text::Module* module, std::u8string header);
-
-	private:
-		void fAddLine(std::u8string_view str);
-		void fPush(std::u8string_view name);
-		void fPop();
+		Sink(std::vector<wasm::SinkInterface*>&& sinks);
 
 	public:
 		void pushScope(const wasm::Target& target) override;

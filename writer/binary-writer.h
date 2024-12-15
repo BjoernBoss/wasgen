@@ -5,6 +5,6 @@
 #include "binary/binary-module.h"
 #include "binary/binary-sink.h"
 
-namespace writer {
+namespace wasm {
 	using BinaryWriter = binary::Module;
 }

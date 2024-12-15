@@ -2,9 +2,9 @@
 /* Copyright (c) 2024 Bjoern Boss Henrichsen */
 #pragma once
 
-#include "text/text-module.h"
-#include "text/text-sink.h"
+#include "split/split-module.h"
+#include "split/split-sink.h"
 
 namespace wasm {
-	using TextWriter = wasm::text::Module;
+	using SplitWriter = split::Module;
 }

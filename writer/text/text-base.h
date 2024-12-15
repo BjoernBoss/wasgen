@@ -11,7 +11,7 @@
 #include "../../sink/wasm-sink.h"
 #include "../../inst/wasm-instlist.h"
 
-namespace writer::text {
+namespace wasm::text {
 	class Module;
 	class Sink;
 

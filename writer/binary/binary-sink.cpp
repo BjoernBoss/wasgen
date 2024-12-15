@@ -3,18 +3,18 @@
 #include "binary-module.h"
 #include "binary-sink.h"
 
-writer::binary::Sink::Sink(binary::Module* module, uint32_t index) : pModule{ module }, pIndex{ index } {}
+wasm::binary::Sink::Sink(binary::Module* module, uint32_t index) : pModule{ module }, pIndex{ index } {}
 
-void writer::binary::Sink::fPush(uint8_t byte) {
+void wasm::binary::Sink::fPush(uint8_t byte) {
 	pCode.push_back(byte);
 }
-void writer::binary::Sink::fPush(std::initializer_list<uint8_t> bytes) {
+void wasm::binary::Sink::fPush(std::initializer_list<uint8_t> bytes) {
 	pCode.insert(pCode.end(), bytes.begin(), bytes.end());
 }
-void writer::binary::Sink::fPushWidth(bool _32, uint8_t i32, uint8_t i64) {
+void wasm::binary::Sink::fPushWidth(bool _32, uint8_t i32, uint8_t i64) {
 	fPush(_32 ? i32 : i64);
 }
-void writer::binary::Sink::fPushSelect(wasm::OpType operand, uint8_t i32, uint8_t i64, uint8_t f32, uint8_t f64) {
+void wasm::binary::Sink::fPushSelect(wasm::OpType operand, uint8_t i32, uint8_t i64, uint8_t f32, uint8_t f64) {
 	switch (operand) {
 	case wasm::OpType::i32:
 		fPush(i32);
@@ -33,7 +33,7 @@ void writer::binary::Sink::fPushSelect(wasm::OpType operand, uint8_t i32, uint8_
 	}
 }
 
-void writer::binary::Sink::pushScope(const wasm::Target& target) {
+void wasm::binary::Sink::pushScope(const wasm::Target& target) {
 	/* write the block-instruction out */
 	if (target.type() == wasm::ScopeType::conditional)
 		fPush(0x04);
@@ -50,13 +50,13 @@ void writer::binary::Sink::pushScope(const wasm::Target& target) {
 	else
 		binary::WriteSInt(pCode, target.prototype().index());
 }
-void writer::binary::Sink::popScope(wasm::ScopeType type) {
+void wasm::binary::Sink::popScope(wasm::ScopeType type) {
 	fPush(0x0b);
 }
-void writer::binary::Sink::toggleConditional() {
+void wasm::binary::Sink::toggleConditional() {
 	fPush(0x05);
 }
-void writer::binary::Sink::close(const wasm::Sink& sink) {
+void wasm::binary::Sink::close(const wasm::Sink& sink) {
 	std::vector<uint8_t>& buffer = pModule->pCode.data[pIndex];
 
 	/* write the local data to the buffer */
@@ -75,13 +75,13 @@ void writer::binary::Sink::close(const wasm::Sink& sink) {
 	/* delete this sink (no reference will be held anymore) */
 	delete this;
 }
-void writer::binary::Sink::addLocal(const wasm::Variable& local) {
+void wasm::binary::Sink::addLocal(const wasm::Variable& local) {
 	if (pLocals.empty() || pLocals.back().type != local.type())
 		pLocals.push_back({ 1, local.type() });
 	else
 		++pLocals.back().count;
 }
-void writer::binary::Sink::addInst(const wasm::InstSimple& inst) {
+void wasm::binary::Sink::addInst(const wasm::InstSimple& inst) {
 	/* write the general instruction-type out */
 	switch (inst.type) {
 	case wasm::InstSimple::Type::drop:
@@ -133,7 +133,7 @@ void writer::binary::Sink::addInst(const wasm::InstSimple& inst) {
 		throw wasm::Exception{ L"Unknown wasm::InstSimple type [", size_t(inst.type), L"] encountered" };
 	}
 }
-void writer::binary::Sink::addInst(const wasm::InstConst& inst) {
+void wasm::binary::Sink::addInst(const wasm::InstConst& inst) {
 	if (std::holds_alternative<uint32_t>(inst.value)) {
 		fPush(0x41);
 		binary::WriteInt32(pCode, std::get<uint32_t>(inst.value));
@@ -153,7 +153,7 @@ void writer::binary::Sink::addInst(const wasm::InstConst& inst) {
 	else
 		throw wasm::Exception{ L"Unknown wasm::InstConst type encountered" };
 }
-void writer::binary::Sink::addInst(const wasm::InstOperand& inst) {
+void wasm::binary::Sink::addInst(const wasm::InstOperand& inst) {
 	/* write the instruction out */
 	switch (inst.type) {
 	case wasm::InstOperand::Type::equal:
@@ -175,7 +175,7 @@ void writer::binary::Sink::addInst(const wasm::InstOperand& inst) {
 		throw wasm::Exception{ L"Unknown wasm::InstOperand type [", size_t(inst.type), L"] encountered" };
 	}
 }
-void writer::binary::Sink::addInst(const wasm::InstWidth& inst) {
+void wasm::binary::Sink::addInst(const wasm::InstWidth& inst) {
 	/* write the instruction out */
 	switch (inst.type) {
 	case wasm::InstWidth::Type::equalZero:
@@ -329,7 +329,7 @@ void writer::binary::Sink::addInst(const wasm::InstWidth& inst) {
 		throw wasm::Exception{ L"Unknown wasm::InstWidth type [", size_t(inst.type), L"] encountered" };
 	}
 }
-void writer::binary::Sink::addInst(const wasm::InstMemory& inst) {
+void wasm::binary::Sink::addInst(const wasm::InstMemory& inst) {
 	bool writeMemoryAndOffset = false;
 
 	/* write the general instruction opcode out */
@@ -410,7 +410,7 @@ void writer::binary::Sink::addInst(const wasm::InstMemory& inst) {
 		binary::WriteUInt(pCode, inst.offset);
 	}
 }
-void writer::binary::Sink::addInst(const wasm::InstTable& inst) {
+void wasm::binary::Sink::addInst(const wasm::InstTable& inst) {
 	/* write the general instruction opcode out */
 	switch (inst.type) {
 	case wasm::InstTable::Type::get:
@@ -440,7 +440,7 @@ void writer::binary::Sink::addInst(const wasm::InstTable& inst) {
 		binary::WriteUInt(pCode, inst.destination.index());
 	binary::WriteUInt(pCode, inst.table.index());
 }
-void writer::binary::Sink::addInst(const wasm::InstLocal& inst) {
+void wasm::binary::Sink::addInst(const wasm::InstLocal& inst) {
 	/* write the general instruction opcode out */
 	switch (inst.type) {
 	case wasm::InstLocal::Type::get:
@@ -459,7 +459,7 @@ void writer::binary::Sink::addInst(const wasm::InstLocal& inst) {
 	/* write the local index out */
 	binary::WriteUInt(pCode, inst.variable.index());
 }
-void writer::binary::Sink::addInst(const wasm::InstGlobal& inst) {
+void wasm::binary::Sink::addInst(const wasm::InstGlobal& inst) {
 	/* write the general instruction opcode out */
 	switch (inst.type) {
 	case wasm::InstGlobal::Type::get:
@@ -475,7 +475,7 @@ void writer::binary::Sink::addInst(const wasm::InstGlobal& inst) {
 	/* write the global index out */
 	binary::WriteUInt(pCode, inst.global.index());
 }
-void writer::binary::Sink::addInst(const wasm::InstFunction& inst) {
+void wasm::binary::Sink::addInst(const wasm::InstFunction& inst) {
 	/* write the general instruction opcode out */
 	switch (inst.type) {
 	case wasm::InstFunction::Type::refFunction:
@@ -494,7 +494,7 @@ void writer::binary::Sink::addInst(const wasm::InstFunction& inst) {
 	/* write the function index out */
 	binary::WriteUInt(pCode, inst.function.index());
 }
-void writer::binary::Sink::addInst(const wasm::InstIndirect& inst) {
+void wasm::binary::Sink::addInst(const wasm::InstIndirect& inst) {
 	/* write the general instruction opcode out */
 	switch (inst.type) {
 	case wasm::InstIndirect::Type::callNormal:
@@ -511,7 +511,7 @@ void writer::binary::Sink::addInst(const wasm::InstIndirect& inst) {
 	binary::WriteUInt(pCode, inst.prototype.index());
 	binary::WriteUInt(pCode, inst.table.index());
 }
-void writer::binary::Sink::addInst(const wasm::InstBranch& inst) {
+void wasm::binary::Sink::addInst(const wasm::InstBranch& inst) {
 	/* write the general instruction opcode out */
 	switch (inst.type) {
 	case wasm::InstBranch::Type::direct:

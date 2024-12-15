@@ -21,15 +21,17 @@ The following `cpp` files exist, which need to be included into the compilation:
     writer/binary/binary-base.cpp
     writer/binary/binary-module.cpp
     writer/binary/binary-sink.cpp
+    writer/split/split-module.cpp
+    writer/split/split-sink.cpp
     writer/text/text-base.cpp
     writer/text/text-module.cpp
     writer/text/text-sink.cpp
 
 ## Generating a WebAssembly Module
 
-The library lives in the `wasm` namespace. The fundamental idea is to create a `wasm::Module` object, which describes a single module. It takes a `wasm::ModuleInterface` implementation as argument, which is implemented by the `writer::BinaryWriter` and `writer::TextWriter` classes. 
+The library lives in the `wasm` namespace. The fundamental idea is to create a `wasm::Module` object, which describes a single module. It takes a `wasm::ModuleInterface` implementation as argument, which is implemented by the `wasm::BinaryWriter`, `wasm::TextWriter`, and `wasm::SplitWriter` classes. 
 
-The `writer::BinaryWriter` produces `WASM`, and the `writer::TextWriter` produces a `utf-8` encoded `WAT` string.
+The `wasm::BinaryWriter` produces `WASM`, and the `wasm::TextWriter` produces a `utf-8` encoded `WAT` string. The `wasm::SplitWriter` duplicates the output to multiple separate writers.
 
 Note: When using the library incorrectly, such as defining imports after the first non-imports have been added, a `wasm::Exception` will be thrown.
 
@@ -37,7 +39,7 @@ The following example to produce `WAT`:
 ```C++
 namespace I = wasm::inst;
 
-writer::TextWriter writer{ u8"  " };
+wasm::TextWriter writer{ u8"  " };
 wasm::Module mod{ &writer };
 
 wasm::Function imp = mod.function(u8"import_function", {}, {}, wasm::Import{ u8"mod" });

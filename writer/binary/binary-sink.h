@@ -4,7 +4,7 @@
 
 #include "binary-base.h"
 
-namespace writer::binary {
+namespace wasm::binary {
 	class Sink final : public wasm::SinkInterface {
 		friend class binary::Module;
 	private:

@@ -4,7 +4,7 @@
 
 #include "text-base.h"
 
-namespace writer::text {
+namespace wasm::text {
 	class Module final : public wasm::ModuleInterface {
 		friend class text::Sink;
 	private:

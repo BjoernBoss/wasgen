@@ -10,7 +10,7 @@
 #include "../../sink/wasm-sink.h"
 #include "../../inst/wasm-instlist.h"
 
-namespace writer::binary {
+namespace wasm::binary {
 	class Module;
 	class Sink;
 
