@@ -59,6 +59,8 @@ namespace wasm {
 		IfThen() = default;
 		IfThen(wasm::Sink& sink, std::u8string_view label, const wasm::Prototype& prototype);
 		IfThen(wasm::Sink& sink, std::u8string_view label = {}, std::initializer_list<wasm::Type> params = {}, std::initializer_list<wasm::Type> result = {});
+		IfThen(wasm::Sink* sink, std::u8string_view label, const wasm::Prototype& prototype);
+		IfThen(wasm::Sink* sink, std::u8string_view label = {}, std::initializer_list<wasm::Type> params = {}, std::initializer_list<wasm::Type> result = {});
 		void otherwise();
 	};
 
@@ -67,6 +69,8 @@ namespace wasm {
 		Loop() = default;
 		Loop(wasm::Sink& sink, std::u8string_view label, const wasm::Prototype& prototype);
 		Loop(wasm::Sink& sink, std::u8string_view label = {}, std::initializer_list<wasm::Type> params = {}, std::initializer_list<wasm::Type> result = {});
+		Loop(wasm::Sink* sink, std::u8string_view label, const wasm::Prototype& prototype);
+		Loop(wasm::Sink* sink, std::u8string_view label = {}, std::initializer_list<wasm::Type> params = {}, std::initializer_list<wasm::Type> result = {});
 	};
 
 	/* create a jump block, which can be jumped to for a sink */
@@ -74,5 +78,7 @@ namespace wasm {
 		Block() = default;
 		Block(wasm::Sink& sink, std::u8string_view label, const wasm::Prototype& prototype);
 		Block(wasm::Sink& sink, std::u8string_view label = {}, std::initializer_list<wasm::Type> params = {}, std::initializer_list<wasm::Type> result = {});
+		Block(wasm::Sink* sink, std::u8string_view label, const wasm::Prototype& prototype);
+		Block(wasm::Sink* sink, std::u8string_view label = {}, std::initializer_list<wasm::Type> params = {}, std::initializer_list<wasm::Type> result = {});
 	};
 }

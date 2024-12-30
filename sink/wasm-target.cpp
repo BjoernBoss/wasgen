@@ -84,6 +84,12 @@ wasm::IfThen::IfThen(wasm::Sink& sink, std::u8string_view label, const wasm::Pro
 wasm::IfThen::IfThen(wasm::Sink& sink, std::u8string_view label, std::initializer_list<wasm::Type> params, std::initializer_list<wasm::Type> result) : Target{ sink } {
 	fSetup(label, params, result, wasm::ScopeType::conditional);
 }
+wasm::IfThen::IfThen(wasm::Sink* sink, std::u8string_view label, const wasm::Prototype& prototype) : Target{ *sink } {
+	fSetup(label, prototype, wasm::ScopeType::conditional);
+}
+wasm::IfThen::IfThen(wasm::Sink* sink, std::u8string_view label, std::initializer_list<wasm::Type> params, std::initializer_list<wasm::Type> result) : Target{ *sink } {
+	fSetup(label, params, result, wasm::ScopeType::conditional);
+}
 void wasm::IfThen::otherwise() {
 	fToggle();
 }
@@ -95,11 +101,23 @@ wasm::Loop::Loop(wasm::Sink& sink, std::u8string_view label, const wasm::Prototy
 wasm::Loop::Loop(wasm::Sink& sink, std::u8string_view label, std::initializer_list<wasm::Type> params, std::initializer_list<wasm::Type> result) : Target{ sink } {
 	fSetup(label, params, result, wasm::ScopeType::loop);
 }
+wasm::Loop::Loop(wasm::Sink* sink, std::u8string_view label, const wasm::Prototype& prototype) : Target{ *sink } {
+	fSetup(label, prototype, wasm::ScopeType::loop);
+}
+wasm::Loop::Loop(wasm::Sink* sink, std::u8string_view label, std::initializer_list<wasm::Type> params, std::initializer_list<wasm::Type> result) : Target{ *sink } {
+	fSetup(label, params, result, wasm::ScopeType::loop);
+}
 
 
 wasm::Block::Block(wasm::Sink& sink, std::u8string_view label, const wasm::Prototype& prototype) : Target{ sink } {
 	fSetup(label, prototype, wasm::ScopeType::block);
 }
 wasm::Block::Block(wasm::Sink& sink, std::u8string_view label, std::initializer_list<wasm::Type> params, std::initializer_list<wasm::Type> result) : Target{ sink } {
+	fSetup(label, params, result, wasm::ScopeType::block);
+}
+wasm::Block::Block(wasm::Sink* sink, std::u8string_view label, const wasm::Prototype& prototype) : Target{ *sink } {
+	fSetup(label, prototype, wasm::ScopeType::block);
+}
+wasm::Block::Block(wasm::Sink* sink, std::u8string_view label, std::initializer_list<wasm::Type> params, std::initializer_list<wasm::Type> result) : Target{ *sink } {
 	fSetup(label, params, result, wasm::ScopeType::block);
 }
