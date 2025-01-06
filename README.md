@@ -33,7 +33,7 @@ The library lives in the `wasm` namespace. The fundamental idea is to create a `
 
 The `wasm::BinaryWriter` produces `WASM`, and the `wasm::TextWriter` produces a `utf-8` encoded `WAT` string. The `wasm::SplitWriter` duplicates the output to multiple separate writers.
 
-Note: When using the library incorrectly, such as defining imports after the first non-imports have been added, a `wasm::Exception` will be thrown.
+Note: When using the library incorrectly, such as defining imports after the first non-imports have been added, a `wasm::Exception` will be thrown. As finalizing a module also performs various checks, which could throw exceptions, these checks are not performed by `wasm::Module::~Module`, but must rather be invoked explicitly by calling `wasm::Module::close()`.
 
 The following example to produce `WAT`:
 ```C++

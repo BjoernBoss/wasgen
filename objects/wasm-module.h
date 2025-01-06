@@ -123,7 +123,6 @@ namespace wasm {
 		Module() = delete;
 		Module(wasm::Module&&) = delete;
 		Module(const wasm::Module&) = delete;
-		~Module() noexcept(false);
 
 	private:
 		wasm::Prototype fPrototype(std::u8string_view id, std::initializer_list<wasm::Param> params, std::initializer_list<wasm::Type> result);

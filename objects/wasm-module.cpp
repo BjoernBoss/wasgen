@@ -4,10 +4,6 @@
 #include "../sink/wasm-sink.h"
 
 wasm::Module::Module(wasm::ModuleInterface* interface) : pInterface{ interface } {}
-wasm::Module::~Module() noexcept(false) {
-	if (std::uncaught_exceptions() == 0)
-		fClose();
-}
 
 wasm::Prototype wasm::Module::fPrototype(std::u8string_view id, std::initializer_list<wasm::Param> params, std::initializer_list<wasm::Type> result) {
 	/* validate the id and the parameter */

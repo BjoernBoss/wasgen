@@ -11,7 +11,6 @@
 #include <variant>
 #include <initializer_list>
 #include <unordered_map>
-#include <exception>
 
 namespace wasm {
 	class Module;
