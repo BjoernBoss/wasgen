@@ -300,11 +300,11 @@ namespace wasm {
 		};
 
 	public:
-		std::initializer_list<wasm::WTarget> list;
+		std::vector<wasm::WTarget> list;
 		const wasm::Target& target;
 		Type type = Type::direct;
 
 	public:
-		constexpr InstBranch(Type type, std::initializer_list<wasm::WTarget> list, const wasm::Target& target) : list(list), target{ target }, type{ type } {}
+		constexpr InstBranch(Type type, std::vector<wasm::WTarget> list, const wasm::Target& target) : list(list), target{ target }, type{ type } {}
 	};
 }

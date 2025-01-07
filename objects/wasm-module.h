@@ -125,8 +125,8 @@ namespace wasm {
 		Module(const wasm::Module&) = delete;
 
 	private:
-		wasm::Prototype fPrototype(std::u8string_view id, std::initializer_list<wasm::Param> params, std::initializer_list<wasm::Type> result);
-		wasm::Prototype fPrototype(std::initializer_list<wasm::Type> params, std::initializer_list<wasm::Type> result);
+		wasm::Prototype fPrototype(std::u8string_view id, std::vector<wasm::Param> params, std::vector<wasm::Type> result);
+		wasm::Prototype fPrototype(std::vector<wasm::Type> params, std::vector<wasm::Type> result);
 		wasm::Function fFunction(std::u8string_view id, const wasm::Prototype& prototype, const wasm::Exchange& exchange);
 		void fData(const wasm::Memory& memory, const wasm::Value& offset, const uint8_t* data, uint32_t count);
 		void fElements(const wasm::Table& table, const wasm::Value& offset, const wasm::Value* values, uint32_t count);
@@ -135,13 +135,13 @@ namespace wasm {
 		void fDeferredException(const wasm::Exception& error);
 
 	public:
-		wasm::Prototype prototype(std::initializer_list<wasm::Type> params, std::initializer_list<wasm::Type> result);
-		wasm::Prototype prototype(std::u8string_view id, std::initializer_list<wasm::Param> params, std::initializer_list<wasm::Type> result);
+		wasm::Prototype prototype(std::vector<wasm::Type> params, std::vector<wasm::Type> result);
+		wasm::Prototype prototype(std::u8string_view id, std::vector<wasm::Param> params, std::vector<wasm::Type> result);
 		wasm::Memory memory(std::u8string_view id, const wasm::Limit& limit = {}, const wasm::Exchange& exchange = {});
 		wasm::Table table(std::u8string_view id, bool functions, const wasm::Limit& limit = {}, const wasm::Exchange& exchange = {});
 		wasm::Global global(std::u8string_view id, wasm::Type type, bool mutating, const wasm::Exchange& exchange = {});
 		wasm::Function function(std::u8string_view id, const wasm::Prototype& prototype, const wasm::Exchange& exchange = {});
-		wasm::Function function(std::u8string_view id, std::initializer_list<wasm::Type> params, std::initializer_list<wasm::Type> result, const wasm::Exchange& exchange = {});
+		wasm::Function function(std::u8string_view id, std::vector<wasm::Type> params, std::vector<wasm::Type> result, const wasm::Exchange& exchange = {});
 		void startup(const wasm::Function& function);
 		void limit(const wasm::Memory& memory, const wasm::Limit& limit);
 		void limit(const wasm::Table& table, const wasm::Limit& limit);

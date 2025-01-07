@@ -93,7 +93,7 @@ namespace wasm {
 		bool fCheckTarget(uint32_t index, size_t stamp, bool soft) const;
 		void fSetupValidTarget(const wasm::Prototype& prototype, std::u8string_view id, wasm::ScopeType type, wasm::Target& target);
 		void fSetupTarget(const wasm::Prototype& prototype, std::u8string_view id, wasm::ScopeType type, wasm::Target& target);
-		void fSetupTarget(std::initializer_list<wasm::Type> params, std::initializer_list<wasm::Type> result, std::u8string_view id, wasm::ScopeType type, wasm::Target& target);
+		void fSetupTarget(std::vector<wasm::Type> params, std::vector<wasm::Type> result, std::u8string_view id, wasm::ScopeType type, wasm::Target& target);
 		void fToggleTarget(uint32_t index, size_t stamp);
 		void fCloseTarget(uint32_t index, size_t stamp);
 

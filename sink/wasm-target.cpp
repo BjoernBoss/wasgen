@@ -33,7 +33,7 @@ wasm::Target::~Target() {
 void wasm::Target::fSetup(std::u8string_view label, const wasm::Prototype& prototype, wasm::ScopeType type) {
 	pSink->fSetupTarget(prototype, label, type, *this);
 }
-void wasm::Target::fSetup(std::u8string_view label, std::initializer_list<wasm::Type> params, std::initializer_list<wasm::Type> result, wasm::ScopeType type) {
+void wasm::Target::fSetup(std::u8string_view label, std::vector<wasm::Type> params, std::vector<wasm::Type> result, wasm::ScopeType type) {
 	pSink->fSetupTarget(params, result, label, type, *this);
 }
 void wasm::Target::fToggle() {
@@ -81,13 +81,13 @@ std::u8string wasm::Target::toString() const {
 wasm::IfThen::IfThen(wasm::Sink& sink, std::u8string_view label, const wasm::Prototype& prototype) : Target{ sink } {
 	fSetup(label, prototype, wasm::ScopeType::conditional);
 }
-wasm::IfThen::IfThen(wasm::Sink& sink, std::u8string_view label, std::initializer_list<wasm::Type> params, std::initializer_list<wasm::Type> result) : Target{ sink } {
+wasm::IfThen::IfThen(wasm::Sink& sink, std::u8string_view label, std::vector<wasm::Type> params, std::vector<wasm::Type> result) : Target{ sink } {
 	fSetup(label, params, result, wasm::ScopeType::conditional);
 }
 wasm::IfThen::IfThen(wasm::Sink* sink, std::u8string_view label, const wasm::Prototype& prototype) : Target{ *sink } {
 	fSetup(label, prototype, wasm::ScopeType::conditional);
 }
-wasm::IfThen::IfThen(wasm::Sink* sink, std::u8string_view label, std::initializer_list<wasm::Type> params, std::initializer_list<wasm::Type> result) : Target{ *sink } {
+wasm::IfThen::IfThen(wasm::Sink* sink, std::u8string_view label, std::vector<wasm::Type> params, std::vector<wasm::Type> result) : Target{ *sink } {
 	fSetup(label, params, result, wasm::ScopeType::conditional);
 }
 void wasm::IfThen::otherwise() {
@@ -98,13 +98,13 @@ void wasm::IfThen::otherwise() {
 wasm::Loop::Loop(wasm::Sink& sink, std::u8string_view label, const wasm::Prototype& prototype) : Target{ sink } {
 	fSetup(label, prototype, wasm::ScopeType::loop);
 }
-wasm::Loop::Loop(wasm::Sink& sink, std::u8string_view label, std::initializer_list<wasm::Type> params, std::initializer_list<wasm::Type> result) : Target{ sink } {
+wasm::Loop::Loop(wasm::Sink& sink, std::u8string_view label, std::vector<wasm::Type> params, std::vector<wasm::Type> result) : Target{ sink } {
 	fSetup(label, params, result, wasm::ScopeType::loop);
 }
 wasm::Loop::Loop(wasm::Sink* sink, std::u8string_view label, const wasm::Prototype& prototype) : Target{ *sink } {
 	fSetup(label, prototype, wasm::ScopeType::loop);
 }
-wasm::Loop::Loop(wasm::Sink* sink, std::u8string_view label, std::initializer_list<wasm::Type> params, std::initializer_list<wasm::Type> result) : Target{ *sink } {
+wasm::Loop::Loop(wasm::Sink* sink, std::u8string_view label, std::vector<wasm::Type> params, std::vector<wasm::Type> result) : Target{ *sink } {
 	fSetup(label, params, result, wasm::ScopeType::loop);
 }
 
@@ -112,12 +112,12 @@ wasm::Loop::Loop(wasm::Sink* sink, std::u8string_view label, std::initializer_li
 wasm::Block::Block(wasm::Sink& sink, std::u8string_view label, const wasm::Prototype& prototype) : Target{ sink } {
 	fSetup(label, prototype, wasm::ScopeType::block);
 }
-wasm::Block::Block(wasm::Sink& sink, std::u8string_view label, std::initializer_list<wasm::Type> params, std::initializer_list<wasm::Type> result) : Target{ sink } {
+wasm::Block::Block(wasm::Sink& sink, std::u8string_view label, std::vector<wasm::Type> params, std::vector<wasm::Type> result) : Target{ sink } {
 	fSetup(label, params, result, wasm::ScopeType::block);
 }
 wasm::Block::Block(wasm::Sink* sink, std::u8string_view label, const wasm::Prototype& prototype) : Target{ *sink } {
 	fSetup(label, prototype, wasm::ScopeType::block);
 }
-wasm::Block::Block(wasm::Sink* sink, std::u8string_view label, std::initializer_list<wasm::Type> params, std::initializer_list<wasm::Type> result) : Target{ *sink } {
+wasm::Block::Block(wasm::Sink* sink, std::u8string_view label, std::vector<wasm::Type> params, std::vector<wasm::Type> result) : Target{ *sink } {
 	fSetup(label, params, result, wasm::ScopeType::block);
 }

@@ -153,7 +153,7 @@ void wasm::Sink::fSetupTarget(const wasm::Prototype& prototype, std::u8string_vi
 	fCheck();
 	fSetupValidTarget(prototype, id, type, target);
 }
-void wasm::Sink::fSetupTarget(std::initializer_list<wasm::Type> params, std::initializer_list<wasm::Type> result, std::u8string_view id, wasm::ScopeType type, wasm::Target& target) {
+void wasm::Sink::fSetupTarget(std::vector<wasm::Type> params, std::vector<wasm::Type> result, std::u8string_view id, wasm::ScopeType type, wasm::Target& target) {
 	fCheck();
 	fSetupValidTarget(pModule->prototype(params, result), id, type, target);
 }

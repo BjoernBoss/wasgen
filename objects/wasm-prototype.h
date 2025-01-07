@@ -17,10 +17,10 @@ namespace wasm {
 	class Prototype : public detail::ModuleMember<detail::PrototypeState> {
 		friend class wasm::Module;
 	public:
-		constexpr Prototype() = default;
+		explicit constexpr Prototype() = default;
 
 	private:
-		constexpr Prototype(wasm::Module& module, uint32_t index) : ModuleMember{ module, index } {}
+		explicit constexpr Prototype(wasm::Module& module, uint32_t index) : ModuleMember{ module, index } {}
 
 	public:
 		constexpr const std::vector<wasm::Param>& parameter() const;

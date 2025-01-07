@@ -20,10 +20,10 @@ namespace wasm {
 	class Global : public detail::ModuleMember<detail::GlobalState> {
 		friend class wasm::Module;
 	public:
-		constexpr Global() = default;
+		explicit constexpr Global() = default;
 
 	private:
-		constexpr Global(wasm::Module& module, uint32_t index) : ModuleMember{ module, index } {}
+		explicit constexpr Global(wasm::Module& module, uint32_t index) : ModuleMember{ module, index } {}
 
 	public:
 		constexpr bool imported() const;

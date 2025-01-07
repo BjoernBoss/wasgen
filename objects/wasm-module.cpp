@@ -5,7 +5,7 @@
 
 wasm::Module::Module(wasm::ModuleInterface* interface) : pInterface{ interface } {}
 
-wasm::Prototype wasm::Module::fPrototype(std::u8string_view id, std::initializer_list<wasm::Param> params, std::initializer_list<wasm::Type> result) {
+wasm::Prototype wasm::Module::fPrototype(std::u8string_view id, std::vector<wasm::Param> params, std::vector<wasm::Type> result) {
 	/* validate the id and the parameter */
 	std::u8string _id{ id };
 	if (!_id.empty() && pPrototype.ids.contains(_id))
@@ -21,8 +21,8 @@ wasm::Prototype wasm::Module::fPrototype(std::u8string_view id, std::initializer
 
 	/* setup the prototype-state */
 	detail::PrototypeState state;
-	state.parameter.insert(state.parameter.end(), params);
-	state.result.insert(state.result.end(), result);
+	state.parameter = std::move(params);
+	state.result = std::move(result);
 
 	/* allocate the next id and register the next prototype */
 	if (!_id.empty())
@@ -34,15 +34,15 @@ wasm::Prototype wasm::Module::fPrototype(std::u8string_view id, std::initializer
 	pInterface->addPrototype(prototype);
 	return prototype;
 }
-wasm::Prototype wasm::Module::fPrototype(std::initializer_list<wasm::Type> params, std::initializer_list<wasm::Type> result) {
+wasm::Prototype wasm::Module::fPrototype(std::vector<wasm::Type> params, std::vector<wasm::Type> result) {
 	/* check if its the null-type */
 	if (params.size() == 0 && result.size() == 0 && pNullPrototype.valid())
 		return pNullPrototype;
 
 	/* setup the type-key */
 	PrototypeKey key{};
-	key.list.insert(key.list.end(), params);
-	key.list.insert(key.list.end(), result);
+	key.list.insert(key.list.end(), params.begin(), params.end());
+	key.list.insert(key.list.end(), result.begin(), result.end());
 	key.params = params.size();
 
 	/* lookup the type in the map of anonymous-types */
@@ -54,14 +54,14 @@ wasm::Prototype wasm::Module::fPrototype(std::initializer_list<wasm::Type> param
 	detail::PrototypeState state;
 	for (wasm::Type param : params)
 		state.parameter.emplace_back(param);
-	state.result.insert(state.result.end(), result);
+	state.result = std::move(result);
 
 	/* allocate the next id and register the next prototype */
 	pPrototype.list.push_back(std::move(state));
 	wasm::Prototype prototype{ *this, uint32_t(pPrototype.list.size() - 1) };
 
 	/* check if this is the null-type and otherwise insert it into the map */
-	if (params.size() == 0 && result.size() == 0)
+	if (pPrototype.list.back().parameter.size() == 0 && pPrototype.list.back().result.size() == 0)
 		pNullPrototype = prototype;
 	else {
 		std::pair<PrototypeKey, uint32_t> value{ std::move(key), prototype.index() };
@@ -256,11 +256,11 @@ void wasm::Module::fDeferredException(const wasm::Exception& error) {
 		pException = error.what();
 }
 
-wasm::Prototype wasm::Module::prototype(std::initializer_list<wasm::Type> params, std::initializer_list<wasm::Type> result) {
+wasm::Prototype wasm::Module::prototype(std::vector<wasm::Type> params, std::vector<wasm::Type> result) {
 	fCheck();
 	return fPrototype(params, result);
 }
-wasm::Prototype wasm::Module::prototype(std::u8string_view id, std::initializer_list<wasm::Param> params, std::initializer_list<wasm::Type> result) {
+wasm::Prototype wasm::Module::prototype(std::u8string_view id, std::vector<wasm::Param> params, std::vector<wasm::Type> result) {
 	fCheck();
 	return fPrototype(id, params, result);
 }
@@ -369,7 +369,7 @@ wasm::Function wasm::Module::function(std::u8string_view id, const wasm::Prototy
 	fCheck();
 	return fFunction(id, prototype, exchange);
 }
-wasm::Function wasm::Module::function(std::u8string_view id, std::initializer_list<wasm::Type> params, std::initializer_list<wasm::Type> result, const wasm::Exchange& exchange) {
+wasm::Function wasm::Module::function(std::u8string_view id, std::vector<wasm::Type> params, std::vector<wasm::Type> result, const wasm::Exchange& exchange) {
 	fCheck();
 	return fFunction(id, fPrototype(params, result), exchange);
 }

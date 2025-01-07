@@ -16,7 +16,7 @@ namespace wasm::inst {
 		}
 
 		/* expected on stack: [index] */
-		static constexpr wasm::InstBranch Table(std::initializer_list<wasm::WTarget> optTarget, const wasm::Target& defTarget) {
+		static constexpr wasm::InstBranch Table(std::vector<wasm::WTarget> optTarget, const wasm::Target& defTarget) {
 			return wasm::InstBranch{ wasm::InstBranch::Type::table, optTarget, defTarget };
 		}
 	};
@@ -43,7 +43,7 @@ namespace wasm::inst {
 		}
 
 		/* expected on stack: [parameter] [table-index] */
-		static constexpr wasm::InstIndirect Indirect(const wasm::Table& table, std::initializer_list<wasm::Type> params = {}, std::initializer_list<wasm::Type> result = {}) {
+		static constexpr wasm::InstIndirect Indirect(const wasm::Table& table, std::vector<wasm::Type> params = {}, std::vector<wasm::Type> result = {}) {
 			wasm::Prototype type{};
 			if (table.valid())
 				type = table.module().prototype(params, result);
@@ -51,7 +51,7 @@ namespace wasm::inst {
 		}
 
 		/* expected on stack: [parameter] [table-index] */
-		static constexpr wasm::InstIndirect IndirectTail(const wasm::Table& table, std::initializer_list<wasm::Type> params = {}, std::initializer_list<wasm::Type> result = {}) {
+		static constexpr wasm::InstIndirect IndirectTail(const wasm::Table& table, std::vector<wasm::Type> params = {}, std::vector<wasm::Type> result = {}) {
 			wasm::Prototype type{};
 			if (table.valid())
 				type = table.module().prototype(params, result);
