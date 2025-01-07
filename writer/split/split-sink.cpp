@@ -25,6 +25,10 @@ void wasm::split::Sink::addLocal(const wasm::Variable& local) {
 	for (auto& child : pSinks)
 		child->addLocal(local);
 }
+void wasm::split::Sink::addComment(std::u8string_view text) {
+	for (auto& child : pSinks)
+		child->addComment(text);
+}
 void wasm::split::Sink::addInst(const wasm::InstSimple& inst) {
 	for (auto& child : pSinks)
 		child->addInst(inst);

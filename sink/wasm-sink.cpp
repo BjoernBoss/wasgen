@@ -304,6 +304,10 @@ wasm::Variable wasm::Sink::local(wasm::Type type, std::u8string_view id) {
 	pInterface->addLocal(variable);
 	return variable;
 }
+void wasm::Sink::comment(std::u8string_view text) {
+	fCheck();
+	pInterface->addComment(text);
+}
 wasm::Function wasm::Sink::function() const {
 	return pFunction;
 }

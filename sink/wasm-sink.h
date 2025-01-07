@@ -18,6 +18,7 @@ namespace wasm {
 		virtual void toggleConditional() = 0;
 		virtual void close(const wasm::Sink& sink) = 0;
 		virtual void addLocal(const wasm::Variable& local) = 0;
+		virtual void addComment(std::u8string_view text) = 0;
 		virtual void addInst(const wasm::InstSimple& inst) = 0;
 		virtual void addInst(const wasm::InstConst& inst) = 0;
 		virtual void addInst(const wasm::InstOperand& inst) = 0;
@@ -150,6 +151,7 @@ namespace wasm {
 	public:
 		wasm::Variable param(uint32_t index);
 		wasm::Variable local(wasm::Type type, std::u8string_view id = {});
+		void comment(std::u8string_view text);
 		wasm::Function function() const;
 		void close();
 

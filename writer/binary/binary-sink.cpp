@@ -81,6 +81,9 @@ void wasm::binary::Sink::addLocal(const wasm::Variable& local) {
 	else
 		++pLocals.back().count;
 }
+void wasm::binary::Sink::addComment(std::u8string_view text) {
+	/* comments not supported for the binary format */
+}
 void wasm::binary::Sink::addInst(const wasm::InstSimple& inst) {
 	/* write the general instruction-type out */
 	switch (inst.type) {

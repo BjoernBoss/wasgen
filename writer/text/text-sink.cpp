@@ -63,6 +63,9 @@ void wasm::text::Sink::addLocal(const wasm::Variable& local) {
 		text::MakeType(local.type()),
 		u8')');
 }
+void wasm::text::Sink::addComment(std::u8string_view text) {
+	fAddLine(str::u8::Build(u8"(; ", text, u8" ;)"));
+}
 void wasm::text::Sink::addInst(const wasm::InstSimple& inst) {
 	/* write the general instruction-type out */
 	switch (inst.type) {
@@ -124,7 +127,7 @@ void wasm::text::Sink::addInst(const wasm::InstConst& inst) {
 		if ((value >> 16) == 0xffff)
 			str::BuildTo(line, u8"i32.const ", int32_t(value));
 		else if ((value >> 16) != 0)
-			str::BuildTo(line, u8"i32.const ", str::As{ U"x", value });
+			str::BuildTo(line, u8"i32.const ", str::As{ U"#x", value });
 		else
 			str::BuildTo(line, u8"i32.const ", value);
 	}
@@ -135,7 +138,7 @@ void wasm::text::Sink::addInst(const wasm::InstConst& inst) {
 		if ((value >> 32) == 0xffff'ffff)
 			str::BuildTo(line, u8"i64.const ", int64_t(value));
 		else if ((value >> 32) != 0)
-			str::BuildTo(line, u8"i64.const ", str::As{ U"x", value });
+			str::BuildTo(line, u8"i64.const ", str::As{ U"#x", value });
 		else
 			str::BuildTo(line, u8"i64.const ", value);
 	}
