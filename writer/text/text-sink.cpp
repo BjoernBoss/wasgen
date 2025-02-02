@@ -262,7 +262,7 @@ void wasm::text::Sink::addInst(const wasm::InstWidth& inst) {
 		fAddLine(str::u8::Build(u8'i', width, u8".trunc_f64_u"));
 		break;
 	case wasm::InstWidth::Type::reinterpretAsFloat:
-		fAddLine(str::u8::Build(u8'i', width, u8".reinterpret_f", width));
+		fAddLine(str::u8::Build(u8'f', width, u8".reinterpret_i", width));
 		break;
 	case wasm::InstWidth::Type::bitAnd:
 		fAddLine(str::u8::Build(u8'i', width, u8".and"));
@@ -301,7 +301,7 @@ void wasm::text::Sink::addInst(const wasm::InstWidth& inst) {
 		fAddLine(str::u8::Build(u8'f', width, u8".div"));
 		break;
 	case wasm::InstWidth::Type::reinterpretAsInt:
-		fAddLine(str::u8::Build(u8'f', width, u8".reinterpret_i", width));
+		fAddLine(str::u8::Build(u8'i', width, u8".reinterpret_f", width));
 		break;
 	case wasm::InstWidth::Type::floatMin:
 		fAddLine(str::u8::Build(u8'f', width, u8".min"));

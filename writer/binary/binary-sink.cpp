@@ -257,7 +257,7 @@ void wasm::binary::Sink::addInst(const wasm::InstWidth& inst) {
 		fPushWidth(inst.width32, 0xab, 0xb1);
 		break;
 	case wasm::InstWidth::Type::reinterpretAsFloat:
-		fPushWidth(inst.width32, 0xbc, 0xbd);
+		fPushWidth(inst.width32, 0xbe, 0xbf);
 		break;
 	case wasm::InstWidth::Type::bitAnd:
 		fPushWidth(inst.width32, 0x71, 0x83);
@@ -296,7 +296,7 @@ void wasm::binary::Sink::addInst(const wasm::InstWidth& inst) {
 		fPushWidth(inst.width32, 0x95, 0xa3);
 		break;
 	case wasm::InstWidth::Type::reinterpretAsInt:
-		fPushWidth(inst.width32, 0xbe, 0xbf);
+		fPushWidth(inst.width32, 0xbc, 0xbd);
 		break;
 	case wasm::InstWidth::Type::floatMin:
 		fPushWidth(inst.width32, 0x96, 0xa4);
