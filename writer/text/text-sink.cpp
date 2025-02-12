@@ -249,17 +249,29 @@ void wasm::text::Sink::addInst(const wasm::InstWidth& inst) {
 	case wasm::InstWidth::Type::convertToF64Unsigned:
 		fAddLine(str::u8::Build(u8"f64.convert_i", width, u8"_u"));
 		break;
-	case wasm::InstWidth::Type::convertFromF32Signed:
+	case wasm::InstWidth::Type::convertFromF32SignedTrap:
 		fAddLine(str::u8::Build(u8'i', width, u8".trunc_f32_s"));
 		break;
-	case wasm::InstWidth::Type::convertFromF32Unsigned:
+	case wasm::InstWidth::Type::convertFromF32UnsignedTrap:
 		fAddLine(str::u8::Build(u8'i', width, u8".trunc_f32_u"));
 		break;
-	case wasm::InstWidth::Type::convertFromF64Signed:
+	case wasm::InstWidth::Type::convertFromF64SignedTrap:
 		fAddLine(str::u8::Build(u8'i', width, u8".trunc_f64_s"));
 		break;
-	case wasm::InstWidth::Type::convertFromF64Unsigned:
+	case wasm::InstWidth::Type::convertFromF64UnsignedTrap:
 		fAddLine(str::u8::Build(u8'i', width, u8".trunc_f64_u"));
+		break;
+	case wasm::InstWidth::Type::convertFromF32SignedNoTrap:
+		fAddLine(str::u8::Build(u8'i', width, u8".trunc_sat_f32_s"));
+		break;
+	case wasm::InstWidth::Type::convertFromF32UnsignedNoTrap:
+		fAddLine(str::u8::Build(u8'i', width, u8".trunc_sat_f32_u"));
+		break;
+	case wasm::InstWidth::Type::convertFromF64SignedNoTrap:
+		fAddLine(str::u8::Build(u8'i', width, u8".trunc_sat_f64_s"));
+		break;
+	case wasm::InstWidth::Type::convertFromF64UnsignedNoTrap:
+		fAddLine(str::u8::Build(u8'i', width, u8".trunc_sat_f64_u"));
 		break;
 	case wasm::InstWidth::Type::reinterpretAsFloat:
 		fAddLine(str::u8::Build(u8'f', width, u8".reinterpret_i", width));

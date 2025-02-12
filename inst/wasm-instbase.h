@@ -116,17 +116,17 @@ namespace wasm::detail {
 			else
 				return wasm::InstWidth{ wasm::InstWidth::Type::convertToF64Unsigned, I32 };
 		}
-		static constexpr wasm::InstWidth FromF32() {
+		static constexpr wasm::InstWidth FromF32(bool trap) {
 			if constexpr (Signed)
-				return wasm::InstWidth{ wasm::InstWidth::Type::convertFromF32Signed, I32 };
+				return wasm::InstWidth{ trap ? wasm::InstWidth::Type::convertFromF32SignedTrap : wasm::InstWidth::Type::convertFromF32SignedNoTrap, I32 };
 			else
-				return wasm::InstWidth{ wasm::InstWidth::Type::convertFromF32Unsigned, I32 };
+				return wasm::InstWidth{ trap ? wasm::InstWidth::Type::convertFromF32UnsignedTrap : wasm::InstWidth::Type::convertFromF32UnsignedNoTrap, I32 };
 		}
-		static constexpr wasm::InstWidth FromF64() {
+		static constexpr wasm::InstWidth FromF64(bool trap) {
 			if constexpr (Signed)
-				return wasm::InstWidth{ wasm::InstWidth::Type::convertFromF64Signed, I32 };
+				return wasm::InstWidth{ trap ? wasm::InstWidth::Type::convertFromF64SignedTrap : wasm::InstWidth::Type::convertFromF64SignedNoTrap, I32 };
 			else
-				return wasm::InstWidth{ wasm::InstWidth::Type::convertFromF64Unsigned, I32 };
+				return wasm::InstWidth{ trap ? wasm::InstWidth::Type::convertFromF64UnsignedTrap : wasm::InstWidth::Type::convertFromF64UnsignedNoTrap, I32 };
 		}
 		static constexpr wasm::InstWidth AsFloat() {
 			return wasm::InstWidth{ wasm::InstWidth::Type::reinterpretAsFloat, I32 };

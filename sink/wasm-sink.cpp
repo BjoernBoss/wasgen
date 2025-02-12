@@ -469,12 +469,16 @@ void wasm::Sink::operator[](const wasm::InstWidth& inst) {
 	case wasm::InstWidth::Type::convertToF64Unsigned:
 		fSwapTypes({ itype }, { wasm::Type::f64 });
 		break;
-	case wasm::InstWidth::Type::convertFromF32Signed:
-	case wasm::InstWidth::Type::convertFromF32Unsigned:
+	case wasm::InstWidth::Type::convertFromF32SignedTrap:
+	case wasm::InstWidth::Type::convertFromF32UnsignedTrap:
+	case wasm::InstWidth::Type::convertFromF32SignedNoTrap:
+	case wasm::InstWidth::Type::convertFromF32UnsignedNoTrap:
 		fSwapTypes({ wasm::Type::f32 }, { itype });
 		break;
-	case wasm::InstWidth::Type::convertFromF64Signed:
-	case wasm::InstWidth::Type::convertFromF64Unsigned:
+	case wasm::InstWidth::Type::convertFromF64SignedTrap:
+	case wasm::InstWidth::Type::convertFromF64UnsignedTrap:
+	case wasm::InstWidth::Type::convertFromF64SignedNoTrap:
+	case wasm::InstWidth::Type::convertFromF64UnsignedNoTrap:
 		fSwapTypes({ wasm::Type::f64 }, { itype });
 		break;
 	case wasm::InstWidth::Type::reinterpretAsFloat:

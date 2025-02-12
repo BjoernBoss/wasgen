@@ -244,17 +244,29 @@ void wasm::binary::Sink::addInst(const wasm::InstWidth& inst) {
 	case wasm::InstWidth::Type::convertToF64Unsigned:
 		fPushWidth(inst.width32, 0xb8, 0xba);
 		break;
-	case wasm::InstWidth::Type::convertFromF32Signed:
+	case wasm::InstWidth::Type::convertFromF32SignedTrap:
 		fPushWidth(inst.width32, 0xa8, 0xae);
 		break;
-	case wasm::InstWidth::Type::convertFromF32Unsigned:
+	case wasm::InstWidth::Type::convertFromF32UnsignedTrap:
 		fPushWidth(inst.width32, 0xa9, 0xaf);
 		break;
-	case wasm::InstWidth::Type::convertFromF64Signed:
+	case wasm::InstWidth::Type::convertFromF64SignedTrap:
 		fPushWidth(inst.width32, 0xaa, 0xb0);
 		break;
-	case wasm::InstWidth::Type::convertFromF64Unsigned:
+	case wasm::InstWidth::Type::convertFromF64UnsignedTrap:
 		fPushWidth(inst.width32, 0xab, 0xb1);
+		break;
+	case wasm::InstWidth::Type::convertFromF32SignedNoTrap:
+		fPush({ 0xfc, uint8_t(inst.width32 ? 0x00 : 0x04) });
+		break;
+	case wasm::InstWidth::Type::convertFromF32UnsignedNoTrap:
+		fPush({ 0xfc, uint8_t(inst.width32 ? 0x01 : 0x05) });
+		break;
+	case wasm::InstWidth::Type::convertFromF64SignedNoTrap:
+		fPush({ 0xfc, uint8_t(inst.width32 ? 0x02 : 0x06) });
+		break;
+	case wasm::InstWidth::Type::convertFromF64UnsignedNoTrap:
+		fPush({ 0xfc, uint8_t(inst.width32 ? 0x03 : 0x07) });
 		break;
 	case wasm::InstWidth::Type::reinterpretAsFloat:
 		fPushWidth(inst.width32, 0xbe, 0xbf);
