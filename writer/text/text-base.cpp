@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: BSD-3-Clause */
-/* Copyright (c) 2024 Bjoern Boss Henrichsen */
+/* Copyright (c) 2024-2025 Bjoern Boss Henrichsen */
 #include "text-base.h"
 
 std::u8string_view wasm::text::MakeType(wasm::Type type) {
