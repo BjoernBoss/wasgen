@@ -115,7 +115,7 @@ void wasm::text::Sink::addInst(const wasm::InstSimple& inst) {
 		fAddLine(u8"f32.demote_f64");
 		break;
 	default:
-		throw wasm::Exception{ L"Unknown wasm::InstSimple type [", size_t(inst.type), L"] encountered" };
+		throw wasm::Exception{ "Unknown wasm::InstSimple type [", size_t(inst.type), "] encountered" };
 	}
 }
 void wasm::text::Sink::addInst(const wasm::InstConst& inst) {
@@ -149,7 +149,7 @@ void wasm::text::Sink::addInst(const wasm::InstConst& inst) {
 	else if (std::holds_alternative<double>(inst.value))
 		str::BuildTo(line, u8"f64.const ", std::get<double>(inst.value));
 	else
-		throw wasm::Exception{ L"Unknown wasm::InstConst type encountered" };
+		throw wasm::Exception{ "Unknown wasm::InstConst type encountered" };
 
 	/* write the line out */
 	fAddLine(line);
@@ -175,7 +175,7 @@ void wasm::text::Sink::addInst(const wasm::InstOperand& inst) {
 		line.append(u8".mul");
 		break;
 	default:
-		throw wasm::Exception{ L"Unknown wasm::InstOperand type [", size_t(inst.type), L"] encountered" };
+		throw wasm::Exception{ "Unknown wasm::InstOperand type [", size_t(inst.type), "] encountered" };
 	}
 
 	/* write the line out */
@@ -346,7 +346,7 @@ void wasm::text::Sink::addInst(const wasm::InstWidth& inst) {
 		fAddLine(str::u8::Build(u8'f', width, u8".copysign"));
 		break;
 	default:
-		throw wasm::Exception{ L"Unknown wasm::InstWidth type [", size_t(inst.type), L"] encountered" };
+		throw wasm::Exception{ "Unknown wasm::InstWidth type [", size_t(inst.type), "] encountered" };
 	}
 }
 void wasm::text::Sink::addInst(const wasm::InstMemory& inst) {
@@ -401,7 +401,7 @@ void wasm::text::Sink::addInst(const wasm::InstMemory& inst) {
 		line = u8"memory.fill";
 		break;
 	default:
-		throw wasm::Exception{ L"Unknown wasm::InstMemory type [", size_t(inst.type), L"] encountered" };
+		throw wasm::Exception{ "Unknown wasm::InstMemory type [", size_t(inst.type), "] encountered" };
 	}
 
 	/* construct the common load/store instruction */
@@ -442,7 +442,7 @@ void wasm::text::Sink::addInst(const wasm::InstTable& inst) {
 		line = u8"table.fill";
 		break;
 	default:
-		throw wasm::Exception{ L"Unknown wasm::InstTable type [", size_t(inst.type), L"] encountered" };
+		throw wasm::Exception{ "Unknown wasm::InstTable type [", size_t(inst.type), "] encountered" };
 	}
 
 	/* add the table references and write the line out (first memory indicates destination) */
@@ -466,7 +466,7 @@ void wasm::text::Sink::addInst(const wasm::InstLocal& inst) {
 		line = u8"local.tee ";
 		break;
 	default:
-		throw wasm::Exception{ L"Unknown wasm::InstLocal type [", size_t(inst.type), L"] encountered" };
+		throw wasm::Exception{ "Unknown wasm::InstLocal type [", size_t(inst.type), "] encountered" };
 	}
 
 	/* add the variable reference and write the line out */
@@ -485,7 +485,7 @@ void wasm::text::Sink::addInst(const wasm::InstGlobal& inst) {
 		line = u8"global.set ";
 		break;
 	default:
-		throw wasm::Exception{ L"Unknown wasm::InstGlobal type [", size_t(inst.type), L"] encountered" };
+		throw wasm::Exception{ "Unknown wasm::InstGlobal type [", size_t(inst.type), "] encountered" };
 	}
 
 	/* add the global reference and write the line out */
@@ -507,7 +507,7 @@ void wasm::text::Sink::addInst(const wasm::InstFunction& inst) {
 		line = u8"return_call ";
 		break;
 	default:
-		throw wasm::Exception{ L"Unknown wasm::InstFunction type [", size_t(inst.type), L"] encountered" };
+		throw wasm::Exception{ "Unknown wasm::InstFunction type [", size_t(inst.type), "] encountered" };
 	}
 
 	/* add the function reference and write the line out */
@@ -526,7 +526,7 @@ void wasm::text::Sink::addInst(const wasm::InstIndirect& inst) {
 		line = u8"return_call_indirect ";
 		break;
 	default:
-		throw wasm::Exception{ L"Unknown wasm::InstIndirect type [", size_t(inst.type), L"] encountered" };
+		throw wasm::Exception{ "Unknown wasm::InstIndirect type [", size_t(inst.type), "] encountered" };
 	}
 
 	/* add the table and prototype reference and write the line out */
@@ -551,7 +551,7 @@ void wasm::text::Sink::addInst(const wasm::InstBranch& inst) {
 			str::BuildTo(line, inst.list.begin()[i].get().toString(), u8' ');
 		break;
 	default:
-		throw wasm::Exception{ L"Unknown wasm::InstBranch type [", size_t(inst.type), L"] encountered" };
+		throw wasm::Exception{ "Unknown wasm::InstBranch type [", size_t(inst.type), "] encountered" };
 	}
 
 	/* add the default target and write the line out */

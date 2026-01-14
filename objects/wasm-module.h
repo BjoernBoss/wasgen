@@ -112,7 +112,7 @@ namespace wasm {
 		Types<detail::GlobalState> pGlobal;
 		Types<detail::FunctionState> pFunction;
 		wasm::ModuleInterface* pInterface = 0;
-		mutable std::wstring pException;
+		mutable std::string pException;
 		wasm::Prototype pNullPrototype;
 		bool pImportsClosed = false;
 		bool pClosed = false;

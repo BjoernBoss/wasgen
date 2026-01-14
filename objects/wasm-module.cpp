@@ -9,13 +9,13 @@ wasm::Prototype wasm::Module::fPrototype(std::u8string_view id, std::vector<wasm
 	/* validate the id and the parameter */
 	std::u8string _id{ id };
 	if (!_id.empty() && pPrototype.ids.contains(_id))
-		throw wasm::Exception{ L"Prototype [", _id, L"] already defined" };
+		throw wasm::Exception{ "Prototype [", _id, "] already defined" };
 	std::unordered_set<std::u8string> names;
 	for (const auto& param : params) {
 		if (param.id.empty())
 			continue;
 		if (names.contains(param.id))
-			throw wasm::Exception{ L"Parameter with name [", param.id, L"] of prototype [", _id, L"] already defined" };
+			throw wasm::Exception{ "Parameter with name [", param.id, "] of prototype [", _id, "] already defined" };
 		names.insert(param.id);
 	}
 
@@ -75,22 +75,22 @@ wasm::Prototype wasm::Module::fPrototype(std::vector<wasm::Type> params, std::ve
 wasm::Function wasm::Module::fFunction(std::u8string_view id, const wasm::Prototype& prototype, const wasm::Exchange& exchange) {
 	/* validate the import/export parameter */
 	if ((!exchange.importModule.empty() || exchange.exported) && id.empty())
-		throw wasm::Exception{ L"Importing or exporting requires explicit id names" };
+		throw wasm::Exception{ "Importing or exporting requires explicit id names" };
 
 	/* validate the imports */
 	if (exchange.importModule.empty())
 		pImportsClosed = true;
 	else if (pImportsClosed)
-		throw wasm::Exception{ L"Cannot import function [", id, L"] after the first non-import object has been added" };
+		throw wasm::Exception{ "Cannot import function [", id, "] after the first non-import object has been added" };
 
 	/* validate the id and the prototype */
 	std::u8string _id{ id };
 	if (!_id.empty() && pFunction.ids.contains(_id))
-		throw wasm::Exception{ L"Function [", _id, L"] already defined" };
+		throw wasm::Exception{ "Function [", _id, "] already defined" };
 	if (!prototype.valid())
-		throw wasm::Exception{ L"Prototype for function [", _id, L"] must be constructed" };
+		throw wasm::Exception{ "Prototype for function [", _id, "] must be constructed" };
 	if (&prototype.module() != this)
-		throw wasm::Exception{ L"Prototype for function [", _id, L"] must originate from this module" };
+		throw wasm::Exception{ "Prototype for function [", _id, "] must originate from this module" };
 
 	/* setup the function */
 	detail::FunctionState state = { std::u8string{ exchange.importModule }, {}, prototype, 0, exchange.exported, false };
@@ -108,22 +108,22 @@ wasm::Function wasm::Module::fFunction(std::u8string_view id, const wasm::Protot
 void wasm::Module::fData(const wasm::Memory& memory, const wasm::Value& offset, const uint8_t* data, uint32_t count) {
 	/* validate the memory */
 	if (!memory.valid())
-		throw wasm::Exception{ L"Memory is required to be constructed to write data to it" };
+		throw wasm::Exception{ "Memory is required to be constructed to write data to it" };
 	if (&memory.module() != this)
-		throw wasm::Exception{ L"Memory [", memory.toString(), L"] must originate from this module" };
+		throw wasm::Exception{ "Memory [", memory.toString(), "] must originate from this module" };
 
 	/* validate the offset */
 	if (!offset.valid())
-		throw wasm::Exception{ L"Offset to write to memory [", memory.toString(), L"] is required to be constructed" };
+		throw wasm::Exception{ "Offset to write to memory [", memory.toString(), "] is required to be constructed" };
 	if (offset.type() != wasm::ValType::i32 && offset.type() != wasm::ValType::global)
-		throw wasm::Exception{ L"Offset to write to memory [", memory.toString(), L"] must be of type i32 or a global-import" };
+		throw wasm::Exception{ "Offset to write to memory [", memory.toString(), "] must be of type i32 or a global-import" };
 	if (offset.type() == wasm::ValType::global) {
 		if (!offset.global().valid())
-			throw wasm::Exception{ L"Imported offset to write to memory [", memory.toString(), L"] must be constructed" };
+			throw wasm::Exception{ "Imported offset to write to memory [", memory.toString(), "] must be constructed" };
 		if (&offset.global().module() != this)
-			throw wasm::Exception{ L"Imported offset to write to memory [", memory.toString(), L"] must originate from this module" };
+			throw wasm::Exception{ "Imported offset to write to memory [", memory.toString(), "] must originate from this module" };
 		if (offset.global().type() != wasm::Type::i32 || !offset.global().imported() || offset.global().mutating())
-			throw wasm::Exception{ L"Imported offset to write to memory [", memory.toString(), L"] must be an immutable imported i32" };
+			throw wasm::Exception{ "Imported offset to write to memory [", memory.toString(), "] must be an immutable imported i32" };
 	}
 
 	/* pass the validated data to the interface */
@@ -132,22 +132,22 @@ void wasm::Module::fData(const wasm::Memory& memory, const wasm::Value& offset, 
 void wasm::Module::fElements(const wasm::Table& table, const wasm::Value& offset, const wasm::Value* values, uint32_t count) {
 	/* validate the memory */
 	if (!table.valid())
-		throw wasm::Exception{ L"Table is required to be constructed to write elements to it" };
+		throw wasm::Exception{ "Table is required to be constructed to write elements to it" };
 	if (&table.module() != this)
-		throw wasm::Exception{ L"Table [", table.toString(), L"] must originate from this module" };
+		throw wasm::Exception{ "Table [", table.toString(), "] must originate from this module" };
 
 	/* validate the offset */
 	if (!offset.valid())
-		throw wasm::Exception{ L"Offset to write to table [", table.toString(), L"] is required to be constructed" };
+		throw wasm::Exception{ "Offset to write to table [", table.toString(), "] is required to be constructed" };
 	if (offset.type() != wasm::ValType::i32 && offset.type() != wasm::ValType::global)
-		throw wasm::Exception{ L"Offset to write to table [", table.toString(), L"] must be of type i32 or a global-import" };
+		throw wasm::Exception{ "Offset to write to table [", table.toString(), "] must be of type i32 or a global-import" };
 	if (offset.type() == wasm::ValType::global) {
 		if (!offset.global().valid())
-			throw wasm::Exception{ L"Imported offset to write to table [", table.toString(), L"] must be constructed" };
+			throw wasm::Exception{ "Imported offset to write to table [", table.toString(), "] must be constructed" };
 		if (&offset.global().module() != this)
-			throw wasm::Exception{ L"Imported offset to write to table [", table.toString(), L"] must originate from this module" };
+			throw wasm::Exception{ "Imported offset to write to table [", table.toString(), "] must originate from this module" };
 		if (offset.global().type() != wasm::Type::i32 || !offset.global().imported() || offset.global().mutating())
-			throw wasm::Exception{ L"Imported offset to write to table [", table.toString(), L"] must be an immutable imported i32" };
+			throw wasm::Exception{ "Imported offset to write to table [", table.toString(), "] must be an immutable imported i32" };
 	}
 
 	/* validate the values */
@@ -174,22 +174,22 @@ void wasm::Module::fElements(const wasm::Table& table, const wasm::Value& offset
 		case wasm::ValType::refFunction:
 			_type = wasm::Type::refFunction;
 			if (value.function().valid() && &value.function().module() != this)
-				throw wasm::Exception{ L"Function value for table [", table.toString(), L"] must originate from this module" };
+				throw wasm::Exception{ "Function value for table [", table.toString(), "] must originate from this module" };
 			break;
 		case wasm::ValType::global:
 			if (!value.global().valid())
-				throw wasm::Exception{ L"Imported value for table [", table.toString(), L"] must be constructed" };
+				throw wasm::Exception{ "Imported value for table [", table.toString(), "] must be constructed" };
 			if (&value.global().module() != this)
-				throw wasm::Exception{ L"Imported value for table [", table.toString(), L"] must originate from this module" };
+				throw wasm::Exception{ "Imported value for table [", table.toString(), "] must originate from this module" };
 			if (!value.global().imported() || value.global().mutating())
-				throw wasm::Exception{ L"Imported value for table [", table.toString(), L"] must be imported and immutable" };
+				throw wasm::Exception{ "Imported value for table [", table.toString(), "] must be imported and immutable" };
 			_type = value.global().type();
 			break;
 		case wasm::ValType::invalid:
-			throw wasm::Exception{ L"Value for table [", table.toString(), L"] is required to be constructed" };
+			throw wasm::Exception{ "Value for table [", table.toString(), "] is required to be constructed" };
 		}
 		if (_type != (table.functions() ? wasm::Type::refFunction : wasm::Type::refExtern))
-			throw wasm::Exception{ L"Value for table [", table.toString(), L"] must match its type" };
+			throw wasm::Exception{ "Value for table [", table.toString(), "] must match its type" };
 	}
 
 	/* pass the validated data to the interface */
@@ -198,14 +198,14 @@ void wasm::Module::fElements(const wasm::Table& table, const wasm::Value& offset
 void wasm::Module::fCheck() const {
 	/* check if any queued exceptions need to be thrown */
 	if (!pException.empty()) {
-		std::wstring err;
+		std::string err;
 		std::swap(err, pException);
 		throw wasm::Exception{ err };
 	}
 
 	/* check if the sink has already been closed */
 	if (pClosed)
-		throw wasm::Exception{ L"Cannot change the closed module" };
+		throw wasm::Exception{ "Cannot change the closed module" };
 }
 void wasm::Module::fClose() {
 	if (pClosed)
@@ -221,7 +221,7 @@ void wasm::Module::fClose() {
 		if (!pMemory.list[i].importModule.empty())
 			continue;
 		if (!pMemory.list[i].limit.valid())
-			throw wasm::Exception{ L"Memory [", wasm::Memory{ *this, uint32_t(i) }.toString(), L"] requires a limit to be set" };
+			throw wasm::Exception{ "Memory [", wasm::Memory{ *this, uint32_t(i) }.toString(), "] requires a limit to be set" };
 	}
 
 	/* check that all table-limits have been set */
@@ -229,7 +229,7 @@ void wasm::Module::fClose() {
 		if (!pTable.list[i].importModule.empty())
 			continue;
 		if (!pTable.list[i].limit.valid())
-			throw wasm::Exception{ L"Table [", wasm::Table{ *this, uint32_t(i) }.toString(), L"] requires a limit to be set" };
+			throw wasm::Exception{ "Table [", wasm::Table{ *this, uint32_t(i) }.toString(), "] requires a limit to be set" };
 	}
 
 	/* check that all globals have been assigned */
@@ -237,7 +237,7 @@ void wasm::Module::fClose() {
 		if (!pGlobal.list[i].importModule.empty())
 			continue;
 		if (!pGlobal.list[i].assigned)
-			throw wasm::Exception{ L"Global [", wasm::Global{ *this, uint32_t(i) }.toString(), L"] requires to either be imported or a value assigned to it" };
+			throw wasm::Exception{ "Global [", wasm::Global{ *this, uint32_t(i) }.toString(), "] requires to either be imported or a value assigned to it" };
 	}
 
 	/* instantiate all sinks to non-sunken functions and close all other remaining sinks */
@@ -269,22 +269,22 @@ wasm::Memory wasm::Module::memory(std::u8string_view id, const wasm::Limit& limi
 
 	/* validate the import/export parameter */
 	if ((!exchange.importModule.empty() || exchange.exported) && id.empty())
-		throw wasm::Exception{ L"Importing or exporting requires explicit id names" };
+		throw wasm::Exception{ "Importing or exporting requires explicit id names" };
 
 	/* validate the imports */
 	if (exchange.importModule.empty())
 		pImportsClosed = true;
 	else if (pImportsClosed)
-		throw wasm::Exception{ L"Cannot import memory [", id, L"] after the first non-import object has been added" };
+		throw wasm::Exception{ "Cannot import memory [", id, "] after the first non-import object has been added" };
 
 	/* validate the limit */
 	if (!exchange.importModule.empty() && !limit.valid())
-		throw wasm::Exception{ L"Imported memory [", id, L"] immediately requires a valid limit" };
+		throw wasm::Exception{ "Imported memory [", id, "] immediately requires a valid limit" };
 
 	/* validate the id */
 	std::u8string _id{ id };
 	if (!_id.empty() && pMemory.ids.contains(_id))
-		throw wasm::Exception{ L"Memory [", _id, L"] already defined" };
+		throw wasm::Exception{ "Memory [", _id, "] already defined" };
 
 	/* setup the memory-state */
 	detail::MemoryState state = { std::u8string{ exchange.importModule }, limit, {}, exchange.exported };
@@ -304,22 +304,22 @@ wasm::Table wasm::Module::table(std::u8string_view id, bool functions, const was
 
 	/* validate the import/export parameter */
 	if ((!exchange.importModule.empty() || exchange.exported) && id.empty())
-		throw wasm::Exception{ L"Importing or exporting requires explicit id names" };
+		throw wasm::Exception{ "Importing or exporting requires explicit id names" };
 
 	/* validate the imports */
 	if (exchange.importModule.empty())
 		pImportsClosed = true;
 	else if (pImportsClosed)
-		throw wasm::Exception{ L"Cannot import table [", id, L"] after the first non-import object has been added" };
+		throw wasm::Exception{ "Cannot import table [", id, "] after the first non-import object has been added" };
 
 	/* validate the limit */
 	if (!exchange.importModule.empty() && !limit.valid())
-		throw wasm::Exception{ L"Imported table [", id, L"] immediately requires a valid limit" };
+		throw wasm::Exception{ "Imported table [", id, "] immediately requires a valid limit" };
 
 	/* validate the id */
 	std::u8string _id{ id };
 	if (!_id.empty() && pTable.ids.contains(_id))
-		throw wasm::Exception{ L"Table [", _id, L"] already defined" };
+		throw wasm::Exception{ "Table [", _id, "] already defined" };
 
 	/* setup the table-state */
 	detail::TableState state = { std::u8string{ exchange.importModule }, limit, {}, exchange.exported, functions };
@@ -339,18 +339,18 @@ wasm::Global wasm::Module::global(std::u8string_view id, wasm::Type type, bool m
 
 	/* validate the import/export parameter */
 	if ((!exchange.importModule.empty() || exchange.exported) && id.empty())
-		throw wasm::Exception{ L"Importing or exporting requires explicit id names" };
+		throw wasm::Exception{ "Importing or exporting requires explicit id names" };
 
 	/* validate the imports */
 	if (exchange.importModule.empty())
 		pImportsClosed = true;
 	else if (pImportsClosed)
-		throw wasm::Exception{ L"Cannot import global [", id, L"] after the first non-import object has been added" };
+		throw wasm::Exception{ "Cannot import global [", id, "] after the first non-import object has been added" };
 
 	/* validate the id */
 	std::u8string _id{ id };
 	if (!_id.empty() && pGlobal.ids.contains(_id))
-		throw wasm::Exception{ L"Global [", _id, L"] already defined" };
+		throw wasm::Exception{ "Global [", _id, "] already defined" };
 
 	/* setup the global */
 	detail::GlobalState state = { std::u8string{ exchange.importModule }, {}, type, exchange.exported, mutating, false };
@@ -378,13 +378,13 @@ void wasm::Module::startup(const wasm::Function& function) {
 
 	/* validate the function */
 	if (!function.valid())
-		throw wasm::Exception{ L"Function is required to be constructed to use it as startup" };
+		throw wasm::Exception{ "Function is required to be constructed to use it as startup" };
 	if (&function.module() != this)
-		throw wasm::Exception{ L"Function [", function.toString(), L"] must originate from this module" };
+		throw wasm::Exception{ "Function [", function.toString(), "] must originate from this module" };
 
 	/* check if a startup has already been set */
 	if (pHasStartup)
-		throw wasm::Exception{ L"Function [", function.toString(), L"] cannot be set as startup as only one startup is allowed per module" };
+		throw wasm::Exception{ "Function [", function.toString(), "] cannot be set as startup as only one startup is allowed per module" };
 
 	/* mark the startup as set and notify the interface */
 	pHasStartup = true;
@@ -395,17 +395,17 @@ void wasm::Module::limit(const wasm::Memory& memory, const wasm::Limit& limit) {
 
 	/* validate the memory */
 	if (!memory.valid())
-		throw wasm::Exception{ L"Memory is required to be constructed to set its limit" };
+		throw wasm::Exception{ "Memory is required to be constructed to set its limit" };
 	if (&memory.module() != this)
-		throw wasm::Exception{ L"Memory [", memory.toString(), L"] must originate from this module" };
+		throw wasm::Exception{ "Memory [", memory.toString(), "] must originate from this module" };
 
 	/* validate the limit */
 	if (!limit.valid())
-		throw wasm::Exception{ L"Memory [", memory.toString(), L"] can only be assigned valid limits" };
+		throw wasm::Exception{ "Memory [", memory.toString(), "] can only be assigned valid limits" };
 
 	/* check if a limit has already been assigned to the memory */
 	if (pMemory.list[memory.index()].limit.valid())
-		throw wasm::Exception{ L"Limit for memory [", memory.toString(), L"] can only be assigned once" };
+		throw wasm::Exception{ "Limit for memory [", memory.toString(), "] can only be assigned once" };
 
 	/* mark the limit as written and notify the interface */
 	pMemory.list[memory.index()].limit = limit;
@@ -416,17 +416,17 @@ void wasm::Module::limit(const wasm::Table& table, const wasm::Limit& limit) {
 
 	/* validate the table */
 	if (!table.valid())
-		throw wasm::Exception{ L"Table is required to be constructed to set its limit" };
+		throw wasm::Exception{ "Table is required to be constructed to set its limit" };
 	if (&table.module() != this)
-		throw wasm::Exception{ L"Table [", table.toString(), L"] must originate from this module" };
+		throw wasm::Exception{ "Table [", table.toString(), "] must originate from this module" };
 
 	/* validate the limit */
 	if (!limit.valid())
-		throw wasm::Exception{ L"Table [", table.toString(), L"] can only be assigned valid limits" };
+		throw wasm::Exception{ "Table [", table.toString(), "] can only be assigned valid limits" };
 
 	/* check if a limit has already been assigned to the table */
 	if (pTable.list[table.index()].limit.valid())
-		throw wasm::Exception{ L"Limit for table [", table.toString(), L"] can only be assigned once" };
+		throw wasm::Exception{ "Limit for table [", table.toString(), "] can only be assigned once" };
 
 	/* mark the limit as written and notify the interface */
 	pTable.list[table.index()].limit = limit;
@@ -437,11 +437,11 @@ void wasm::Module::value(const wasm::Global& global, const wasm::Value& value) {
 
 	/* validate the global */
 	if (!global.valid())
-		throw wasm::Exception{ L"Global is required to be constructed to set its value" };
+		throw wasm::Exception{ "Global is required to be constructed to set its value" };
 	if (&global.module() != this)
-		throw wasm::Exception{ L"Global [", global.toString(), L"] must originate from this module" };
+		throw wasm::Exception{ "Global [", global.toString(), "] must originate from this module" };
 	if (global.imported())
-		throw wasm::Exception{ L"Global [", global.toString(), L"] cannot be set a value as it is being imported" };
+		throw wasm::Exception{ "Global [", global.toString(), "] cannot be set a value as it is being imported" };
 
 	/* validate the value */
 	wasm::Type _type{};
@@ -464,26 +464,26 @@ void wasm::Module::value(const wasm::Global& global, const wasm::Value& value) {
 	case wasm::ValType::refFunction:
 		_type = wasm::Type::refFunction;
 		if (value.function().valid() && &value.function().module() != this)
-			throw wasm::Exception{ L"Function value for global [", global.toString(), L"] must originate from this module" };
+			throw wasm::Exception{ "Function value for global [", global.toString(), "] must originate from this module" };
 		break;
 	case wasm::ValType::global:
 		if (!value.global().valid())
-			throw wasm::Exception{ L"Imported value for global [", global.toString(), L"] must be constructed" };
+			throw wasm::Exception{ "Imported value for global [", global.toString(), "] must be constructed" };
 		if (&value.global().module() != this)
-			throw wasm::Exception{ L"Imported value for global [", global.toString(), L"] must originate from this module" };
+			throw wasm::Exception{ "Imported value for global [", global.toString(), "] must originate from this module" };
 		if (!value.global().imported() || value.global().mutating())
-			throw wasm::Exception{ L"Imported value for global [", global.toString(), L"] must be imported and immutable" };
+			throw wasm::Exception{ "Imported value for global [", global.toString(), "] must be imported and immutable" };
 		_type = value.global().type();
 		break;
 	case wasm::ValType::invalid:
-		throw wasm::Exception{ L"Value for global [", global.toString(), L"] is required to be constructed" };
+		throw wasm::Exception{ "Value for global [", global.toString(), "] is required to be constructed" };
 	}
 	if (_type != global.type())
-		throw wasm::Exception{ L"Value for global [", global.toString(), L"] must match its type" };
+		throw wasm::Exception{ "Value for global [", global.toString(), "] must match its type" };
 
 	/* check if a value has already been assigned to the global */
 	if (pGlobal.list[global.index()].assigned)
-		throw wasm::Exception{ L"Value for global [", global.toString(), L"] can only be assigned once" };
+		throw wasm::Exception{ "Value for global [", global.toString(), "] can only be assigned once" };
 
 	/* mark the value as written and notify the interface */
 	pGlobal.list[global.index()].assigned = true;

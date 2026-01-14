@@ -6,15 +6,15 @@
 wasm::Sink::Sink(const wasm::Function& function) {
 	/* validate that the function can be used as sink-target */
 	if (!function.valid())
-		throw wasm::Exception{ L"Functions must be constructed to create a sink to them" };
+		throw wasm::Exception{ "Functions must be constructed to create a sink to them" };
 	if (function.imported())
-		throw wasm::Exception{ L"Sinks cannot be created for imported function [", function.toString(), L"]" };
+		throw wasm::Exception{ "Sinks cannot be created for imported function [", function.toString(), ']' };
 	pModule = &function.module();
 
 	/* check if the module is closed or the function has already been bound */
 	pModule->fCheck();
 	if (pModule->pFunction.list[function.index()].bound)
-		throw wasm::Exception{ L"Sink cannot be created for function [", function.toString(), L"] for which a sink has already been created before" };
+		throw wasm::Exception{ "Sink cannot be created for function [", function.toString(), "] for which a sink has already been created before" };
 	pModule->pFunction.list[function.index()].bound = true;
 
 	/* setup the sink-state */
@@ -49,7 +49,7 @@ wasm::Type wasm::Sink::fMapOperand(wasm::OpType operand) const {
 	case wasm::OpType::f64:
 		return wasm::Type::f64;
 	default:
-		throw wasm::Exception{ L"Unknown wasm::OpType type [", size_t(operand), L"] encountered" };
+		throw wasm::Exception{ "Unknown wasm::OpType type [", size_t(operand), "] encountered" };
 	}
 }
 std::u8string wasm::Sink::fError() const {
@@ -58,14 +58,14 @@ std::u8string wasm::Sink::fError() const {
 void wasm::Sink::fCheck() const {
 	/* check if any queued exceptions need to be thrown */
 	if (!pException.empty()) {
-		std::wstring err;
+		std::string err;
 		std::swap(err, pException);
 		throw wasm::Exception{ err };
 	}
 
 	/* check if the sink has already been closed */
 	if (pClosed)
-		throw wasm::Exception{ fError(), L"Cannot change the closed" };
+		throw wasm::Exception{ fError(), "Cannot change the closed" };
 }
 void wasm::Sink::fClose() {
 	if (pClosed)
@@ -96,7 +96,7 @@ void wasm::Sink::fDeferredException(const wasm::Exception& error) {
 wasm::Variable wasm::Sink::fParam(uint32_t index) {
 	/* validate the parameter-index */
 	if (index >= pParameter)
-		throw wasm::Exception{ fError(), L"Parameter index [", index, L"] out of bounds" };
+		throw wasm::Exception{ fError(), "Parameter index [", index, "] out of bounds" };
 	return wasm::Variable{ *this, index };
 }
 
@@ -120,15 +120,15 @@ bool wasm::Sink::fCheckTarget(uint32_t index, size_t stamp, bool soft) const {
 	if (index < pTargets.size() && pTargets[index].state.stamp == stamp)
 		return true;
 	if (!soft)
-		throw wasm::Exception{ fError(), L"Target [", index, L"] is out of scope" };
+		throw wasm::Exception{ fError(), "Target [", index, "] is out of scope" };
 	return false;
 }
 void wasm::Sink::fSetupValidTarget(const wasm::Prototype& prototype, std::u8string_view id, wasm::ScopeType type, wasm::Target& target) {
 	/* validate the prototype */
 	if (!prototype.valid())
-		throw wasm::Exception{ fError(), L"Prototype must be constructed" };
+		throw wasm::Exception{ fError(), "Prototype must be constructed" };
 	if (&prototype.module() != pModule)
-		throw wasm::Exception{ fError(), L"Prototype [", prototype.toString(), L"] must originate from same module as function" };
+		throw wasm::Exception{ fError(), "Prototype [", prototype.toString(), "] must originate from same module as function" };
 
 	/* perform the type checking */
 	if (type == wasm::ScopeType::conditional)
@@ -186,23 +186,23 @@ void wasm::Sink::fCloseTarget(uint32_t index, size_t stamp) {
 		fPopUntil(index);
 }
 
-void wasm::Sink::fTypesFailed(std::wstring_view expected, std::wstring_view found) const {
+void wasm::Sink::fTypesFailed(std::string_view expected, std::string_view found) const {
 	if (!fScope().unreachable)
-		throw wasm::Exception{ fError(), L"Expected [", expected, L"] but found [", found, L"]" };
+		throw wasm::Exception{ fError(), "Expected [", expected, "] but found [", found, ']' };
 }
-void wasm::Sink::fPopFailed(size_t count, std::wstring_view expected) const {
+void wasm::Sink::fPopFailed(size_t count, std::string_view expected) const {
 	const Scope& scope = fScope();
 
 	/* setup the description of the found types */
 	size_t available = pStack.size() - scope.stack;
 	size_t start = scope.stack + (count > available ? 0 : (available - count));
-	std::wstring found = fMakeTypeList(pStack.begin() + start, pStack.end(), [](auto& t) { return t; });
+	std::string found = fMakeTypeList(pStack.begin() + start, pStack.end(), [](auto& t) { return t; });
 	fTypesFailed(expected, found);
 }
 void wasm::Sink::fCheckEmpty() const {
 	const Scope& scope = fScope();
 	if (pStack.size() > scope.stack)
-		fPopFailed(pStack.size() - scope.stack, L"");
+		fPopFailed(pStack.size() - scope.stack, "");
 }
 const wasm::Sink::Scope& wasm::Sink::fScope() const {
 	if (pTargets.empty())
@@ -226,7 +226,7 @@ void wasm::Sink::fPopTypes(std::initializer_list<wasm::Type> types) {
 	}
 
 	/* setup the description of the expected types */
-	std::wstring expected = fMakeTypeList(types.begin(), types.end(), [](auto& t) { return t; });
+	std::string expected = fMakeTypeList(types.begin(), types.end(), [](auto& t) { return t; });
 	fPopFailed(types.size(), expected);
 }
 void wasm::Sink::fPopTypes(const wasm::Prototype& prototype, bool params) {
@@ -235,7 +235,7 @@ void wasm::Sink::fPopTypes(const wasm::Prototype& prototype, bool params) {
 		return;
 
 	/* validate that the given types exist and pop them */
-	std::wstring expected;
+	std::string expected;
 	size_t count = 0;
 	if (params) {
 		const auto& list = prototype.parameter();
@@ -289,7 +289,7 @@ wasm::Variable wasm::Sink::local(wasm::Type type, std::u8string_view id) {
 	/* validate the id */
 	std::u8string _id{ id };
 	if (!_id.empty() && pVariables.ids.contains(_id))
-		throw wasm::Exception{ fError(), L"Variable [", _id, L"] already defined in sink" };
+		throw wasm::Exception{ fError(), "Variable [", _id, "] already defined in sink" };
 
 	/* setup the variable-state */
 	detail::VariableState state = { {}, type };
@@ -326,7 +326,7 @@ void wasm::Sink::operator[](const wasm::InstSimple& inst) {
 	switch (inst.type) {
 	case wasm::InstSimple::Type::drop:
 		if (pStack.size() - fScope().stack < 1)
-			fPopFailed(1, L"any");
+			fPopFailed(1, "any");
 		else
 			fPopTypes({ pStack.back() });
 		break;
@@ -336,7 +336,7 @@ void wasm::Sink::operator[](const wasm::InstSimple& inst) {
 		break;
 	case wasm::InstSimple::Type::select:
 		if (pStack.size() - fScope().stack < 3)
-			fPopFailed(3, L"opt1, opt2, i32");
+			fPopFailed(3, "opt1, opt2, i32");
 		else {
 			wasm::Type type = pStack.end()[-2];
 			fSwapTypes({ type, type, wasm::Type::i32 }, { type });
@@ -350,7 +350,7 @@ void wasm::Sink::operator[](const wasm::InstSimple& inst) {
 		break;
 	case wasm::InstSimple::Type::refTestNull:
 		if (pStack.size() - fScope().stack < 1 || (pStack.back() != wasm::Type::refExtern && pStack.back() != wasm::Type::refFunction))
-			fPopFailed(1, L"ref");
+			fPopFailed(1, "ref");
 		else {
 			fSwapTypes({ pStack.back() }, { wasm::Type::i32 });
 		}
@@ -380,7 +380,7 @@ void wasm::Sink::operator[](const wasm::InstSimple& inst) {
 	case wasm::InstSimple::Type::nop:
 		break;
 	default:
-		throw wasm::Exception{ L"Unknown wasm::InstSimple type [", size_t(inst.type), L"] encountered" };
+		throw wasm::Exception{ "Unknown wasm::InstSimple type [", size_t(inst.type), "] encountered" };
 	}
 
 	/* add the instruction to the interface */
@@ -399,7 +399,7 @@ void wasm::Sink::operator[](const wasm::InstConst& inst) {
 	else if (std::holds_alternative<double>(inst.value))
 		fPushTypes({ wasm::Type::f64 });
 	else
-		throw wasm::Exception{ L"Unknown wasm::InstConst type encountered" };
+		throw wasm::Exception{ "Unknown wasm::InstConst type encountered" };
 
 	/* add the instruction to the interface */
 	pInterface->addInst(inst);
@@ -503,7 +503,7 @@ void wasm::Sink::operator[](const wasm::InstWidth& inst) {
 		fSwapTypes({ ftype }, { ftype });
 		break;
 	default:
-		throw wasm::Exception{ L"Unknown wasm::InstWidth type [", size_t(inst.type), L"] encountered" };
+		throw wasm::Exception{ "Unknown wasm::InstWidth type [", size_t(inst.type), "] encountered" };
 	}
 
 	/* add the instruction to the interface */
@@ -514,14 +514,14 @@ void wasm::Sink::operator[](const wasm::InstMemory& inst) {
 
 	/* validate the instruction-operands */
 	if (!inst.memory.valid())
-		throw wasm::Exception{ fError(), L"Memories must be constructed" };
+		throw wasm::Exception{ fError(), "Memories must be constructed" };
 	if (&inst.memory.module() != pModule)
-		throw wasm::Exception{ fError(), L"Memory [", inst.memory.toString(), L"] must originate from same module as function" };
+		throw wasm::Exception{ fError(), "Memory [", inst.memory.toString(), "] must originate from same module as function" };
 	if (inst.type == wasm::InstMemory::Type::copy) {
 		if (!inst.destination.valid())
-			throw wasm::Exception{ fError(), L"Memories must be constructed" };
+			throw wasm::Exception{ fError(), "Memories must be constructed" };
 		if (&inst.destination.module() != pModule)
-			throw wasm::Exception{ fError(), L"Memory [", inst.destination.toString(), L"] must originate from same module as function" };
+			throw wasm::Exception{ fError(), "Memory [", inst.destination.toString(), "] must originate from same module as function" };
 	}
 
 	/* perform the type checking */
@@ -573,7 +573,7 @@ void wasm::Sink::operator[](const wasm::InstMemory& inst) {
 		fPopTypes({ wasm::Type::i32, wasm::Type::i32, wasm::Type::i32 });
 		break;
 	default:
-		throw wasm::Exception{ L"Unknown wasm::InstMemory type [", size_t(inst.type), L"] encountered" };
+		throw wasm::Exception{ "Unknown wasm::InstMemory type [", size_t(inst.type), "] encountered" };
 	}
 
 	/* add the instruction to the interface */
@@ -584,14 +584,14 @@ void wasm::Sink::operator[](const wasm::InstTable& inst) {
 
 	/* validate the instruction-operands */
 	if (!inst.table.valid())
-		throw wasm::Exception{ fError(), L"Tables must be constructed" };
+		throw wasm::Exception{ fError(), "Tables must be constructed" };
 	if (&inst.table.module() != pModule)
-		throw wasm::Exception{ fError(), L"Table [", inst.table.toString(), L"] must originate from same module as function" };
+		throw wasm::Exception{ fError(), "Table [", inst.table.toString(), "] must originate from same module as function" };
 	if (inst.type == wasm::InstTable::Type::copy) {
 		if (!inst.destination.valid())
-			throw wasm::Exception{ fError(), L"Tables must be constructed" };
+			throw wasm::Exception{ fError(), "Tables must be constructed" };
 		if (&inst.destination.module() != pModule)
-			throw wasm::Exception{ fError(), L"Table [", inst.destination.toString(), L"] must originate from same module as function" };
+			throw wasm::Exception{ fError(), "Table [", inst.destination.toString(), "] must originate from same module as function" };
 	}
 
 	/* perform the type checking */
@@ -615,7 +615,7 @@ void wasm::Sink::operator[](const wasm::InstTable& inst) {
 		fPopTypes({ wasm::Type::i32, (inst.table.functions() ? wasm::Type::refFunction : wasm::Type::refExtern), wasm::Type::i32 });
 		break;
 	default:
-		throw wasm::Exception{ L"Unknown wasm::InstTable type [", size_t(inst.type), L"] encountered" };
+		throw wasm::Exception{ "Unknown wasm::InstTable type [", size_t(inst.type), "] encountered" };
 	}
 
 	/* add the instruction to the interface */
@@ -626,9 +626,9 @@ void wasm::Sink::operator[](const wasm::InstLocal& inst) {
 
 	/* validate the instruction-operands */
 	if (!inst.variable.valid())
-		throw wasm::Exception{ fError(), L"Locals must be constructed" };
+		throw wasm::Exception{ fError(), "Locals must be constructed" };
 	if (&inst.variable.sink() != this)
-		throw wasm::Exception{ fError(), L"Local [", inst.variable.toString(), L"] must originate from sink" };
+		throw wasm::Exception{ fError(), "Local [", inst.variable.toString(), "] must originate from sink" };
 
 	/* perform the type checking */
 	switch (inst.type) {
@@ -642,7 +642,7 @@ void wasm::Sink::operator[](const wasm::InstLocal& inst) {
 		fSwapTypes({ inst.variable.type() }, { inst.variable.type() });
 		break;
 	default:
-		throw wasm::Exception{ L"Unknown wasm::InstLocal type [", size_t(inst.type), L"] encountered" };
+		throw wasm::Exception{ "Unknown wasm::InstLocal type [", size_t(inst.type), "] encountered" };
 	}
 
 	/* add the instruction to the interface */
@@ -660,7 +660,7 @@ void wasm::Sink::operator[](const wasm::InstParam& inst) {
 		wasm::Sink::operator[](wasm::InstLocal{ wasm::InstLocal::Type::tee, fParam(inst.index) });
 		break;
 	default:
-		throw wasm::Exception{ L"Unknown wasm::InstParam type [", size_t(inst.type), L"] encountered" };
+		throw wasm::Exception{ "Unknown wasm::InstParam type [", size_t(inst.type), "] encountered" };
 	}
 }
 void wasm::Sink::operator[](const wasm::InstGlobal& inst) {
@@ -668,9 +668,9 @@ void wasm::Sink::operator[](const wasm::InstGlobal& inst) {
 
 	/* validate the instruction-operands */
 	if (!inst.global.valid())
-		throw wasm::Exception{ fError(), L"Globals must be constructed" };
+		throw wasm::Exception{ fError(), "Globals must be constructed" };
 	if (&inst.global.module() != pModule)
-		throw wasm::Exception{ fError(), L"Global [", inst.global.toString(), L"] must originate from same module as function" };
+		throw wasm::Exception{ fError(), "Global [", inst.global.toString(), "] must originate from same module as function" };
 
 	/* perform the type checking */
 	switch (inst.type) {
@@ -681,7 +681,7 @@ void wasm::Sink::operator[](const wasm::InstGlobal& inst) {
 		fPopTypes({ inst.global.type() });
 		break;
 	default:
-		throw wasm::Exception{ L"Unknown wasm::InstGlobal type [", size_t(inst.type), L"] encountered" };
+		throw wasm::Exception{ "Unknown wasm::InstGlobal type [", size_t(inst.type), "] encountered" };
 	}
 
 	/* add the instruction to the interface */
@@ -692,9 +692,9 @@ void wasm::Sink::operator[](const wasm::InstFunction& inst) {
 
 	/* validate the instruction-operands */
 	if (!inst.function.valid())
-		throw wasm::Exception{ fError(), L"Functions must be constructed" };
+		throw wasm::Exception{ fError(), "Functions must be constructed" };
 	if (&inst.function.module() != pModule)
-		throw wasm::Exception{ fError(), L"Function [", inst.function.toString(), L"] must originate from same module as function" };
+		throw wasm::Exception{ fError(), "Function [", inst.function.toString(), "] must originate from same module as function" };
 
 	/* perform the type checking */
 	switch (inst.type) {
@@ -716,7 +716,7 @@ void wasm::Sink::operator[](const wasm::InstFunction& inst) {
 		fScope().unreachable = true;
 		break;
 	default:
-		throw wasm::Exception{ L"Unknown wasm::InstFunction type [", size_t(inst.type), L"] encountered" };
+		throw wasm::Exception{ "Unknown wasm::InstFunction type [", size_t(inst.type), "] encountered" };
 	}
 
 	/* add the instruction to the interface */
@@ -727,13 +727,13 @@ void wasm::Sink::operator[](const wasm::InstIndirect& inst) {
 
 	/* validate the instruction-operands */
 	if (!inst.table.valid())
-		throw wasm::Exception{ fError(), L"Tables must be constructed" };
+		throw wasm::Exception{ fError(), "Tables must be constructed" };
 	if (&inst.table.module() != pModule)
-		throw wasm::Exception{ fError(), L"Table [", inst.table.toString(), L"] must originate from same module as function" };
+		throw wasm::Exception{ fError(), "Table [", inst.table.toString(), "] must originate from same module as function" };
 	if (!inst.prototype.valid())
-		throw wasm::Exception{ fError(), L"Prototype must be constructed" };
+		throw wasm::Exception{ fError(), "Prototype must be constructed" };
 	if (&inst.prototype.module() != pModule)
-		throw wasm::Exception{ fError(), L"Prototype [", inst.prototype.toString(), L"] must originate from same module as function" };
+		throw wasm::Exception{ fError(), "Prototype [", inst.prototype.toString(), "] must originate from same module as function" };
 
 	/* perform the type checking */
 	switch (inst.type) {
@@ -754,7 +754,7 @@ void wasm::Sink::operator[](const wasm::InstIndirect& inst) {
 		fScope().unreachable = true;
 		break;
 	default:
-		throw wasm::Exception{ L"Unknown wasm::InstIndirect type [", size_t(inst.type), L"] encountered" };
+		throw wasm::Exception{ "Unknown wasm::InstIndirect type [", size_t(inst.type), "] encountered" };
 	}
 
 	/* add the instruction to the interface */
@@ -765,17 +765,17 @@ void wasm::Sink::operator[](const wasm::InstBranch& inst) {
 
 	/* validate the instruction-operands */
 	if (!inst.target.valid())
-		throw wasm::Exception{ fError(), L"Targets must be constructed and not out of scope" };
+		throw wasm::Exception{ fError(), "Targets must be constructed and not out of scope" };
 	if (&inst.target.sink() != this)
-		throw wasm::Exception{ fError(), L"Target [", inst.target.toString(), L"] must originate from sink" };
+		throw wasm::Exception{ fError(), "Target [", inst.target.toString(), "] must originate from sink" };
 	if (inst.type == wasm::InstBranch::Type::table) {
 		for (size_t i = 0; i < inst.list.size(); ++i) {
 			const wasm::Target& target = inst.list.begin()[i];
 
 			if (!target.valid())
-				throw wasm::Exception{ fError(), L"Targets must be constructed and not out of scope" };
+				throw wasm::Exception{ fError(), "Targets must be constructed and not out of scope" };
 			if (&target.sink() != this)
-				throw wasm::Exception{ fError(), L"Target [", target.toString(), L"] must originate from sink" };
+				throw wasm::Exception{ fError(), "Target [", target.toString(), "] must originate from sink" };
 		}
 	}
 
@@ -803,7 +803,7 @@ void wasm::Sink::operator[](const wasm::InstBranch& inst) {
 		fScope().unreachable = true;
 		break;
 	default:
-		throw wasm::Exception{ L"Unknown wasm::InstBranch type [", size_t(inst.type), L"] encountered" };
+		throw wasm::Exception{ "Unknown wasm::InstBranch type [", size_t(inst.type), "] encountered" };
 	}
 
 	/* add the instruction to the interface */

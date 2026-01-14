@@ -68,7 +68,7 @@ namespace wasm {
 		Scope pRoot;
 		wasm::Function pFunction;
 		wasm::SinkInterface* pInterface = 0;
-		mutable std::wstring pException;
+		mutable std::string pException;
 		size_t pNextStamp = 0;
 		uint32_t pParameter = 0;
 		bool pClosed = false;
@@ -99,37 +99,37 @@ namespace wasm {
 
 	private:
 		template <class ItType, class MkType>
-		std::wstring fMakeTypeList(ItType begin, ItType end, MkType make) const {
-			std::wstring expected;
+		std::string fMakeTypeList(ItType begin, ItType end, MkType make) const {
+			std::string expected;
 
 			/* create the comma-separated list of types */
 			while (begin != end) {
 				if (!expected.empty())
-					expected.append(L", ");
+					expected.append(", ");
 
 				/* append the type */
 				wasm::Type type = make(*begin);
 				switch (type) {
 				case wasm::Type::i32:
-					expected.append(L"i32");
+					expected.append("i32");
 					break;
 				case wasm::Type::i64:
-					expected.append(L"i64");
+					expected.append("i64");
 					break;
 				case wasm::Type::f32:
-					expected.append(L"f32");
+					expected.append("f32");
 					break;
 				case wasm::Type::f64:
-					expected.append(L"f64");
+					expected.append("f64");
 					break;
 				case wasm::Type::refExtern:
-					expected.append(L"externref");
+					expected.append("externref");
 					break;
 				case wasm::Type::refFunction:
-					expected.append(L"funcref");
+					expected.append("funcref");
 					break;
 				default:
-					throw wasm::Exception{ L"Unknown wasm type [", size_t(type), L"] encountered" };
+					throw wasm::Exception{ "Unknown wasm type [", size_t(type), "] encountered" };
 				}
 				++begin;
 			}
@@ -137,8 +137,8 @@ namespace wasm {
 		}
 
 	private:
-		void fTypesFailed(std::wstring_view expected, std::wstring_view found) const;
-		void fPopFailed(size_t count, std::wstring_view expected) const;
+		void fTypesFailed(std::string_view expected, std::string_view found) const;
+		void fPopFailed(size_t count, std::string_view expected) const;
 		void fCheckEmpty() const;
 		const Scope& fScope() const;
 		Scope& fScope();

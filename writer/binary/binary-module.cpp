@@ -55,7 +55,7 @@ void wasm::binary::Module::fWriteSection(const Deferred& section, bool placeSlot
 
 const std::vector<uint8_t>& wasm::binary::Module::output() const {
 	if (pOutput.empty())
-		throw wasm::Exception{ L"Cannot produce binary-writer module output before the wrapping wasm::Module has been closed" };
+		throw wasm::Exception{ "Cannot produce binary-writer module output before the wrapping wasm::Module has been closed" };
 	return pOutput;
 }
 

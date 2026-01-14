@@ -19,9 +19,9 @@ namespace wasm {
 	class ModuleInterface;
 
 	/* exception thrown when using wasm module/instructions/sinks in unsupported ways */
-	struct Exception : public str::wd::BuildException {
+	struct Exception : public str::ch::BuildException {
 		template <class... Args>
-		constexpr Exception(const Args&... args) : str::wd::BuildException{ args... } {}
+		constexpr Exception(const Args&... args) : str::ch::BuildException{ args... } {}
 	};
 
 	/* native types supported by wasm */

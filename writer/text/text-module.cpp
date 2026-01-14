@@ -7,7 +7,7 @@ wasm::text::Module::Module(std::u8string_view indent) : pIndent{ indent } {}
 
 const std::u8string& wasm::text::Module::output() const {
 	if (pOutput.empty())
-		throw wasm::Exception{ L"Cannot produce text-writer module output before the wrapping wasm::Module has been closed" };
+		throw wasm::Exception{ "Cannot produce text-writer module output before the wrapping wasm::Module has been closed" };
 	return pOutput;
 }
 
